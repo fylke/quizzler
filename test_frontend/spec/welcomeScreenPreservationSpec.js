@@ -12,7 +12,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
         fixtureContainer.innerHTML =
             '<div id="welcomeScreen" class="screen">' +
                 '<div class="welcome-content">' +
-                    '<h1 id="authHeading">\u2708\uFE0F Travel Quiz</h1>' +
+                    '<h1 id="authHeading">\u2708\uFE0F Quizzler</h1>' +
                     '<p id="authSubtext">Log in or create an account to continue.</p>' +
                     '<div class="input-group auth-group">' +
                         '<input type="text" id="name" placeholder="Enter your name" maxlength="20" class="hidden">' +

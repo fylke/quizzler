@@ -6,7 +6,7 @@ name: Rollback Self-Test
   workflow_dispatch:
 
 env:
-  CONTAINER_NAME: travel-quizzer
+  CONTAINER_NAME: quizzler
 
 jobs:
   self_test:
