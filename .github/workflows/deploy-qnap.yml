@@ -1,6 +1,6 @@
 name: Deploy to QNAP Container Station
 
-on:
+"on":
   push:
     tags:
       - 'v*'

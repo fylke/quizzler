@@ -1,6 +1,6 @@
 name: QNAP Backup and Restore
 
-on:
+"on":
   schedule:
     - cron: '15 2 * * 0' # Weekly on Sunday at 02:15 UTC
   workflow_dispatch:
