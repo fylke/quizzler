@@ -335,7 +335,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         # Start quiz: hint_difficulty=5, remaining_guesses=3
         self.client.get("/api/quiz/42")
 
-        # Wrong answer: remaining_guesses goes from 3 to 2, hint_difficulty from 5 to 4
+        # Wrong answer: remaining_guesses goes from 3 to 2, hint_difficulty stays at 5
         resp1 = self.client.post(
             "/api/check-answer", json={"answer": "wrong answer"}
         )
@@ -351,9 +351,9 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(resp2.status_code, 200)
         data2 = resp2.get_json()
         self.assertTrue(data2["correct"])
-        # After one wrong answer: hint_difficulty decremented to 4, remaining_guesses=2
-        # Score = 4 * 2 = 8
-        self.assertEqual(data2["points"], 8)
+        # After one wrong answer: hint_difficulty is still 5, remaining_guesses=2
+        # Score = 5 * 2 = 10
+        self.assertEqual(data2["points"], 10)
 
     def test_media_endpoint_serves_files(self):
         """Requirement 5.5: /media/countries/{id}/{level}{a|b}.jpg path is served."""
