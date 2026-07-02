@@ -14,6 +14,7 @@ let csrfToken = null;
 const API_BASE = window.location.origin;
 let authMode = 'login';
 let submitting = false; // guards against double-click on submit
+let hintCounterAnimationTimeout = null;
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -256,7 +257,6 @@ async function logout() {
 
 function displayQuiz(data) {
     submitting = false;
-    document.getElementById('progressFill').style.width = '100%';
     resetHintReviewState();
     quizState.currentQuizId = Number(data.id) || null;
     updateHintDisplay(data.hint, data.hintDifficulty, data.remainingGuesses);
@@ -305,16 +305,20 @@ async function loadQuestion() {
     }
 }
 
-function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
+function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options = {}) {
     const difficulty = Number(hintDifficulty);
     const guesses = Number(remainingGuesses);
 
     if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
         document.getElementById('hint').textContent = hintText;
+        updateHintProgressBar(null);
+        updateNextHintCostPreview(null, null);
         return;
     }
 
-    updateHintCounter(difficulty);
+    updateHintProgressBar(difficulty);
+    updateHintCounter(difficulty, guesses, options);
+    updateNextHintCostPreview(difficulty, guesses);
     addHintToHistory(hintText, difficulty);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -324,16 +328,98 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
     renderHintFromState();
 }
 
-function updateHintCounter(hintDifficulty) {
+function getDifficultyLabel(hintDifficulty) {
+    const labels = {
+        5: 'Hardest',
+        4: 'Hard',
+        3: 'Medium',
+        2: 'Easy',
+        1: 'Easiest'
+    };
+
+    return labels[hintDifficulty] || `Difficulty ${hintDifficulty}`;
+}
+
+function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
     const counterEl = document.getElementById('currentHint');
     if (!counterEl) {
         return;
     }
 
+    const difficulty = Number(hintDifficulty);
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
+        return;
+    }
+
+    const points = difficulty * guesses;
+    const nextLabel = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
+    const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
+
+    if (hintCounterAnimationTimeout !== null) {
+        clearTimeout(hintCounterAnimationTimeout);
+        hintCounterAnimationTimeout = null;
+    }
+
+    const currentPoints = Number(counterEl.dataset.currentPoints);
+    if (!shouldAnimateEvaporation || !Number.isFinite(currentPoints) || currentPoints === points) {
+        counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        counterEl.textContent = nextLabel;
+        counterEl.dataset.currentPoints = String(points);
+        return;
+    }
+
+    counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+    void counterEl.offsetWidth;
+    counterEl.classList.add('points-evaporate-out');
+
+    hintCounterAnimationTimeout = window.setTimeout(() => {
+        counterEl.textContent = nextLabel;
+        counterEl.dataset.currentPoints = String(points);
+        counterEl.classList.remove('points-evaporate-out');
+        counterEl.classList.add('points-evaporate-in');
+
+        window.setTimeout(() => {
+            counterEl.classList.remove('points-evaporate-in');
+        }, 260);
+        hintCounterAnimationTimeout = null;
+    }, 260);
+}
+
+function updateHintProgressBar(hintDifficulty) {
+    const progressFill = document.getElementById('progressFill');
+    if (!progressFill) {
+        return;
+    }
+
+    const difficulty = Number(hintDifficulty);
+    if (!Number.isFinite(difficulty)) {
+        progressFill.style.width = '0%';
+        return;
+    }
+
     const totalHints = Number(validationRules.destination?.hintCount) || 5;
-    const currentHintNumber = (totalHints - hintDifficulty) + 1;
-    const clampedHintNumber = Math.min(totalHints, Math.max(1, currentHintNumber));
-    counterEl.textContent = String(clampedHintNumber);
+    const hintPosition = (totalHints - difficulty) + 1;
+    const normalizedPosition = Math.min(totalHints, Math.max(1, hintPosition));
+    const progressPercentage = (normalizedPosition / totalHints) * 100;
+    progressFill.style.width = `${progressPercentage}%`;
+}
+
+function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
+    const previewEl = document.getElementById('nextHintCostPreview');
+    if (!previewEl) {
+        return;
+    }
+
+    const difficulty = Number(hintDifficulty);
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
+        previewEl.textContent = '';
+        return;
+    }
+
+    const pointsGivenUp = difficulty > 1 ? guesses : 0;
+    previewEl.textContent = `(-${pointsGivenUp}p)`;
 }
 
 function resetHintReviewState() {
@@ -345,11 +431,25 @@ function resetHintReviewState() {
 
     const hintReviewSection = document.getElementById('hintReviewSection');
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
+    const nextHintCostPreview = document.getElementById('nextHintCostPreview');
+    const currentHint = document.getElementById('currentHint');
+    if (hintCounterAnimationTimeout !== null) {
+        clearTimeout(hintCounterAnimationTimeout);
+        hintCounterAnimationTimeout = null;
+    }
     if (hintReviewSection) {
         hintReviewSection.classList.add('hidden');
     }
     if (hintHistoryButtons) {
         hintHistoryButtons.innerHTML = '';
+    }
+    if (nextHintCostPreview) {
+        nextHintCostPreview.textContent = '';
+    }
+    updateHintProgressBar(null);
+    if (currentHint) {
+        currentHint.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        delete currentHint.dataset.currentPoints;
     }
 }
 
@@ -399,11 +499,11 @@ function renderHintReviewControls() {
             button.classList.add('active');
         }
 
-        let label = `Hint ${difficulty}`;
-        if (difficulty === quizState.liveHintDifficulty) {
-            label += ' (current)';
-        }
-        button.textContent = label;
+        const totalHints = Number(validationRules.destination?.hintCount) || 5;
+        const ordinalPosition = (totalHints - difficulty) + 1;
+        const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+        const ordinalLabel = labels[ordinalPosition - 1] || `${ordinalPosition}th`;
+        button.textContent = ordinalLabel;
         button.addEventListener('click', () => selectHintForReview(difficulty));
         hintHistoryButtons.appendChild(button);
     });
@@ -423,13 +523,8 @@ function renderHintFromState() {
         return;
     }
 
-    const potentialPoints = liveDifficulty * remainingGuesses;
-    if (viewedDifficulty === liveDifficulty) {
-        document.getElementById('hintProgress').textContent = `Hint difficulty is ${liveDifficulty}, and you have ${remainingGuesses} remaining guesses.`;
-    } else {
-        document.getElementById('hintProgress').textContent = `Reviewing hint difficulty ${viewedDifficulty}. Current scoring hint is difficulty ${liveDifficulty}, and you have ${remainingGuesses} remaining guesses.`;
-    }
-    document.getElementById('hintPoints').textContent = `If you guess correctly, you will get ${potentialPoints} points.`;
+    document.getElementById('hintProgress').textContent = '';
+    document.getElementById('hintPoints').textContent = '';
 }
 
 function renderResultImages(imageUrls) {
@@ -490,7 +585,9 @@ async function submitAnswer() {
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
             animateWrongGuess(answerInput);
-            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses);
+            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses, {
+                animatePointsEvaporation: true
+            });
             const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
                 ? result.images
                 : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);

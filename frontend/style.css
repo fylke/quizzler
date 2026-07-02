@@ -250,10 +250,55 @@ body {
 
 .progress-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 10px;
-    font-size: 0.9em;
-    color: #666;
+    font-size: 1.2em;
+    color: #0f2a3d;
+    font-weight: 800;
+}
+
+.progress-info #currentHint {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid #96c3e6;
+    background: linear-gradient(135deg, #f5fbff 0%, #d7efff 100%);
+    box-shadow: 0 6px 16px rgba(17, 104, 156, 0.2);
+    letter-spacing: 0.02em;
+}
+
+.progress-info #currentHint.points-evaporate-out {
+    animation: points-evaporate-out 0.26s ease-out forwards;
+}
+
+.progress-info #currentHint.points-evaporate-in {
+    animation: points-evaporate-in 0.26s ease-out forwards;
+}
+
+@keyframes points-evaporate-out {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.76);
+        filter: blur(4px);
+    }
+}
+
+@keyframes points-evaporate-in {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.9);
+        filter: blur(3px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
 }
 
 .progress-bar {
@@ -266,9 +311,9 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #d62828 0%, #f4d35e 50%, #2a9d8f 100%);
     width: 0%;
-    transition: width 0.3s ease;
+    transition: width 0.35s ease;
 }
 
 .quiz-content {
@@ -636,6 +681,40 @@ body {
 .button-group .btn {
     flex: 1;
     min-width: 150px;
+}
+
+.button-group .next-hint-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 150px;
+}
+
+.button-group .next-hint-wrap .btn {
+    width: 100%;
+}
+
+.next-hint-cost-preview {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translate(-50%, 4px);
+    opacity: 0;
+    pointer-events: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fbe8e8;
+    border: 1px solid #ebbbbb;
+    color: #8d1d1d;
+    font-weight: 700;
+    font-size: 0.85em;
+    white-space: nowrap;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.next-hint-wrap:hover .next-hint-cost-preview,
+.next-hint-wrap:focus-within .next-hint-cost-preview {
+    opacity: 1;
+    transform: translate(-50%, 0);
 }
 
 /* Responsive */

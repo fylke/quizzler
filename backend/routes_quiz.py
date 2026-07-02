@@ -195,10 +195,8 @@ def check_answer():
             }
         )
 
-    # Still has guesses left — also reveal next hint
-    new_difficulty = quiz_result.hint_difficulty - 1
-    if new_difficulty >= 1:
-        quiz_result.hint_difficulty = new_difficulty
+    # Still has guesses left — keep same hint difficulty.
+    # Users progress to the next hint only via the skip-hint flow.
 
     db.session.commit()
 

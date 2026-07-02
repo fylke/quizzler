@@ -9,7 +9,7 @@ describe('Hint Review', function () {
         fixtureContainer.innerHTML =
             '<div id="quizScreen" class="screen">' +
                 '<div class="progress-info">' +
-                    '<span>Hint <span id="currentHint">1</span> out of 5</span>' +
+                    '<span id="currentHint">Hardest difficulty (15p)</span>' +
                 '</div>' +
                 '<div class="hint-section"><h2 id="hint"></h2></div>' +
                 '<div class="hint-meta">' +
@@ -21,6 +21,12 @@ describe('Hint Review', function () {
                     '<div id="hintHistoryButtons" class="hint-history-buttons"></div>' +
                 '</div>' +
                 '<input id="answerInput" />' +
+                '<div class="button-group">' +
+                    '<div class="next-hint-wrap">' +
+                        '<span id="nextHintCostPreview" class="next-hint-cost-preview"></span>' +
+                        '<button onclick="skipHint()" class="btn btn-secondary">Next Hint</button>' +
+                    '</div>' +
+                '</div>' +
                 '<div id="progressFill"></div>' +
                 '<img id="image1" />' +
                 '<img id="image2" />' +
@@ -50,7 +56,7 @@ describe('Hint Review', function () {
         expect(document.querySelectorAll('#hintHistoryButtons .hint-history-btn').length).toBe(2);
     });
 
-    it('allows viewing a previous hint while keeping current scoring info', function () {
+    it('allows viewing a previous hint', function () {
         updateHintDisplay('Harder hint', 5, 5);
         updateHintDisplay('Easier hint', 4, 4);
 
@@ -60,8 +66,20 @@ describe('Hint Review', function () {
         buttons[0].click();
 
         expect(document.getElementById('hint').textContent).toBe('Harder hint');
-        expect(document.getElementById('hintProgress').textContent).toContain('Reviewing hint difficulty 5');
-        expect(document.getElementById('hintPoints').textContent).toContain('16 points');
+        expect(document.getElementById('hintProgress').textContent).toBe('');
+        expect(document.getElementById('hintPoints').textContent).toBe('');
+    });
+
+    it('renders hint history buttons as ordinal labels', function () {
+        updateHintDisplay('Hardest hint', 5, 5);
+        updateHintDisplay('Hard hint', 4, 4);
+        updateHintDisplay('Medium hint', 3, 3);
+
+        var labels = Array.from(document.querySelectorAll('#hintHistoryButtons .hint-history-btn')).map(function (button) {
+            return button.textContent;
+        });
+
+        expect(labels).toEqual(['First', 'Second', 'Third']);
     });
 
     it('updates quiz images when skipping to a new hint', function (done) {
@@ -101,12 +119,43 @@ describe('Hint Review', function () {
 
     it('updates the top hint counter when moving to easier hints', function () {
         updateHintDisplay('Hardest hint', 5, 3);
-        expect(document.getElementById('currentHint').textContent).toBe('1');
+        expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (15p)');
 
         updateHintDisplay('Second hint', 4, 3);
-        expect(document.getElementById('currentHint').textContent).toBe('2');
+        expect(document.getElementById('currentHint').textContent).toBe('Hard difficulty (12p)');
 
         updateHintDisplay('Third hint', 3, 2);
-        expect(document.getElementById('currentHint').textContent).toBe('3');
+        expect(document.getElementById('currentHint').textContent).toBe('Medium difficulty (6p)');
+    });
+
+    it('shows point loss preview for next hint based on current state', function () {
+        updateHintDisplay('Hardest hint', 5, 3);
+        expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-3p)');
+
+        updateHintDisplay('Easiest hint', 1, 2);
+        expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
+    });
+
+    it('progresses the top bar to the right as hints advance', function () {
+        updateHintDisplay('Hardest hint', 5, 3);
+        expect(document.getElementById('progressFill').style.width).toBe('20%');
+
+        updateHintDisplay('Second hint', 4, 3);
+        expect(document.getElementById('progressFill').style.width).toBe('40%');
+
+        updateHintDisplay('Easiest hint', 1, 1);
+        expect(document.getElementById('progressFill').style.width).toBe('100%');
+    });
+
+    it('animates top points when a wrong answer lowers points', function (done) {
+        updateHintDisplay('Hardest hint', 5, 3);
+        updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
+
+        expect(document.getElementById('currentHint').classList.contains('points-evaporate-out')).toBe(true);
+
+        setTimeout(function () {
+            expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');
+            done();
+        }, 320);
     });
 });

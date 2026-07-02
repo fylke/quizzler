@@ -197,7 +197,7 @@ class MainAppTestCase(unittest.TestCase):
 
         data = response.get_json()
         self.assertFalse(data['correct'])
-        # Still has guesses left, so we get remainingGuesses and a new hint
+        # Still has guesses left, so we get updated remainingGuesses
         self.assertIn('remainingGuesses', data)
         self.assertEqual(data['remainingGuesses'], 2)
 
@@ -219,7 +219,7 @@ class MainAppTestCase(unittest.TestCase):
             ],
         )
 
-    def test_check_answer_wrong_guess_returns_images_for_next_hint(self):
+    def test_check_answer_wrong_guess_keeps_current_hint_images(self):
         question = self.quiz_data[0]
         self.client.get(f'/api/quiz/{question["id"]}')
 
@@ -230,13 +230,13 @@ class MainAppTestCase(unittest.TestCase):
 
         data = response.get_json()
         self.assertFalse(data['correct'])
-        self.assertEqual(data['hintDifficulty'], 4)
+        self.assertEqual(data['hintDifficulty'], 5)
         self.assertIn('images', data)
         self.assertEqual(
             data['images'],
             [
-                f"/media/countries/{question['id']}/4a.jpg",
-                f"/media/countries/{question['id']}/4b.jpg",
+                f"/media/countries/{question['id']}/5a.jpg",
+                f"/media/countries/{question['id']}/5b.jpg",
             ],
         )
 

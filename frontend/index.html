@@ -109,7 +109,7 @@
         <div id="quizScreen" class="screen hidden">
             <div class="quiz-header">
                 <div class="progress-info">
-                    <span>Hint <span id="currentHint">1</span> out of 5</span>
+                    <span id="currentHint">Hardest difficulty (15p)</span>
                 </div>
                 <div class="progress-bar">
                     <div id="progressFill" class="progress-fill"></div>
@@ -151,7 +151,10 @@
                     >
                     <div class="button-group">
                         <button onclick="submitAnswer()" class="btn btn-primary">Submit Answer</button>
-                        <button onclick="nextHint()" class="btn btn-secondary">Next Hint</button>
+                        <div class="next-hint-wrap">
+                            <span id="nextHintCostPreview" class="next-hint-cost-preview" aria-hidden="true"></span>
+                            <button onclick="nextHint()" class="btn btn-secondary">Next Hint</button>
+                        </div>
                     </div>
                 </div>
             </div>
