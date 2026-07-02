@@ -257,7 +257,6 @@ async function logout() {
 
 function displayQuiz(data) {
     submitting = false;
-    document.getElementById('progressFill').style.width = '100%';
     resetHintReviewState();
     quizState.currentQuizId = Number(data.id) || null;
     updateHintDisplay(data.hint, data.hintDifficulty, data.remainingGuesses);
@@ -312,10 +311,12 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
 
     if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
         document.getElementById('hint').textContent = hintText;
+        updateHintProgressBar(null);
         updateNextHintCostPreview(null, null);
         return;
     }
 
+    updateHintProgressBar(difficulty);
     updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
     addHintToHistory(hintText, difficulty);
@@ -385,6 +386,25 @@ function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
     }, 260);
 }
 
+function updateHintProgressBar(hintDifficulty) {
+    const progressFill = document.getElementById('progressFill');
+    if (!progressFill) {
+        return;
+    }
+
+    const difficulty = Number(hintDifficulty);
+    if (!Number.isFinite(difficulty)) {
+        progressFill.style.width = '0%';
+        return;
+    }
+
+    const totalHints = Number(validationRules.destination?.hintCount) || 5;
+    const hintPosition = (totalHints - difficulty) + 1;
+    const normalizedPosition = Math.min(totalHints, Math.max(1, hintPosition));
+    const progressPercentage = (normalizedPosition / totalHints) * 100;
+    progressFill.style.width = `${progressPercentage}%`;
+}
+
 function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
     const previewEl = document.getElementById('nextHintCostPreview');
     if (!previewEl) {
@@ -426,6 +446,7 @@ function resetHintReviewState() {
     if (nextHintCostPreview) {
         nextHintCostPreview.textContent = '';
     }
+    updateHintProgressBar(null);
     if (currentHint) {
         currentHint.classList.remove('points-evaporate-out', 'points-evaporate-in');
         delete currentHint.dataset.currentPoints;

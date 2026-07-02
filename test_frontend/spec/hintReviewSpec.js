@@ -136,6 +136,17 @@ describe('Hint Review', function () {
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
 
+    it('progresses the top bar to the right as hints advance', function () {
+        updateHintDisplay('Hardest hint', 5, 3);
+        expect(document.getElementById('progressFill').style.width).toBe('20%');
+
+        updateHintDisplay('Second hint', 4, 3);
+        expect(document.getElementById('progressFill').style.width).toBe('40%');
+
+        updateHintDisplay('Easiest hint', 1, 1);
+        expect(document.getElementById('progressFill').style.width).toBe('100%');
+    });
+
     it('animates top points when a wrong answer lowers points', function (done) {
         updateHintDisplay('Hardest hint', 5, 3);
         updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
