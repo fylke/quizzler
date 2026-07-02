@@ -314,7 +314,7 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
         return;
     }
 
-    updateHintCounter(difficulty);
+    updateHintCounter(difficulty, guesses);
     addHintToHistory(hintText, difficulty);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -324,16 +324,32 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
     renderHintFromState();
 }
 
-function updateHintCounter(hintDifficulty) {
+function getDifficultyLabel(hintDifficulty) {
+    const labels = {
+        5: 'Hardest',
+        4: 'Hard',
+        3: 'Medium',
+        2: 'Easy',
+        1: 'Easiest'
+    };
+
+    return labels[hintDifficulty] || `Difficulty ${hintDifficulty}`;
+}
+
+function updateHintCounter(hintDifficulty, remainingGuesses) {
     const counterEl = document.getElementById('currentHint');
     if (!counterEl) {
         return;
     }
 
-    const totalHints = Number(validationRules.destination?.hintCount) || 5;
-    const currentHintNumber = (totalHints - hintDifficulty) + 1;
-    const clampedHintNumber = Math.min(totalHints, Math.max(1, currentHintNumber));
-    counterEl.textContent = String(clampedHintNumber);
+    const difficulty = Number(hintDifficulty);
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
+        return;
+    }
+
+    const points = difficulty * guesses;
+    counterEl.textContent = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
 }
 
 function resetHintReviewState() {

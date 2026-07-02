@@ -9,7 +9,7 @@ describe('Hint Review', function () {
         fixtureContainer.innerHTML =
             '<div id="quizScreen" class="screen">' +
                 '<div class="progress-info">' +
-                    '<span>Hint <span id="currentHint">1</span> out of 5</span>' +
+                    '<span id="currentHint">Hardest difficulty (15p)</span>' +
                 '</div>' +
                 '<div class="hint-section"><h2 id="hint"></h2></div>' +
                 '<div class="hint-meta">' +
@@ -101,12 +101,12 @@ describe('Hint Review', function () {
 
     it('updates the top hint counter when moving to easier hints', function () {
         updateHintDisplay('Hardest hint', 5, 3);
-        expect(document.getElementById('currentHint').textContent).toBe('1');
+        expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (15p)');
 
         updateHintDisplay('Second hint', 4, 3);
-        expect(document.getElementById('currentHint').textContent).toBe('2');
+        expect(document.getElementById('currentHint').textContent).toBe('Hard difficulty (12p)');
 
         updateHintDisplay('Third hint', 3, 2);
-        expect(document.getElementById('currentHint').textContent).toBe('3');
+        expect(document.getElementById('currentHint').textContent).toBe('Medium difficulty (6p)');
     });
 });
