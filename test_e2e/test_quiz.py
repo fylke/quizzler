@@ -69,15 +69,15 @@ def test_submit_wrong_answer(page: Page, base_url: str):
     assert is_feedback or is_quiz
 
 
-def test_skip_hint_button(page: Page, base_url: str):
-    """Clicking 'Skip Hint' should request the next hint."""
+def test_next_hint_button(page: Page, base_url: str):
+    """Clicking 'Next Hint' should request the next hint."""
     _register_and_start(page, base_url)
 
     # Get initial hint text
     initial_hint = page.locator("#hint").text_content()
 
-    # Click skip hint
-    page.click("text=Skip Hint")
+    # Click next hint
+    page.click("text=Next Hint")
     page.wait_for_timeout(1000)
 
     # The hint text should have changed (or same if there's an error)

@@ -1,4 +1,4 @@
-"""Email service for Travel Quizzer.
+"""Email service for Quizzler.
 
 Sends transactional emails (password reset) via SMTP. All configuration is
 read from environment variables at call time so that tests can freely set
@@ -86,9 +86,9 @@ def send_password_reset_email(to_address: str, reset_url: str) -> None:
     """Send a password reset email. Raises EmailServiceError on failure."""
 
     # --- Build the email message ---
-    subject = "Travel Quizzer \u2014 Password Reset Request"
+    subject = "Quizzler \u2014 Password Reset Request"
     body = (
-        f"You requested a password reset for your Travel Quizzer account.\n\n"
+        f"You requested a password reset for your Quizzler account.\n\n"
         f"Click the link below to set a new password:\n\n"
         f"{reset_url}\n\n"
         f"This link expires in 15 minutes.\n\n"
@@ -112,7 +112,7 @@ def send_hint_complaint_email(
     if not admin_address:
         raise EmailServiceError("ADMIN_EMAIL is missing or empty")
 
-    subject = f"Travel Quizzer - Hint complaint for quiz {quiz_id}"
+    subject = f"Quizzler - Hint complaint for quiz {quiz_id}"
     body = (
         "A user submitted a hint complaint.\n\n"
         f"Reporter name: {reporter_name}\n"

@@ -1,9 +1,9 @@
 services:
-  travel-quizzer:
+  quizzler:
     build:
       context: .
       dockerfile: Containerfile
-    container_name: travel-quizzer
+    container_name: quizzler
     ports:
       - "9696:5000"
     volumes:
@@ -11,7 +11,7 @@ services:
       - ./data:/app/data:ro
       - ./media:/app/media:ro
     environment:
-      QUIZ_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-quizzer}:${POSTGRES_PASSWORD:-quizzer_pass}@postgres:5432/${POSTGRES_DB:-travel_quizzer}
+      QUIZ_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-quizzer}:${POSTGRES_PASSWORD:-quizzer_pass}@postgres:5432/${POSTGRES_DB:-quizzler}
       SMTP_HOST:
       SMTP_PORT: 587
       SMTP_USERNAME:
@@ -38,7 +38,7 @@ services:
         hard: 2048
       nproc: 256
     networks:
-      - travel-quizzer-net
+      - quizzler-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
@@ -50,11 +50,11 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-travel_quizzer}
+      POSTGRES_DB: ${POSTGRES_DB:-quizzler}
       POSTGRES_USER: ${POSTGRES_USER:-quizzer}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quizzer_pass}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-quizzer} -d ${POSTGRES_DB:-travel_quizzer}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-quizzer} -d ${POSTGRES_DB:-quizzler}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,10 +62,10 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - travel-quizzer-net
+      - quizzler-net
 
 networks:
-  travel-quizzer-net:
+  quizzler-net:
     driver: bridge
 
 volumes:

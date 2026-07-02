@@ -19,13 +19,13 @@ A scheduled readiness check also exists:
 
 Rollback containers are kept with generation names:
 
-- `travel-quizzer-rollback-1` (most recent previous deployment)
-- `travel-quizzer-rollback-2`
-- `travel-quizzer-rollback-3`
+- `quizzler-rollback-1` (most recent previous deployment)
+- `quizzler-rollback-2`
+- `quizzler-rollback-3`
 
 The active container name is always:
 
-- `travel-quizzer`
+- `quizzler`
 
 ## Before you roll back
 
@@ -55,7 +55,7 @@ If automatic rollback fails, run manual rollback immediately using generation 1,
 
 ## Post-rollback verification checklist
 
-1. Confirm active container is `travel-quizzer` and running.
+1. Confirm active container is `quizzler` and running.
 2. Confirm `/health` responds successfully.
 3. Validate login and one quiz round manually.
 4. Confirm no database migration/data integrity errors in logs.
@@ -73,7 +73,7 @@ If automatic rollback fails, run manual rollback immediately using generation 1,
 
 ### No rollback container found
 
-- Meaning: `travel-quizzer-rollback-<n>` does not exist.
+- Meaning: `quizzler-rollback-<n>` does not exist.
 - Action: choose another available generation or redeploy last known good tag.
 
 ### Rollback container starts but health fails
