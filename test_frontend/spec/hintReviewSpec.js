@@ -21,6 +21,12 @@ describe('Hint Review', function () {
                     '<div id="hintHistoryButtons" class="hint-history-buttons"></div>' +
                 '</div>' +
                 '<input id="answerInput" />' +
+                '<div class="button-group">' +
+                    '<div class="next-hint-wrap">' +
+                        '<span id="nextHintCostPreview" class="next-hint-cost-preview"></span>' +
+                        '<button onclick="skipHint()" class="btn btn-secondary">Next Hint</button>' +
+                    '</div>' +
+                '</div>' +
                 '<div id="progressFill"></div>' +
                 '<img id="image1" />' +
                 '<img id="image2" />' +
@@ -120,5 +126,13 @@ describe('Hint Review', function () {
 
         updateHintDisplay('Third hint', 3, 2);
         expect(document.getElementById('currentHint').textContent).toBe('Medium difficulty (6p)');
+    });
+
+    it('shows point loss preview for next hint based on current state', function () {
+        updateHintDisplay('Hardest hint', 5, 3);
+        expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-3p)');
+
+        updateHintDisplay('Easiest hint', 1, 2);
+        expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
 });

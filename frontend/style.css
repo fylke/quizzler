@@ -649,6 +649,40 @@ body {
     min-width: 150px;
 }
 
+.button-group .next-hint-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 150px;
+}
+
+.button-group .next-hint-wrap .btn {
+    width: 100%;
+}
+
+.next-hint-cost-preview {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translate(-50%, 4px);
+    opacity: 0;
+    pointer-events: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fbe8e8;
+    border: 1px solid #ebbbbb;
+    color: #8d1d1d;
+    font-weight: 700;
+    font-size: 0.85em;
+    white-space: nowrap;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.next-hint-wrap:hover .next-hint-cost-preview,
+.next-hint-wrap:focus-within .next-hint-cost-preview {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .screen {

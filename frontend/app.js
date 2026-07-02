@@ -311,10 +311,12 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
 
     if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
         document.getElementById('hint').textContent = hintText;
+        updateNextHintCostPreview(null, null);
         return;
     }
 
     updateHintCounter(difficulty, guesses);
+    updateNextHintCostPreview(difficulty, guesses);
     addHintToHistory(hintText, difficulty);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -352,6 +354,23 @@ function updateHintCounter(hintDifficulty, remainingGuesses) {
     counterEl.textContent = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
 }
 
+function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
+    const previewEl = document.getElementById('nextHintCostPreview');
+    if (!previewEl) {
+        return;
+    }
+
+    const difficulty = Number(hintDifficulty);
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(difficulty) || !Number.isFinite(guesses)) {
+        previewEl.textContent = '';
+        return;
+    }
+
+    const pointsGivenUp = difficulty > 1 ? guesses : 0;
+    previewEl.textContent = `(-${pointsGivenUp}p)`;
+}
+
 function resetHintReviewState() {
     quizState.hintHistory = {};
     quizState.unlockedHintDifficulties = [];
@@ -361,11 +380,15 @@ function resetHintReviewState() {
 
     const hintReviewSection = document.getElementById('hintReviewSection');
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
+    const nextHintCostPreview = document.getElementById('nextHintCostPreview');
     if (hintReviewSection) {
         hintReviewSection.classList.add('hidden');
     }
     if (hintHistoryButtons) {
         hintHistoryButtons.innerHTML = '';
+    }
+    if (nextHintCostPreview) {
+        nextHintCostPreview.textContent = '';
     }
 }
 
