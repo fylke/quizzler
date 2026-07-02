@@ -1,7 +1,7 @@
 # ✈️ Quizzler Webapp
 
 [![CI](https://github.com/fylke/travel-quizzer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/ci.yml)
-[![Deploy to QNAP](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml)
+[![Deploy to QNAP](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml/badge.svg)](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml)
 [![backup-qnap](https://github.com/fylke/travel-quizzer/actions/workflows/backup-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/backup-qnap.yml)
 [![E2E Nightly](https://github.com/fylke/travel-quizzer/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/e2e-nightly.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/travel-quizzer/blob/main/.github/dependabot.yml)
