@@ -69,7 +69,7 @@ def test_submit_wrong_answer(page: Page, base_url: str):
     assert is_feedback or is_quiz
 
 
-def test_skip_hint_button(page: Page, base_url: str):
+def test_next_hint_button(page: Page, base_url: str):
     """Clicking 'Next Hint' should request the next hint."""
     _register_and_start(page, base_url)
 
