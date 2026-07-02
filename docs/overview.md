@@ -25,7 +25,7 @@ stateDiagram-v2
         ButtonLogout
     }
 
-    QuizScreen --> QuizScreen: ButtonSkipHint
+    QuizScreen --> QuizScreen: ButtonNextHint
     QuizScreen --> QuizScreen: ButtonAnswer (Incorrect guess)
     QuizScreen --> CorrectScreen: ButtonAnswer (Correct guess)
     QuizScreen --> FailureScreen: ButtonAnswer (Incorrect guess, no more guesses)
@@ -34,7 +34,7 @@ stateDiagram-v2
         TextfieldHint
         PictureHint
         ButtonAnswer
-        ButtonSkipHint
+        ButtonNextHint
     }
 
     CorrectScreen --> StatusScreen: ButtonBackToStatus

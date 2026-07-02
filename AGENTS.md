@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Guidelines for AI agents working on the Travel Quizzer project.
+Guidelines for AI agents working on the Quizzler project.
 
 ## Project Overview
 
-A Flask-based travel quiz webapp with a vanilla JS frontend. Users log in, answer geography/travel questions with progressive hints, and earn points. Admins can manage quiz destinations via a CRUD API.
+A Flask-based quizzler webapp with a vanilla JS frontend. Users log in, answer geography/travel questions with progressive hints, and earn points. Admins can manage quiz destinations via a CRUD API.
 
 ## Tech Stack
 

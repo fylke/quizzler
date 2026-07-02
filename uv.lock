@@ -942,7 +942,7 @@ wheels = [
 ]
 
 [[package]]
-name = "travel-quizzer"
+name = "quizzler"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

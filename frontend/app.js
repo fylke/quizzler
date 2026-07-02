@@ -606,7 +606,7 @@ async function submitAnswer() {
     }
 }
 
-async function skipHint() {
+async function nextHint() {
     await fetchHint();
 }
 

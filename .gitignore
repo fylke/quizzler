@@ -29,3 +29,6 @@ data/destinations.json
 
 # Media files (quiz images live outside the repo)
 media/
+
+# Local prompt artifacts
+.github/prompts/

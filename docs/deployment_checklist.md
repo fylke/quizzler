@@ -25,7 +25,7 @@ Configure these in the repository under **Settings → Secrets and variables →
 
 1. Generate a dedicated deploy key (if one doesn't exist):
    ```bash
-   ssh-keygen -t ed25519 -C "deploy@travel-quizzer" -f deploy_key
+   ssh-keygen -t ed25519 -C "deploy@quizzler" -f deploy_key
    ```
 2. Add the **public** key to the QNAP user's `~/.ssh/authorized_keys`.
 3. Paste the **private** key contents into the `QNAP_SSH_KEY` GitHub secret.
@@ -46,10 +46,32 @@ Configure these in the repository under **Settings → Secrets and variables →
 ### Create directories
 
 ```bash
-mkdir -p /share/Container/travel-quizzer/database
-mkdir -p /share/Container/travel-quizzer/data
-mkdir -p /share/Container/travel-quizzer/media/countries
+mkdir -p /share/Container/quizzler/database
+mkdir -p /share/Container/quizzler/data
+mkdir -p /share/Container/quizzler/media/countries
 ```
+
+### Host migration after rename (travel-quizzer -> quizzler)
+
+If the host still uses legacy paths/container names, migrate data before running the renamed workflows:
+
+```bash
+# Stop old container if it is still present
+docker stop travel-quizzer || true
+
+# Move app data root (preserves database/media/backups)
+if [ -d /share/Container/travel-quizzer ] && [ ! -d /share/Container/quizzler ]; then
+  mv /share/Container/travel-quizzer /share/Container/quizzler
+fi
+
+# Optional: if legacy container object exists, rename it once
+docker rename travel-quizzer quizzler || true
+```
+
+Migration impact summary:
+- Deployment and backup workflows now read/write under `/share/Container/quizzler`.
+- Runtime container name is now `quizzler` (including rollback generation names).
+- Compose defaults now use `POSTGRES_DB=quizzler`.
 
 ### Verify Docker is available
 
@@ -64,7 +86,7 @@ docker --version
 `data/countries.json` is gitignored and not baked into the image. Copy it manually:
 
 ```bash
-scp data/countries.json <user>@<qnap>:/share/Container/travel-quizzer/data/countries.json
+scp data/countries.json <user>@<qnap>:/share/Container/quizzler/data/countries.json
 ```
 
 ### Place quiz images
@@ -95,7 +117,7 @@ Levels run 1 (easiest) through 5 (hardest). Current country IDs:
 
 - [x] Check container logs (automated in deploy workflow "Verify deployment"):
   ```bash
-  docker logs travel-quizzer
+  docker logs quizzler
   ```
 - [x] Confirm the app responds at `http://<qnap-ip>:9696` (automated health probe in deploy workflow).
 - [x] Log in with the seeded admin account (`ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD`) when bootstrap credentials are provided (automated in deploy workflow). If the deployment preserves an existing admin because no bootstrap secret was supplied, this remains a manual verification.
@@ -113,7 +135,7 @@ Levels run 1 (easiest) through 5 (hardest). Current country IDs:
 
 ### Container won't start
 
-- Check logs: `docker logs travel-quizzer`
+- Check logs: `docker logs quizzler`
 - Verify the bind-mounted directories exist and have correct ownership.
 - Ensure port `9696` is not already in use on the host.
 
@@ -123,11 +145,11 @@ Levels run 1 (easiest) through 5 (hardest). Current country IDs:
 - Test manually:
   ```bash
   echo $TOKEN | docker login ghcr.io -u <github-user> --password-stdin
-  docker pull ghcr.io/<org>/travel-quizzer:latest
+  docker pull ghcr.io/<org>/quizzler:latest
   ```
 
 ### Database issues
 
-- The SQLite file lives at `/share/Container/travel-quizzer/database/quiz_data.db`.
+- The SQLite file lives at `/share/Container/quizzler/database/quiz_data.db`.
 - If the container starts fresh with an empty database, run the seed script inside the container or copy a pre-seeded DB.
 - File permission problems: ensure the container user can write to the `database/` directory.
