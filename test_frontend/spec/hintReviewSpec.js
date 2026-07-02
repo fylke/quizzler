@@ -135,4 +135,16 @@ describe('Hint Review', function () {
         updateHintDisplay('Easiest hint', 1, 2);
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
+
+    it('animates top points when a wrong answer lowers points', function (done) {
+        updateHintDisplay('Hardest hint', 5, 3);
+        updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
+
+        expect(document.getElementById('currentHint').classList.contains('points-evaporate-out')).toBe(true);
+
+        setTimeout(function () {
+            expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');
+            done();
+        }, 320);
+    });
 });

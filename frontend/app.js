@@ -14,6 +14,7 @@ let csrfToken = null;
 const API_BASE = window.location.origin;
 let authMode = 'login';
 let submitting = false; // guards against double-click on submit
+let hintCounterAnimationTimeout = null;
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -305,7 +306,7 @@ async function loadQuestion() {
     }
 }
 
-function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
+function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options = {}) {
     const difficulty = Number(hintDifficulty);
     const guesses = Number(remainingGuesses);
 
@@ -315,7 +316,7 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses) {
         return;
     }
 
-    updateHintCounter(difficulty, guesses);
+    updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
     addHintToHistory(hintText, difficulty);
     quizState.liveHintDifficulty = difficulty;
@@ -338,7 +339,7 @@ function getDifficultyLabel(hintDifficulty) {
     return labels[hintDifficulty] || `Difficulty ${hintDifficulty}`;
 }
 
-function updateHintCounter(hintDifficulty, remainingGuesses) {
+function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
     const counterEl = document.getElementById('currentHint');
     if (!counterEl) {
         return;
@@ -351,7 +352,37 @@ function updateHintCounter(hintDifficulty, remainingGuesses) {
     }
 
     const points = difficulty * guesses;
-    counterEl.textContent = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
+    const nextLabel = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
+    const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
+
+    if (hintCounterAnimationTimeout !== null) {
+        clearTimeout(hintCounterAnimationTimeout);
+        hintCounterAnimationTimeout = null;
+    }
+
+    const currentPoints = Number(counterEl.dataset.currentPoints);
+    if (!shouldAnimateEvaporation || !Number.isFinite(currentPoints) || currentPoints === points) {
+        counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        counterEl.textContent = nextLabel;
+        counterEl.dataset.currentPoints = String(points);
+        return;
+    }
+
+    counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+    void counterEl.offsetWidth;
+    counterEl.classList.add('points-evaporate-out');
+
+    hintCounterAnimationTimeout = window.setTimeout(() => {
+        counterEl.textContent = nextLabel;
+        counterEl.dataset.currentPoints = String(points);
+        counterEl.classList.remove('points-evaporate-out');
+        counterEl.classList.add('points-evaporate-in');
+
+        window.setTimeout(() => {
+            counterEl.classList.remove('points-evaporate-in');
+        }, 260);
+        hintCounterAnimationTimeout = null;
+    }, 260);
 }
 
 function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
@@ -381,6 +412,11 @@ function resetHintReviewState() {
     const hintReviewSection = document.getElementById('hintReviewSection');
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
     const nextHintCostPreview = document.getElementById('nextHintCostPreview');
+    const currentHint = document.getElementById('currentHint');
+    if (hintCounterAnimationTimeout !== null) {
+        clearTimeout(hintCounterAnimationTimeout);
+        hintCounterAnimationTimeout = null;
+    }
     if (hintReviewSection) {
         hintReviewSection.classList.add('hidden');
     }
@@ -389,6 +425,10 @@ function resetHintReviewState() {
     }
     if (nextHintCostPreview) {
         nextHintCostPreview.textContent = '';
+    }
+    if (currentHint) {
+        currentHint.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        delete currentHint.dataset.currentPoints;
     }
 }
 
@@ -524,7 +564,9 @@ async function submitAnswer() {
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
             animateWrongGuess(answerInput);
-            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses);
+            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses, {
+                animatePointsEvaporation: true
+            });
             const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
                 ? result.images
                 : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);
