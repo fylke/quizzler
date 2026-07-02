@@ -50,7 +50,7 @@ describe('Hint Review', function () {
         expect(document.querySelectorAll('#hintHistoryButtons .hint-history-btn').length).toBe(2);
     });
 
-    it('allows viewing a previous hint while keeping current scoring info', function () {
+    it('allows viewing a previous hint', function () {
         updateHintDisplay('Harder hint', 5, 5);
         updateHintDisplay('Easier hint', 4, 4);
 
@@ -60,8 +60,20 @@ describe('Hint Review', function () {
         buttons[0].click();
 
         expect(document.getElementById('hint').textContent).toBe('Harder hint');
-        expect(document.getElementById('hintProgress').textContent).toContain('Reviewing hint difficulty 5');
-        expect(document.getElementById('hintPoints').textContent).toContain('16 points');
+        expect(document.getElementById('hintProgress').textContent).toBe('');
+        expect(document.getElementById('hintPoints').textContent).toBe('');
+    });
+
+    it('renders hint history buttons as ordinal labels', function () {
+        updateHintDisplay('Hardest hint', 5, 5);
+        updateHintDisplay('Hard hint', 4, 4);
+        updateHintDisplay('Medium hint', 3, 3);
+
+        var labels = Array.from(document.querySelectorAll('#hintHistoryButtons .hint-history-btn')).map(function (button) {
+            return button.textContent;
+        });
+
+        expect(labels).toEqual(['First', 'Second', 'Third']);
     });
 
     it('updates quiz images when skipping to a new hint', function (done) {

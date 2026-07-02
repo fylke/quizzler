@@ -415,11 +415,11 @@ function renderHintReviewControls() {
             button.classList.add('active');
         }
 
-        let label = `Hint ${difficulty}`;
-        if (difficulty === quizState.liveHintDifficulty) {
-            label += ' (current)';
-        }
-        button.textContent = label;
+        const totalHints = Number(validationRules.destination?.hintCount) || 5;
+        const ordinalPosition = (totalHints - difficulty) + 1;
+        const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+        const ordinalLabel = labels[ordinalPosition - 1] || `${ordinalPosition}th`;
+        button.textContent = ordinalLabel;
         button.addEventListener('click', () => selectHintForReview(difficulty));
         hintHistoryButtons.appendChild(button);
     });
@@ -439,13 +439,8 @@ function renderHintFromState() {
         return;
     }
 
-    const potentialPoints = liveDifficulty * remainingGuesses;
-    if (viewedDifficulty === liveDifficulty) {
-        document.getElementById('hintProgress').textContent = `Hint difficulty is ${liveDifficulty}, and you have ${remainingGuesses} remaining guesses.`;
-    } else {
-        document.getElementById('hintProgress').textContent = `Reviewing hint difficulty ${viewedDifficulty}. Current scoring hint is difficulty ${liveDifficulty}, and you have ${remainingGuesses} remaining guesses.`;
-    }
-    document.getElementById('hintPoints').textContent = `If you guess correctly, you will get ${potentialPoints} points.`;
+    document.getElementById('hintProgress').textContent = '';
+    document.getElementById('hintPoints').textContent = '';
 }
 
 function renderResultImages(imageUrls) {
