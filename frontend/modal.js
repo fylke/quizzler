@@ -102,8 +102,8 @@ async function openRulesModal(quizType) {
     const titleEl = document.getElementById('rulesModalTitle');
     const contentEl = document.getElementById('rulesModalContent');
 
-    // Show modal with loading state
-    titleEl.textContent = 'Rules';
+    // The markdown content already includes its own heading.
+    titleEl.textContent = '';
     contentEl.innerHTML = '<p class="rules-loading">Loading...</p>';
     modal.style.display = 'flex';
 

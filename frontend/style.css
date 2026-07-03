@@ -1247,6 +1247,10 @@ body {
     flex-direction: column;
 }
 
+.rules-modal-card #rulesModalTitle {
+    display: none;
+}
+
 .rules-modal-content {
     overflow-y: auto;
     margin-bottom: 20px;
@@ -1261,6 +1265,7 @@ body {
 .rules-modal-content h3 {
     color: #333;
     margin: 16px 0 8px;
+    text-align: left;
 }
 
 .rules-modal-content h1 {
