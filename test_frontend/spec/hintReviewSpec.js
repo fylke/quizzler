@@ -70,6 +70,24 @@ describe('Hint Review', function () {
         expect(document.getElementById('hintPoints').textContent).toBe('');
     });
 
+    it('switches quiz images when reviewing older hints', function () {
+        updateHintDisplay('Hardest hint', 5, 5, {
+            images: ['/media/countries/12/5a.jpg', '/media/countries/12/5b.jpg']
+        });
+        updateHintDisplay('Hard hint', 4, 4, {
+            images: ['/media/countries/12/4a.jpg', '/media/countries/12/4b.jpg']
+        });
+
+        expect(document.getElementById('image1').src).toContain('/media/countries/12/4a.jpg');
+        expect(document.getElementById('image2').src).toContain('/media/countries/12/4b.jpg');
+
+        var buttons = document.querySelectorAll('#hintHistoryButtons .hint-history-btn');
+        buttons[0].click();
+
+        expect(document.getElementById('image1').src).toContain('/media/countries/12/5a.jpg');
+        expect(document.getElementById('image2').src).toContain('/media/countries/12/5b.jpg');
+    });
+
     it('renders hint history buttons as ordinal labels', function () {
         updateHintDisplay('Hardest hint', 5, 5);
         updateHintDisplay('Hard hint', 4, 4);
