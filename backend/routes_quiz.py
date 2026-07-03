@@ -23,6 +23,10 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _media_root() -> Path:
     """Return the media root directory from env or project default."""
+    media_dir = os.environ.get("MEDIA_DIR")
+    if media_dir:
+        return Path(str(media_dir))
+
     media_dir = current_app.config.get("MEDIA_DIR")
     if media_dir:
         return Path(str(media_dir))

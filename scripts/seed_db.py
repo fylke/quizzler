@@ -83,7 +83,6 @@ def _resolve_admin_accounts(has_existing_admins):
 
     return [
         ("admin@example.com", "adminpass123"),
-        ("admin@travel-quizzer.local", "admin123"),
     ]
 
 

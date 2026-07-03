@@ -302,7 +302,8 @@ def index():
 @app.route("/media/<path:filename>")
 def serve_media(filename):
     """Serve quiz images from the media directory."""
-    return send_from_directory(app.config["MEDIA_DIR"], filename)
+    media_dir = os.environ.get("MEDIA_DIR") or app.config["MEDIA_DIR"]
+    return send_from_directory(media_dir, filename)
 
 
 if __name__ == "__main__":
