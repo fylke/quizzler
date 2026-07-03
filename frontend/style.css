@@ -250,7 +250,7 @@ body {
 
 .progress-info {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     margin-bottom: 10px;
     font-size: 1.2em;
     color: #0f2a3d;
@@ -259,19 +259,14 @@ body {
 
 .progress-info #currentHint {
     display: inline-block;
-    padding: 8px 16px;
-    border-radius: 999px;
-    border: 1px solid #96c3e6;
-    background: linear-gradient(135deg, #f5fbff 0%, #d7efff 100%);
-    box-shadow: 0 6px 16px rgba(17, 104, 156, 0.2);
     letter-spacing: 0.02em;
 }
 
-.progress-info #currentHint.points-evaporate-out {
+.progress-info #currentHint .current-hint-points.points-evaporate-out {
     animation: points-evaporate-out 0.26s ease-out forwards;
 }
 
-.progress-info #currentHint.points-evaporate-in {
+.progress-info #currentHint .current-hint-points.points-evaporate-in {
     animation: points-evaporate-in 0.26s ease-out forwards;
 }
 
@@ -281,18 +276,23 @@ body {
         transform: translateY(0) scale(1);
         filter: blur(0);
     }
+    55% {
+        opacity: 0.45;
+        transform: translateY(-14px) scale(0.72) rotate(-8deg);
+        filter: blur(3px);
+    }
     100% {
         opacity: 0;
-        transform: translateY(-14px) scale(0.76);
-        filter: blur(4px);
+        transform: translateY(-26px) scale(0.42) rotate(-16deg);
+        filter: blur(8px);
     }
 }
 
 @keyframes points-evaporate-in {
     0% {
         opacity: 0;
-        transform: translateY(10px) scale(0.9);
-        filter: blur(3px);
+        transform: translateY(16px) scale(0.68);
+        filter: blur(5px);
     }
     100% {
         opacity: 1;

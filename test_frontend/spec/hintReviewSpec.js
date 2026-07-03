@@ -151,7 +151,7 @@ describe('Hint Review', function () {
         updateHintDisplay('Hardest hint', 5, 3);
         updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
 
-        expect(document.getElementById('currentHint').classList.contains('points-evaporate-out')).toBe(true);
+        expect(document.querySelector('#currentHint .current-hint-points').classList.contains('points-evaporate-out')).toBe(true);
 
         setTimeout(function () {
             expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');
