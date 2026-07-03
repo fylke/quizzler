@@ -16,6 +16,8 @@ const API_BASE = window.location.origin;
 let authMode = 'login';
 let submitting = false; // guards against double-click on submit
 let hintCounterAnimationTimeout = null;
+let remainingGuessesAnimationTimeout = null;
+const COUNTER_PUFF_DURATION_MS = 340;
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -347,7 +349,7 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
     updateHintProgressBar(difficulty);
     updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
-    updateRemainingGuessesDisplay(guesses);
+    updateRemainingGuessesDisplay(guesses, options);
     addHintToHistory(hintText, difficulty, options.images);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -429,9 +431,9 @@ function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
             if (refreshedPointsEl) {
                 refreshedPointsEl.classList.remove('points-evaporate-in');
             }
-        }, 260);
+        }, COUNTER_PUFF_DURATION_MS);
         hintCounterAnimationTimeout = null;
-    }, 260);
+    }, COUNTER_PUFF_DURATION_MS);
 }
 
 function updateHintProgressBar(hintDifficulty) {
@@ -470,7 +472,7 @@ function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
     previewEl.textContent = `(-${pointsGivenUp}p)`;
 }
 
-function updateRemainingGuessesDisplay(remainingGuesses) {
+function updateRemainingGuessesDisplay(remainingGuesses, options = {}) {
     const remainingGuessesEl = document.getElementById('remainingGuesses');
     if (!remainingGuessesEl) {
         return;
@@ -479,10 +481,41 @@ function updateRemainingGuessesDisplay(remainingGuesses) {
     const guesses = Number(remainingGuesses);
     if (!Number.isFinite(guesses)) {
         remainingGuessesEl.textContent = '';
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        delete remainingGuessesEl.dataset.currentGuesses;
         return;
     }
 
-    remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+    const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
+
+    if (remainingGuessesAnimationTimeout !== null) {
+        clearTimeout(remainingGuessesAnimationTimeout);
+        remainingGuessesAnimationTimeout = null;
+    }
+
+    const currentGuesses = Number(remainingGuessesEl.dataset.currentGuesses);
+    if (!shouldAnimateEvaporation || !Number.isFinite(currentGuesses) || currentGuesses === guesses) {
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+        remainingGuessesEl.dataset.currentGuesses = String(guesses);
+        return;
+    }
+
+    remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+    void remainingGuessesEl.offsetWidth;
+    remainingGuessesEl.classList.add('remaining-guesses-evaporate-out');
+
+    remainingGuessesAnimationTimeout = window.setTimeout(() => {
+        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+        remainingGuessesEl.dataset.currentGuesses = String(guesses);
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out');
+        remainingGuessesEl.classList.add('remaining-guesses-evaporate-in');
+
+        window.setTimeout(() => {
+            remainingGuessesEl.classList.remove('remaining-guesses-evaporate-in');
+        }, COUNTER_PUFF_DURATION_MS);
+        remainingGuessesAnimationTimeout = null;
+    }, COUNTER_PUFF_DURATION_MS);
 }
 
 function resetHintReviewState() {
@@ -497,9 +530,14 @@ function resetHintReviewState() {
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
     const nextHintCostPreview = document.getElementById('nextHintCostPreview');
     const currentHint = document.getElementById('currentHint');
+    const remainingGuesses = document.getElementById('remainingGuesses');
     if (hintCounterAnimationTimeout !== null) {
         clearTimeout(hintCounterAnimationTimeout);
         hintCounterAnimationTimeout = null;
+    }
+    if (remainingGuessesAnimationTimeout !== null) {
+        clearTimeout(remainingGuessesAnimationTimeout);
+        remainingGuessesAnimationTimeout = null;
     }
     if (hintReviewSection) {
         hintReviewSection.classList.add('hidden');
@@ -518,6 +556,10 @@ function resetHintReviewState() {
             pointsEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
         }
         delete currentHint.dataset.currentPoints;
+    }
+    if (remainingGuesses) {
+        remainingGuesses.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        delete remainingGuesses.dataset.currentGuesses;
     }
 }
 
