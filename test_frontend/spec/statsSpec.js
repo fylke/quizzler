@@ -3,11 +3,7 @@ describe('Status Screen Stats', function () {
     var statIds = [
         'statsCumulativeScore',
         'statsCompleted',
-        'statsAverageScore',
-        'statsBestScore',
-        'statsAccuracyRate',
-        'statsCurrentStreak',
-        'statsOngoing'
+        'statsAverageScore'
     ];
     var statElements = {};
     var adminLink;
@@ -16,11 +12,7 @@ describe('Status Screen Stats', function () {
     var mockStatsResponse = {
         cumulativeScore: 42,
         quizzesCompleted: 5,
-        averageScore: 8.4,
-        bestScore: 15,
-        accuracyRate: 80,
-        currentStreak: 3,
-        quizzesOngoing: 2
+        averageScore: 8.4
     };
 
     beforeEach(function () {
@@ -70,27 +62,6 @@ describe('Status Screen Stats', function () {
             expect(statElements['statsCumulativeScore'].textContent).toBe('42');
             expect(statElements['statsCompleted'].textContent).toBe('5');
             expect(statElements['statsAverageScore'].textContent).toBe('8.4');
-            expect(statElements['statsBestScore'].textContent).toBe('15');
-            expect(statElements['statsAccuracyRate'].textContent).toBe('80%');
-            expect(statElements['statsCurrentStreak'].textContent).toBe('3');
-            expect(statElements['statsOngoing'].textContent).toBe('2');
-        });
-    });
-
-    // ========== Accuracy rate displays with percent symbol ==========
-    describe('accuracy rate formatting', function () {
-        it('displays accuracy rate with percent symbol', async function () {
-            spyOn(window, 'fetch').and.returnValue(Promise.resolve({
-                ok: true,
-                json: function () {
-                    return Promise.resolve(mockStatsResponse);
-                }
-            }));
-
-            await showStatusScreen();
-
-            expect(statElements['statsAccuracyRate'].textContent).toContain('%');
-            expect(statElements['statsAccuracyRate'].textContent).toBe('80%');
         });
     });
 

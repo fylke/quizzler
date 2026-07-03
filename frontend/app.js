@@ -774,10 +774,6 @@ async function showStatusScreen() {
             document.getElementById('statsCumulativeScore').textContent = stats.cumulativeScore;
             document.getElementById('statsCompleted').textContent = stats.quizzesCompleted;
             document.getElementById('statsAverageScore').textContent = stats.averageScore;
-            document.getElementById('statsBestScore').textContent = stats.bestScore;
-            document.getElementById('statsAccuracyRate').textContent = stats.accuracyRate + '%';
-            document.getElementById('statsCurrentStreak').textContent = stats.currentStreak;
-            document.getElementById('statsOngoing').textContent = stats.quizzesOngoing;
         } else {
             showNotification('Failed to load statistics.');
         }
