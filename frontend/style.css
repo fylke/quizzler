@@ -556,7 +556,7 @@ body {
 
 /* Status Screen */
 .status-content {
-    text-align: center;
+    text-align: left;
 }
 
 .status-content h1 {
@@ -568,7 +568,7 @@ body {
 .stats-section {
     display: flex;
     gap: 20px;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
     margin-bottom: 30px;
 }
@@ -579,7 +579,7 @@ body {
     padding: 20px 30px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     min-width: 140px;
 }
 
@@ -599,7 +599,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .specific-quiz-section {
