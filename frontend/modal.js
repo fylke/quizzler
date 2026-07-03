@@ -64,6 +64,20 @@ function wireZoomableImage(imageEl, imageUrl, altText) {
     imageEl.setAttribute('aria-label', `${altText}. Click to enlarge.`);
     imageEl.title = 'Click to enlarge';
 
+    const applyOrientationClass = () => {
+        imageEl.classList.remove('is-portrait', 'is-landscape');
+        if (imageEl.naturalHeight > imageEl.naturalWidth) {
+            imageEl.classList.add('is-portrait');
+            return;
+        }
+        imageEl.classList.add('is-landscape');
+    };
+
+    imageEl.onload = applyOrientationClass;
+    if (imageEl.complete && imageEl.naturalWidth > 0 && imageEl.naturalHeight > 0) {
+        applyOrientationClass();
+    }
+
     imageEl.onclick = function () {
         openImageModal(imageUrl, altText);
     };
@@ -385,6 +399,7 @@ function openImageModal(imageUrl, altText) {
     const imageEl = document.getElementById('imageModalImage');
     const captionEl = document.getElementById('imageModalCaption');
     const closeBtn = document.getElementById('imageModalCloseBtn');
+    const cardEl = modal ? modal.querySelector('.image-modal-card') : null;
 
     if (!modal || !imageEl) {
         return;
@@ -393,6 +408,24 @@ function openImageModal(imageUrl, altText) {
     _imageModalTrigger = document.activeElement;
     imageEl.src = imageUrl;
     imageEl.alt = altText;
+
+    const applyModalOrientationClass = () => {
+        if (!cardEl) {
+            return;
+        }
+        cardEl.classList.remove('is-portrait', 'is-landscape');
+        if (imageEl.naturalHeight > imageEl.naturalWidth) {
+            cardEl.classList.add('is-portrait');
+            return;
+        }
+        cardEl.classList.add('is-landscape');
+    };
+
+    imageEl.onload = applyModalOrientationClass;
+    if (imageEl.complete && imageEl.naturalWidth > 0 && imageEl.naturalHeight > 0) {
+        applyModalOrientationClass();
+    }
+
     if (captionEl) {
         captionEl.textContent = altText;
     }
@@ -406,12 +439,16 @@ function openImageModal(imageUrl, altText) {
 function closeImageModal() {
     const modal = document.getElementById('imageModal');
     const imageEl = document.getElementById('imageModalImage');
+    const cardEl = modal ? modal.querySelector('.image-modal-card') : null;
 
     if (modal) {
         modal.style.display = 'none';
     }
     if (imageEl) {
         imageEl.src = '';
+    }
+    if (cardEl) {
+        cardEl.classList.remove('is-portrait', 'is-landscape');
     }
 
     if (_imageModalTrigger && typeof _imageModalTrigger.focus === 'function') {
