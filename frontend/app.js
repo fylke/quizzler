@@ -468,6 +468,11 @@ function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
         return;
     }
 
+    if (difficulty <= 1) {
+        previewEl.textContent = 'No more hints, might as well guess now!';
+        return;
+    }
+
     const pointsGivenUp = difficulty > 1 ? guesses : 0;
     previewEl.textContent = `(-${pointsGivenUp}p)`;
 }
