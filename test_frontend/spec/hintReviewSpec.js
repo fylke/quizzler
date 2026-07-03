@@ -10,6 +10,7 @@ describe('Hint Review', function () {
             '<div id="quizScreen" class="screen">' +
                 '<div class="progress-info">' +
                     '<span id="currentHint">Hardest difficulty (15p)</span>' +
+                    '<span id="remainingGuesses">Remaining guesses: 3</span>' +
                 '</div>' +
                 '<div class="hint-section"><h2 id="hint"></h2></div>' +
                 '<div class="hint-meta">' +
@@ -154,15 +155,23 @@ describe('Hint Review', function () {
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
 
-    it('starts full and shrinks from the left as hints advance', function () {
+    it('shows remaining guesses in the top-right counter', function () {
         updateHintDisplay('Hardest hint', 5, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('100%');
+        expect(document.getElementById('remainingGuesses').textContent).toBe('Remaining guesses: 3');
+
+        updateHintDisplay('Hard hint', 4, 2);
+        expect(document.getElementById('remainingGuesses').textContent).toBe('Remaining guesses: 2');
+    });
+
+    it('starts clear and grows right-side overlay as hints advance', function () {
+        updateHintDisplay('Hardest hint', 5, 3);
+        expect(document.getElementById('progressFill').style.width).toBe('0%');
 
         updateHintDisplay('Second hint', 4, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('80%');
+        expect(document.getElementById('progressFill').style.width).toBe('20%');
 
         updateHintDisplay('Easiest hint', 1, 1);
-        expect(document.getElementById('progressFill').style.width).toBe('20%');
+        expect(document.getElementById('progressFill').style.width).toBe('80%');
     });
 
     it('animates top points when a wrong answer lowers points', function (done) {

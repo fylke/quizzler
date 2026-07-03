@@ -340,12 +340,14 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
         document.getElementById('hint').textContent = hintText;
         updateHintProgressBar(null);
         updateNextHintCostPreview(null, null);
+        updateRemainingGuessesDisplay(null);
         return;
     }
 
     updateHintProgressBar(difficulty);
     updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
+    updateRemainingGuessesDisplay(guesses);
     addHintToHistory(hintText, difficulty, options.images);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -447,7 +449,8 @@ function updateHintProgressBar(hintDifficulty) {
     const totalHints = Number(validationRules.destination?.hintCount) || 5;
     const normalizedDifficulty = Math.min(totalHints, Math.max(1, difficulty));
     const progressPercentage = (normalizedDifficulty / totalHints) * 100;
-    progressFill.style.width = `${progressPercentage}%`;
+    const overlayPercentage = 100 - progressPercentage;
+    progressFill.style.width = `${overlayPercentage}%`;
 }
 
 function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
@@ -465,6 +468,21 @@ function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
 
     const pointsGivenUp = difficulty > 1 ? guesses : 0;
     previewEl.textContent = `(-${pointsGivenUp}p)`;
+}
+
+function updateRemainingGuessesDisplay(remainingGuesses) {
+    const remainingGuessesEl = document.getElementById('remainingGuesses');
+    if (!remainingGuessesEl) {
+        return;
+    }
+
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(guesses)) {
+        remainingGuessesEl.textContent = '';
+        return;
+    }
+
+    remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
 }
 
 function resetHintReviewState() {
@@ -492,6 +510,7 @@ function resetHintReviewState() {
     if (nextHintCostPreview) {
         nextHintCostPreview.textContent = '';
     }
+    updateRemainingGuessesDisplay(null);
     updateHintProgressBar(null);
     if (currentHint) {
         const pointsEl = currentHint.querySelector('.current-hint-points');
