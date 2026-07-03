@@ -161,9 +161,10 @@ class MainAppTestCase(unittest.TestCase):
             destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
             destination_media_dir.mkdir(parents=True, exist_ok=True)
 
-            # Create 12 valid "0*" images and one non-matching file; API must cap at 10.
+            # Create 12 valid "0*.jpg" images and one non-matching file; API must cap at 10.
             for index in range(1, 13):
                 (destination_media_dir / f'0{index:02d}.jpg').write_bytes(b'test-image')
+            (destination_media_dir / '0a.png').write_bytes(b'ignored-non-jpg-image')
             (destination_media_dir / '1a.jpg').write_bytes(b'ignored-hint-image')
 
             try:
@@ -179,6 +180,7 @@ class MainAppTestCase(unittest.TestCase):
                 self.assertIn('resultImages', data)
                 self.assertEqual(len(data['resultImages']), 10)
                 self.assertTrue(all(path.startswith(f"/media/countries/{question['id']}/0") for path in data['resultImages']))
+                self.assertTrue(all(path.lower().endswith('.jpg') for path in data['resultImages']))
             finally:
                 if original_media_dir is None:
                     os.environ.pop('MEDIA_DIR', None)
