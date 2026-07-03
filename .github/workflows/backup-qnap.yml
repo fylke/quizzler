@@ -27,7 +27,87 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  lint_workflow_scripts:
+    name: Lint embedded workflow scripts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate embedded bash scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import tempfile
+
+          workflow = Path('.github/workflows/backup-qnap.yml')
+          lines = workflow.read_text().splitlines()
+
+          scripts = []
+          i = 0
+          while i < len(lines):
+            line = lines[i]
+            stripped = line.lstrip(' ')
+            indent = len(line) - len(stripped)
+
+            if stripped == 'script: |':
+              block_indent = indent + 2
+              i += 1
+              block = []
+              while i < len(lines):
+                current = lines[i]
+                current_stripped = current.lstrip(' ')
+                current_indent = len(current) - len(current_stripped)
+
+                if current.strip() == '':
+                  block.append('')
+                  i += 1
+                  continue
+
+                if current_indent < block_indent:
+                  break
+
+                block.append(current[block_indent:])
+                i += 1
+
+              scripts.append('\n'.join(block) + '\n')
+              continue
+
+            i += 1
+
+          if not scripts:
+            raise SystemExit('No script: | blocks found to lint')
+
+          failures = []
+          for idx, script in enumerate(scripts, start=1):
+            with tempfile.NamedTemporaryFile('w', suffix='.sh', delete=False) as tmp:
+              tmp.write(script)
+              tmp_path = tmp.name
+
+            result = subprocess.run(
+              ['bash', '-n', tmp_path],
+              capture_output=True,
+              text=True,
+              check=False,
+            )
+
+            if result.returncode != 0:
+              failures.append((idx, result.stderr.strip()))
+
+          if failures:
+            for idx, err in failures:
+              print(f'Script block #{idx} failed bash -n:\n{err}\n')
+            raise SystemExit(1)
+
+          print(f'Validated {len(scripts)} embedded script block(s) with bash -n')
+          PY
+
   backup:
+    needs: lint_workflow_scripts
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.action == 'backup')
     runs-on: ubuntu-latest
 
@@ -77,20 +157,7 @@ jobs:
               fi
 
               if command -v python3 >/dev/null 2>&1; then
-                python3 - "$db_path" <<'PY'
-                  import sqlite3
-                  import sys
-
-                  db_path = sys.argv[1]
-                  conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-                  try:
-                    result = conn.execute("PRAGMA quick_check;").fetchone()
-                  finally:
-                    conn.close()
-
-                  if not result or result[0] != "ok":
-                    raise SystemExit(f"SQLite quick_check failed: {result}")
-                PY
+                python3 -c "import sqlite3,sys;db_path=sys.argv[1];conn=sqlite3.connect(f'file:{db_path}?mode=ro',uri=True);result=conn.execute('PRAGMA quick_check;').fetchone();conn.close();sys.exit(0 if result and result[0]=='ok' else f'SQLite quick_check failed: {result}')" "$db_path"
                 return
               fi
 
@@ -129,15 +196,15 @@ jobs:
               if [ "$PREVIOUS_STATE" = "$CURRENT_STATE" ]; then
                 echo "No database or media changes detected since last backup. Skipping archive creation."
 
-                cat > "$REPORT_FILE" <<EOF
                 {
-                  "action": "backup",
-                  "status": "skipped",
-                  "reason": "no_changes",
-                  "retention_count": $RETAIN_COUNT,
-                  "created_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                }
-                EOF
+                  printf '{\n'
+                  printf '  "action": "backup",\n'
+                  printf '  "status": "skipped",\n'
+                  printf '  "reason": "no_changes",\n'
+                  printf '  "retention_count": %s,\n' "$RETAIN_COUNT"
+                  printf '  "created_at_utc": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  printf '}\n'
+                } > "$REPORT_FILE"
                 exit 0
               fi
             fi
@@ -171,17 +238,17 @@ jobs:
             DB_ARCHIVE_HASH=$(sha256sum "$BACKUP_DB_ARCHIVE" | awk '{print $1}')
             MEDIA_ARCHIVE_HASH=$(sha256sum "$BACKUP_MEDIA_ARCHIVE" | awk '{print $1}')
 
-            cat > "$BACKUP_MANIFEST" <<EOF
-            BACKUP_ID=$TIMESTAMP
-            CREATED_AT_UTC=$TIMESTAMP
-            DB_ARCHIVE=$(basename "$BACKUP_DB_ARCHIVE")
-            MEDIA_ARCHIVE=$(basename "$BACKUP_MEDIA_ARCHIVE")
-            DB_SHA256=$DB_HASH
-            MEDIA_SHA256=$MEDIA_HASH
-            DB_ARCHIVE_SHA256=$DB_ARCHIVE_HASH
-            MEDIA_ARCHIVE_SHA256=$MEDIA_ARCHIVE_HASH
-            MEDIA_FILE_COUNT=$MEDIA_FILE_COUNT
-            EOF
+            {
+              printf 'BACKUP_ID=%s\n' "$TIMESTAMP"
+              printf 'CREATED_AT_UTC=%s\n' "$TIMESTAMP"
+              printf 'DB_ARCHIVE=%s\n' "$(basename "$BACKUP_DB_ARCHIVE")"
+              printf 'MEDIA_ARCHIVE=%s\n' "$(basename "$BACKUP_MEDIA_ARCHIVE")"
+              printf 'DB_SHA256=%s\n' "$DB_HASH"
+              printf 'MEDIA_SHA256=%s\n' "$MEDIA_HASH"
+              printf 'DB_ARCHIVE_SHA256=%s\n' "$DB_ARCHIVE_HASH"
+              printf 'MEDIA_ARCHIVE_SHA256=%s\n' "$MEDIA_ARCHIVE_HASH"
+              printf 'MEDIA_FILE_COUNT=%s\n' "$MEDIA_FILE_COUNT"
+            } > "$BACKUP_MANIFEST"
 
             tar -tzf "$BACKUP_DB_ARCHIVE" >/dev/null
             tar -tzf "$BACKUP_MEDIA_ARCHIVE" >/dev/null
@@ -227,24 +294,24 @@ jobs:
                   done
             fi
 
-            cat > "$REPORT_FILE" <<EOF
             {
-              "action": "backup",
-              "status": "success",
-              "backup_id": "$TIMESTAMP",
-              "retention_count": $RETAIN_COUNT,
-              "deleted_old_sets": $DELETED_COUNT,
-              "db_archive": "$(basename "$BACKUP_DB_ARCHIVE")",
-              "media_archive": "$(basename "$BACKUP_MEDIA_ARCHIVE")",
-              "manifest": "$(basename "$BACKUP_MANIFEST")",
-              "db_sha256": "$DB_HASH",
-              "media_sha256": "$MEDIA_HASH",
-              "db_archive_sha256": "$DB_ARCHIVE_HASH",
-              "media_archive_sha256": "$MEDIA_ARCHIVE_HASH",
-              "media_file_count": $MEDIA_FILE_COUNT,
-              "created_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            }
-            EOF
+              printf '{\n'
+              printf '  "action": "backup",\n'
+              printf '  "status": "success",\n'
+              printf '  "backup_id": "%s",\n' "$TIMESTAMP"
+              printf '  "retention_count": %s,\n' "$RETAIN_COUNT"
+              printf '  "deleted_old_sets": %s,\n' "$DELETED_COUNT"
+              printf '  "db_archive": "%s",\n' "$(basename "$BACKUP_DB_ARCHIVE")"
+              printf '  "media_archive": "%s",\n' "$(basename "$BACKUP_MEDIA_ARCHIVE")"
+              printf '  "manifest": "%s",\n' "$(basename "$BACKUP_MANIFEST")"
+              printf '  "db_sha256": "%s",\n' "$DB_HASH"
+              printf '  "media_sha256": "%s",\n' "$MEDIA_HASH"
+              printf '  "db_archive_sha256": "%s",\n' "$DB_ARCHIVE_HASH"
+              printf '  "media_archive_sha256": "%s",\n' "$MEDIA_ARCHIVE_HASH"
+              printf '  "media_file_count": %s,\n' "$MEDIA_FILE_COUNT"
+              printf '  "created_at_utc": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              printf '}\n'
+            } > "$REPORT_FILE"
 
             echo "Backup created and verified successfully"
             echo "  Database archive: $BACKUP_DB_ARCHIVE"
@@ -278,6 +345,7 @@ jobs:
           if-no-files-found: error
 
   restore:
+    needs: lint_workflow_scripts
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'restore'
     runs-on: ubuntu-latest
 
@@ -397,20 +465,7 @@ jobs:
                 exit 1
               fi
             elif command -v python3 >/dev/null 2>&1; then
-              python3 - "$TMP_DIR/quiz_data.db" <<'PY'
-              import sqlite3
-              import sys
-
-              db_path = sys.argv[1]
-              conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-              try:
-                result = conn.execute("PRAGMA quick_check;").fetchone()
-              finally:
-                conn.close()
-
-              if not result or result[0] != "ok":
-                raise SystemExit(f"SQLite quick_check failed: {result}")
-              PY
+              python3 -c "import sqlite3,sys;db_path=sys.argv[1];conn=sqlite3.connect(f'file:{db_path}?mode=ro',uri=True);result=conn.execute('PRAGMA quick_check;').fetchone();conn.close();sys.exit(0 if result and result[0]=='ok' else f'SQLite quick_check failed: {result}')" "$TMP_DIR/quiz_data.db"
             fi
 
             DOCKER_BIN=""
@@ -455,20 +510,20 @@ jobs:
               HEALTH_STATUS="passed"
             fi
 
-            cat > "$REPORT_FILE" <<EOF
             {
-              "action": "restore",
-              "status": "success",
-              "backup_id": "$RESTORED_BACKUP_ID",
-              "db_archive": "$(basename "$DB_ARCHIVE")",
-              "media_archive": "$(basename "$MEDIA_ARCHIVE")",
-              "db_archive_sha256": "$DB_ARCHIVE_HASH",
-              "media_archive_sha256": "$MEDIA_ARCHIVE_HASH",
-              "container_was_running": $RUNNING_BEFORE,
-              "health_check": "$HEALTH_STATUS",
-              "created_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            }
-            EOF
+              printf '{\n'
+              printf '  "action": "restore",\n'
+              printf '  "status": "success",\n'
+              printf '  "backup_id": "%s",\n' "$RESTORED_BACKUP_ID"
+              printf '  "db_archive": "%s",\n' "$(basename "$DB_ARCHIVE")"
+              printf '  "media_archive": "%s",\n' "$(basename "$MEDIA_ARCHIVE")"
+              printf '  "db_archive_sha256": "%s",\n' "$DB_ARCHIVE_HASH"
+              printf '  "media_archive_sha256": "%s",\n' "$MEDIA_ARCHIVE_HASH"
+              printf '  "container_was_running": %s,\n' "$RUNNING_BEFORE"
+              printf '  "health_check": "%s",\n' "$HEALTH_STATUS"
+              printf '  "created_at_utc": "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              printf '}\n'
+            } > "$REPORT_FILE"
 
             echo "Restore complete"
             echo "  Database archive: $DB_ARCHIVE"
