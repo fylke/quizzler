@@ -1,10 +1,10 @@
 # ✈️ Quizzler Webapp
 
-[![CI](https://github.com/fylke/travel-quizzer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/ci.yml)
-[![Deploy to QNAP](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml/badge.svg)](https://github.com/fylke/travel-quizzer/actions/workflows/deploy-qnap.yml)
-[![backup-qnap](https://github.com/fylke/travel-quizzer/actions/workflows/backup-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/backup-qnap.yml)
-[![E2E Nightly](https://github.com/fylke/travel-quizzer/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/travel-quizzer/actions/workflows/e2e-nightly.yml)
-[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/travel-quizzer/blob/main/.github/dependabot.yml)
+[![CI](https://github.com/fylke/quizzler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/ci.yml)
+[![Deploy to QNAP](https://github.com/fylke/quizzer/actions/workflows/deploy-qnap.yml/badge.svg)](https://github.com/fylke/quizzler/actions/workflows/deploy-qnap.yml)
+[![backup-qnap](https://github.com/fylke/quizzler/actions/workflows/backup-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/backup-qnap.yml)
+[![E2E Nightly](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/quizzler/blob/main/.github/dependabot.yml)
 
 A fun interactive quiz game where you guess travel destinations based on hints and images. 
 
