@@ -118,6 +118,32 @@ def get_specific_quiz(destination_id):
     return jsonify(_start_quiz(user, destination))
 
 
+@quiz_bp.route("/api/quiz/active", methods=["GET"])
+@login_required
+def get_active_quiz():
+    """Return the active quiz state for the logged-in user."""
+    user = get_current_user()
+    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    if quiz_result is None:
+        return jsonify({"error": "No active quiz"}), 404
+
+    destination = Destination.query.filter_by(id=quiz_result.destination_id).first()
+    if destination is None:
+        return jsonify({"error": "Question not found"}), 404
+
+    difficulty = quiz_result.hint_difficulty
+    hint_text = getattr(destination, f"hint{difficulty}", "")
+    return jsonify(
+        {
+            "id": destination.id,
+            "hint": hint_text,
+            "hintDifficulty": difficulty,
+            "remainingGuesses": quiz_result.remaining_guesses,
+            "images": _hint_images_for_destination(destination.id, difficulty),
+        }
+    )
+
+
 @quiz_bp.route("/api/hint", methods=["GET"])
 @login_required
 def get_hint():

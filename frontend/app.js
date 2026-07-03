@@ -108,11 +108,35 @@ async function loadUser() {
         const data = await response.json();
         quizState.user = data;
         csrfToken = data.csrfToken || null;
-        showStatusScreen();
+        const restoredActiveQuiz = await restoreActiveQuiz();
+        if (!restoredActiveQuiz) {
+            showStatusScreen();
+        }
     } catch (error) {
         console.error('Error checking auth status:', error);
         showNotification('Cannot connect to server.');
         showScreen('welcomeScreen');
+    }
+}
+
+async function restoreActiveQuiz() {
+    try {
+        const response = await fetch(`${API_BASE}/api/quiz/active`);
+        if (response.status === 404) {
+            return false;
+        }
+        if (!response.ok) {
+            showNotification('Unable to restore active quiz.');
+            return false;
+        }
+
+        const activeQuiz = await response.json();
+        showScreen('quizScreen');
+        displayQuiz(activeQuiz);
+        return true;
+    } catch (error) {
+        console.error('Error restoring active quiz:', error);
+        return false;
     }
 }
 
