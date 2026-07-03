@@ -70,6 +70,24 @@ describe('Hint Review', function () {
         expect(document.getElementById('hintPoints').textContent).toBe('');
     });
 
+    it('switches quiz images when reviewing older hints', function () {
+        updateHintDisplay('Hardest hint', 5, 5, {
+            images: ['/media/countries/12/5a.jpg', '/media/countries/12/5b.jpg']
+        });
+        updateHintDisplay('Hard hint', 4, 4, {
+            images: ['/media/countries/12/4a.jpg', '/media/countries/12/4b.jpg']
+        });
+
+        expect(document.getElementById('image1').src).toContain('/media/countries/12/4a.jpg');
+        expect(document.getElementById('image2').src).toContain('/media/countries/12/4b.jpg');
+
+        var buttons = document.querySelectorAll('#hintHistoryButtons .hint-history-btn');
+        buttons[0].click();
+
+        expect(document.getElementById('image1').src).toContain('/media/countries/12/5a.jpg');
+        expect(document.getElementById('image2').src).toContain('/media/countries/12/5b.jpg');
+    });
+
     it('renders hint history buttons as ordinal labels', function () {
         updateHintDisplay('Hardest hint', 5, 5);
         updateHintDisplay('Hard hint', 4, 4);
@@ -136,22 +154,22 @@ describe('Hint Review', function () {
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
 
-    it('progresses the top bar to the right as hints advance', function () {
+    it('starts full and shrinks from the left as hints advance', function () {
         updateHintDisplay('Hardest hint', 5, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('20%');
+        expect(document.getElementById('progressFill').style.width).toBe('100%');
 
         updateHintDisplay('Second hint', 4, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('40%');
+        expect(document.getElementById('progressFill').style.width).toBe('80%');
 
         updateHintDisplay('Easiest hint', 1, 1);
-        expect(document.getElementById('progressFill').style.width).toBe('100%');
+        expect(document.getElementById('progressFill').style.width).toBe('20%');
     });
 
     it('animates top points when a wrong answer lowers points', function (done) {
         updateHintDisplay('Hardest hint', 5, 3);
         updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
 
-        expect(document.getElementById('currentHint').classList.contains('points-evaporate-out')).toBe(true);
+        expect(document.querySelector('#currentHint .current-hint-points').classList.contains('points-evaporate-out')).toBe(true);
 
         setTimeout(function () {
             expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');

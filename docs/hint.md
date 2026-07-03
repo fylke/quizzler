@@ -29,7 +29,15 @@ sequenceDiagram
         Database->>Backend: Country(hint1..hint5)
         Backend->>Database: UPDATE quiz_result SET hint_difficulty = hint_difficulty - 1
         Database->>Backend: OK
-        Backend->>Frontend: (200, {hint: "The city is known for its iconic opera house.",<br/>hintDifficulty: 2, remainingGuesses: 2})
+        Backend->>Frontend: (200, {hint: "The city is known for its iconic opera house.",<br/>hintDifficulty: 2, remainingGuesses: 2,<br/>images: ["/media/countries/12/2a.jpg", "/media/countries/12/2b.jpg"]})
         Frontend->>User: Display hint and remaining guesses
     end
 ```
+
+## Hint Review Behavior
+
+- The frontend stores unlocked hints per difficulty and renders review buttons in descending difficulty order.
+- The active review selection is tracked separately from live server progression, so users can inspect earlier hints without changing backend state.
+- Each unlocked hint difficulty keeps its own image pair.
+- When a user clicks an older hint in review, both hint text and quiz images switch to that hint's snapshot.
+- If a saved image pair is unavailable, the frontend falls back to deterministic URLs using destination id and difficulty (`/media/countries/<id>/<difficulty>a.jpg`, `/media/countries/<id>/<difficulty>b.jpg`).

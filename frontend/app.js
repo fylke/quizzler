@@ -3,6 +3,7 @@ let quizState = {
     user: null,
     currentQuizId: null,
     hintHistory: {},
+    hintImagesByDifficulty: {},
     unlockedHintDifficulties: [],
     liveHintDifficulty: null,
     liveRemainingGuesses: null,
@@ -259,10 +260,12 @@ function displayQuiz(data) {
     submitting = false;
     resetHintReviewState();
     quizState.currentQuizId = Number(data.id) || null;
-    updateHintDisplay(data.hint, data.hintDifficulty, data.remainingGuesses);
     const initialImages = Array.isArray(data.images) && data.images.length >= 2
         ? data.images
         : getHintImageUrls(quizState.currentQuizId, data.hintDifficulty);
+    updateHintDisplay(data.hint, data.hintDifficulty, data.remainingGuesses, {
+        images: initialImages
+    });
     renderQuizImages(initialImages);
     document.getElementById('answerInput').value = '';
     document.getElementById('answerInput').focus();
@@ -319,7 +322,7 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
     updateHintProgressBar(difficulty);
     updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
-    addHintToHistory(hintText, difficulty);
+    addHintToHistory(hintText, difficulty, options.images);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
     quizState.viewedHintDifficulty = difficulty;
@@ -340,6 +343,11 @@ function getDifficultyLabel(hintDifficulty) {
     return labels[hintDifficulty] || `Difficulty ${hintDifficulty}`;
 }
 
+function renderHintCounter(counterEl, difficulty, points) {
+    const label = `${getDifficultyLabel(difficulty)} difficulty `;
+    counterEl.innerHTML = `${label}<span class="current-hint-points">(${points}p)</span>`;
+}
+
 function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
     const counterEl = document.getElementById('currentHint');
     if (!counterEl) {
@@ -353,7 +361,6 @@ function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
     }
 
     const points = difficulty * guesses;
-    const nextLabel = `${getDifficultyLabel(difficulty)} difficulty (${points}p)`;
     const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
 
     if (hintCounterAnimationTimeout !== null) {
@@ -363,24 +370,39 @@ function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
 
     const currentPoints = Number(counterEl.dataset.currentPoints);
     if (!shouldAnimateEvaporation || !Number.isFinite(currentPoints) || currentPoints === points) {
-        counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
-        counterEl.textContent = nextLabel;
+        const pointsEl = counterEl.querySelector('.current-hint-points');
+        if (pointsEl) {
+            pointsEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        }
+        renderHintCounter(counterEl, difficulty, points);
         counterEl.dataset.currentPoints = String(points);
         return;
     }
 
-    counterEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
-    void counterEl.offsetWidth;
-    counterEl.classList.add('points-evaporate-out');
+    const pointsEl = counterEl.querySelector('.current-hint-points');
+    if (!pointsEl) {
+        renderHintCounter(counterEl, difficulty, points);
+        counterEl.dataset.currentPoints = String(points);
+        return;
+    }
+
+    pointsEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+    void pointsEl.offsetWidth;
+    pointsEl.classList.add('points-evaporate-out');
 
     hintCounterAnimationTimeout = window.setTimeout(() => {
-        counterEl.textContent = nextLabel;
+        renderHintCounter(counterEl, difficulty, points);
         counterEl.dataset.currentPoints = String(points);
-        counterEl.classList.remove('points-evaporate-out');
-        counterEl.classList.add('points-evaporate-in');
+        const refreshedPointsEl = counterEl.querySelector('.current-hint-points');
+        if (refreshedPointsEl) {
+            refreshedPointsEl.classList.remove('points-evaporate-out');
+            refreshedPointsEl.classList.add('points-evaporate-in');
+        }
 
         window.setTimeout(() => {
-            counterEl.classList.remove('points-evaporate-in');
+            if (refreshedPointsEl) {
+                refreshedPointsEl.classList.remove('points-evaporate-in');
+            }
         }, 260);
         hintCounterAnimationTimeout = null;
     }, 260);
@@ -399,9 +421,8 @@ function updateHintProgressBar(hintDifficulty) {
     }
 
     const totalHints = Number(validationRules.destination?.hintCount) || 5;
-    const hintPosition = (totalHints - difficulty) + 1;
-    const normalizedPosition = Math.min(totalHints, Math.max(1, hintPosition));
-    const progressPercentage = (normalizedPosition / totalHints) * 100;
+    const normalizedDifficulty = Math.min(totalHints, Math.max(1, difficulty));
+    const progressPercentage = (normalizedDifficulty / totalHints) * 100;
     progressFill.style.width = `${progressPercentage}%`;
 }
 
@@ -424,6 +445,7 @@ function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
 
 function resetHintReviewState() {
     quizState.hintHistory = {};
+    quizState.hintImagesByDifficulty = {};
     quizState.unlockedHintDifficulties = [];
     quizState.liveHintDifficulty = null;
     quizState.liveRemainingGuesses = null;
@@ -448,12 +470,15 @@ function resetHintReviewState() {
     }
     updateHintProgressBar(null);
     if (currentHint) {
-        currentHint.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        const pointsEl = currentHint.querySelector('.current-hint-points');
+        if (pointsEl) {
+            pointsEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
+        }
         delete currentHint.dataset.currentPoints;
     }
 }
 
-function addHintToHistory(hintText, hintDifficulty) {
+function addHintToHistory(hintText, hintDifficulty, hintImages) {
     if (!Number.isFinite(hintDifficulty) || hintDifficulty < 1) {
         return;
     }
@@ -465,6 +490,9 @@ function addHintToHistory(hintText, hintDifficulty) {
         quizState.unlockedHintDifficulties.sort((a, b) => b - a);
     }
     quizState.hintHistory[hintDifficulty] = hintText;
+    if (Array.isArray(hintImages) && hintImages.length >= 2) {
+        quizState.hintImagesByDifficulty[hintDifficulty] = hintImages.slice(0, 2);
+    }
 }
 
 function selectHintForReview(hintDifficulty) {
@@ -525,6 +553,15 @@ function renderHintFromState() {
 
     document.getElementById('hintProgress').textContent = '';
     document.getElementById('hintPoints').textContent = '';
+
+    const imagesForViewedHint = quizState.hintImagesByDifficulty[viewedDifficulty];
+    if (Array.isArray(imagesForViewedHint) && imagesForViewedHint.length >= 2) {
+        renderQuizImages(imagesForViewedHint);
+        return;
+    }
+
+    const fallbackImages = getHintImageUrls(quizState.currentQuizId, viewedDifficulty);
+    renderQuizImages(fallbackImages);
 }
 
 function renderResultImages(imageUrls) {
@@ -585,12 +622,13 @@ async function submitAnswer() {
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
             animateWrongGuess(answerInput);
-            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses, {
-                animatePointsEvaporation: true
-            });
             const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
                 ? result.images
                 : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);
+            updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses, {
+                animatePointsEvaporation: true,
+                images: nextHintImages
+            });
             renderQuizImages(nextHintImages);
             document.getElementById('answerInput').value = '';
             document.getElementById('answerInput').focus();
@@ -624,10 +662,12 @@ async function fetchHint() {
             }
             throw new Error(result.error || 'Failed to fetch hint');
         }
-        updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses);
         const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
             ? result.images
             : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);
+        updateHintDisplay(result.hint, result.hintDifficulty, result.remainingGuesses, {
+            images: nextHintImages
+        });
         renderQuizImages(nextHintImages);
         document.getElementById('answerInput').value = '';
         document.getElementById('answerInput').focus();

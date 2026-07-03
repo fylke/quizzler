@@ -68,4 +68,33 @@ describe('Image Enlargement', function () {
         expect(document.getElementById('imageModalImage').src).toContain('result-1.jpg');
         expect(document.getElementById('imageModalCaption').textContent).toBe('Additional destination image 1');
     });
+
+    it('marks hint images as portrait when natural dimensions are portrait', function () {
+        wireZoomableImage(
+            document.getElementById('image1'),
+            'https://example.com/portrait.jpg',
+            'Destination image 1'
+        );
+
+        var image = document.getElementById('image1');
+        Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 600 });
+        Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 900 });
+        image.dispatchEvent(new Event('load'));
+
+        expect(image.classList.contains('is-portrait')).toBeTrue();
+        expect(image.classList.contains('is-landscape')).toBeFalse();
+    });
+
+    it('uses portrait modal viewport for portrait images', function () {
+        openImageModal('https://example.com/portrait-modal.jpg', 'Portrait image');
+
+        var image = document.getElementById('imageModalImage');
+        var card = document.querySelector('#imageModal .image-modal-card');
+        Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 700 });
+        Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 1100 });
+        image.dispatchEvent(new Event('load'));
+
+        expect(card.classList.contains('is-portrait')).toBeTrue();
+        expect(card.classList.contains('is-landscape')).toBeFalse();
+    });
 });

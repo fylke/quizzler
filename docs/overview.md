@@ -52,3 +52,7 @@ stateDiagram-v2
         ButtonBackToStatus_Failure
     }
 ```
+
+## Related Docs
+
+- Hint flow details, including hint review image switching behavior: [hint.md](hint.md)
