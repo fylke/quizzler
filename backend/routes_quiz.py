@@ -23,6 +23,10 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _media_root() -> Path:
     """Return the media root directory from env or project default."""
+    media_dir = current_app.config.get("MEDIA_DIR")
+    if media_dir:
+        return Path(str(media_dir))
+
     default_media = Path(__file__).resolve().parent.parent / "media"
     return Path(os.environ.get("MEDIA_DIR", str(default_media)))
 
@@ -35,6 +39,11 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
     """
     destination_dir = _media_root() / "countries" / str(destination_id)
     if not destination_dir.is_dir():
+        current_app.logger.debug(
+            "Result images directory not found for destination %s: %s",
+            destination_id,
+            destination_dir,
+        )
         return []
 
     images: list[str] = []
@@ -49,6 +58,13 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
         images.append(f"/media/countries/{destination_id}/{file_path.name}")
         if len(images) >= RESULT_IMAGE_MAX_COUNT:
             break
+
+    current_app.logger.debug(
+        "Discovered %s result images for destination %s in %s",
+        len(images),
+        destination_id,
+        destination_dir,
+    )
 
     return images
 
