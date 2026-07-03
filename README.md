@@ -99,7 +99,18 @@ uv run e2e-test
 
 1. **Build and start the container (-d for detached, to not block terminal):**
    ```bash
-   podman-compose -f podman-compose.yml up --build -d
+   podman-compose -p quizzler -f podman-compose.yml up --build -d
+   ```
+
+   If your host does not support container CPU/memory cgroup limits (for example `cpu.max` errors), disable CPU/memory limits for local runs but keep a non-zero process limit:
+   ```bash
+   QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 podman-compose -p quizzler -f podman-compose.yml up --build -d
+   ```
+
+   Or make the override persistent for your local checkout:
+   ```bash
+   cp .env.example .env
+   podman-compose -p quizzler -f podman-compose.yml up --build -d
    ```
 
 2. **Open your browser and go to:**
@@ -109,7 +120,7 @@ uv run e2e-test
 
 3. **Stop the container:**
    ```bash
-   podman-compose -f podman-compose.yml down
+   podman-compose -p quizzler -f podman-compose.yml down
    ```
 
 ## Environment Variables

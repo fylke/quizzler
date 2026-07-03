@@ -1,3 +1,5 @@
+name: quizzler
+
 services:
   quizzler:
     build:
@@ -29,9 +31,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    pids_limit: 200
-    mem_limit: 512m
-    cpus: 1.0
+    pids_limit: ${QUIZZLER_PIDS_LIMIT:-200}
+    mem_limit: ${QUIZZLER_MEM_LIMIT:-512m}
+    cpus: ${QUIZZLER_CPUS:-1.0}
     ulimits:
       nofile:
         soft: 1024
@@ -48,7 +50,7 @@ services:
       start_period: 5s
 
   postgres:
-    image: postgres:16
+    image: docker.io/library/postgres:16
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-quizzler}
       POSTGRES_USER: ${POSTGRES_USER:-quizzer}

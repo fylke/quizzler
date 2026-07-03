@@ -18,6 +18,7 @@ dist/
 
 # OS
 .DS_Store
+.env
 database/quiz_data.db
 database/ci_quiz_data.db
 database/test_quiz_data.db
