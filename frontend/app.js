@@ -654,10 +654,8 @@ function renderHintFromState() {
     renderQuizImages(fallbackImages);
 }
 
-function renderResultImages(imageUrls) {
-    const container = document.getElementById('resultImages');
+function renderImageGallery(container, imageUrls, variant = 'result') {
     if (!container) return;
-
     const images = Array.isArray(imageUrls) ? imageUrls.slice(0, 10) : [];
     container.innerHTML = '';
 
@@ -669,16 +667,27 @@ function renderResultImages(imageUrls) {
     container.classList.remove('hidden');
     images.forEach((url, index) => {
         const imageContainer = document.createElement('div');
-        imageContainer.className = 'result-image-container';
-
         const image = document.createElement('img');
-        image.className = 'result-image';
+
+        if (variant === 'hint') {
+            imageContainer.className = 'image-container';
+            image.className = 'quiz-image';
+        } else {
+            imageContainer.className = 'result-image-container';
+            image.className = 'result-image';
+        }
+
         image.loading = 'lazy';
         wireZoomableImage(image, url, `Additional destination image ${index + 1}`);
 
         imageContainer.appendChild(image);
         container.appendChild(imageContainer);
     });
+}
+
+function renderResultImages(imageUrls) {
+    const container = document.getElementById('resultImages');
+    renderImageGallery(container, imageUrls);
 }
 
 async function submitAnswer() {
@@ -778,7 +787,7 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
         feedbackStatus.className = 'feedback-status correct';
         feedbackDetails.innerHTML = `
             <p>The destination was: <span class="correct-answer">${correctAnswer}</span></p>
-            <p class="points-earned">+${points} Points!</p>
+            <p class="points-earned">${points} Points!</p>
         `;
     } else {
         feedbackStatus.textContent = '✗ Incorrect';
@@ -792,6 +801,19 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
     // Store points in a data attribute for the results screen
     document.getElementById('feedbackScreen').dataset.lastScore = points;
     document.getElementById('feedbackScreen').dataset.resultImages = JSON.stringify(resultImages);
+
+    const feedbackImagesHeading = document.getElementById('feedbackResultImagesHeading');
+    const feedbackImagesContainer = document.getElementById('feedbackResultImages');
+    if (feedbackImagesHeading) {
+        if (Array.isArray(resultImages) && resultImages.length > 0) {
+            feedbackImagesHeading.textContent = `Here are some extra pictures from ${correctAnswer}`;
+            feedbackImagesHeading.classList.remove('hidden');
+        } else {
+            feedbackImagesHeading.textContent = '';
+            feedbackImagesHeading.classList.add('hidden');
+        }
+    }
+    renderImageGallery(feedbackImagesContainer, resultImages, 'hint');
 }
 
 function endQuiz() {

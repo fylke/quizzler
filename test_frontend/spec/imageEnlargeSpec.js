@@ -20,6 +20,12 @@ describe('Image Enlargement', function () {
                 '<img id="image1" />' +
                 '<img id="image2" />' +
             '</div>' +
+            '<div id="feedbackScreen" class="screen hidden">' +
+                '<div id="feedbackStatus"></div>' +
+                '<div id="feedbackDetails"></div>' +
+                '<h3 id="feedbackResultImagesHeading" class="hidden"></h3>' +
+                '<div id="feedbackResultImages" class="images-section hidden"></div>' +
+            '</div>' +
             '<div id="resultImages" class="result-images hidden"></div>' +
             '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="imageModalCaption">' +
                 '<div class="modal-card image-modal-card">' +
@@ -67,6 +73,19 @@ describe('Image Enlargement', function () {
         expect(document.getElementById('imageModal').style.display).toBe('flex');
         expect(document.getElementById('imageModalImage').src).toContain('result-1.jpg');
         expect(document.getElementById('imageModalCaption').textContent).toBe('Additional destination image 1');
+    });
+
+    it('renders result images on the feedback screen shown after quiz completion', function () {
+        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
+
+        var images = document.querySelectorAll('#feedbackResultImages .quiz-image');
+        expect(images.length).toBe(1);
+        expect(images[0].src).toContain('result-1.jpg');
+        expect(document.getElementById('feedbackResultImages').classList.contains('hidden')).toBeFalse();
+        expect(document.getElementById('feedbackResultImagesHeading').textContent)
+            .toBe('Here are some extra pictures from Bhutan');
+        expect(document.getElementById('feedbackResultImagesHeading').classList.contains('hidden')).toBeFalse();
+        expect(document.querySelector('#feedbackDetails .points-earned').textContent).toBe('15 Points!');
     });
 
     it('marks hint images as portrait when natural dimensions are portrait', function () {

@@ -17,7 +17,7 @@ quiz_bp = Blueprint("quiz", __name__)
 
 RESULT_IMAGE_PREFIX = "0"
 RESULT_IMAGE_MAX_COUNT = 10
-RESULT_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+RESULT_IMAGE_NAME_RE = re.compile(r"^0.*\.jpg$", re.IGNORECASE)
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -56,7 +56,7 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
             continue
         if not file_path.name.startswith(RESULT_IMAGE_PREFIX):
             continue
-        if file_path.suffix.lower() not in RESULT_IMAGE_EXTENSIONS:
+        if not RESULT_IMAGE_NAME_RE.match(file_path.name):
             continue
 
         images.append(f"/media/countries/{destination_id}/{file_path.name}")
