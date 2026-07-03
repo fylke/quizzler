@@ -1,11 +1,17 @@
-# ✈️ Travel Quiz Webapp
+# ✈️ Quizzler Webapp
+
+[![CI](https://github.com/fylke/quizzler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/ci.yml)
+[![Deploy to QNAP](https://github.com/fylke/quizzler/actions/workflows/deploy-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/deploy-qnap.yml)
+[![backup-qnap](https://github.com/fylke/quizzler/actions/workflows/backup-qnap.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/backup-qnap.yml)
+[![E2E Nightly](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/quizzler/blob/main/.github/dependabot.yml)
 
 A fun interactive quiz game where you guess travel destinations based on hints and images. 
 
 ## Project Structure
 
 ```
-travel-quizzer/
+quizzler/
 ├── backend/
 │   ├── __init__.py        # Flask app initialization
 │   ├── __main__.py        # Entry point
@@ -41,7 +47,7 @@ The `database/` directory is kept in the repo as a placeholder for local SQLite 
 1. **Clone and enter the project:**
    ```bash
    git clone <repo-url>
-   cd travel-quizzer
+   cd quizzler
    ```
 
 2. **Install dependencies with uv:**
@@ -116,7 +122,7 @@ uv run e2e-test
 | `SMTP_PORT`         | SMTP server port (1–65535)                                                      | `587`                             |
 | `SMTP_USERNAME`     | SMTP authentication username                                                    | `user@gmail.com`                  |
 | `SMTP_PASSWORD`     | SMTP authentication password                                                    | `app-password`                    |
-| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@travelquizzer.com`       |
+| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@quizzler.com`       |
 | `SMTP_USE_TLS`      | Use TLS for SMTP connection (`"true"` enables, any other value uses plain SMTP) | `true`                            |
 | `ADMIN_EMAIL`       | Destination address for hint complaint emails                                   | _(none)_                          |
 
@@ -128,14 +134,14 @@ The repository includes a GitHub Actions workflow at `.github/workflows/backup-q
 
 - Runs automatically every Sunday at 02:15 UTC.
 - Creates compressed backups for:
-   - `/share/Container/travel-quizzer/database/quiz_data.db`
-   - `/share/Container/travel-quizzer/media`
+   - `/share/Container/quizzler/database/quiz_data.db`
+   - `/share/Container/quizzler/media`
 - Skips backup creation when neither the database nor media content changed since the previous backup.
 - Validates backup content by:
    - running SQLite `PRAGMA quick_check` on the copied database
    - verifying archive readability (`tar -tzf`)
    - extracting and comparing checksums against source content
-- Stores backups on QNAP under `/share/Container/travel-quizzer/backups`.
+- Stores backups on QNAP under `/share/Container/quizzler/backups`.
 - Automatically prunes older backup sets and keeps the latest 12 complete snapshots.
 
 ### Manual backup run
@@ -154,7 +160,7 @@ From GitHub Actions, run workflow **QNAP Backup and Restore** with:
 
 Set `backup_id` to a timestamp like `20260701T021500Z`, or leave it empty to restore the latest backup.
 
-The restore job validates the selected archives, replaces live database/media content, and restarts the `travel-quizzer` container if it was running.
+The restore job validates the selected archives, replaces live database/media content, and restarts the `quizzler` container if it was running.
 
 If the container was running before restore, the workflow also runs a post-restore health check against `/health` and fails the run if the app does not become healthy in time.
 

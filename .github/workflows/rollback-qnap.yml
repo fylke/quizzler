@@ -14,7 +14,7 @@ name: Rollback QNAP Deployment
           - "3"
 
 env:
-  CONTAINER_NAME: travel-quizzer
+  CONTAINER_NAME: quizzler
 
 jobs:
   rollback:

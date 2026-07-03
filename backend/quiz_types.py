@@ -1,4 +1,4 @@
-"""Quiz type registry for the Travel Quizzer application.
+"""Quiz type registry for the Quizzler application.
 
 Defines available quiz types and provides startup validation. Adding a
 new quiz type requires only appending to the QUIZ_TYPES list and placing

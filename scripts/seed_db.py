@@ -4,7 +4,7 @@ Usage:
     uv run python -m scripts.seed_db
 
 Or inside the container:
-    podman exec travel-quizzer uv run --no-project python -m scripts.seed_db
+    podman exec quizzler uv run --no-project python -m scripts.seed_db
 
 The seed data is loaded from data/countries.json (gitignored).
 See data/countries.example.json for the expected format.

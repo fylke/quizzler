@@ -5,7 +5,108 @@ on:
   pull_request:
 
 jobs:
+  workflow-script-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Lint SSH workflow scripts with bash -n
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          workflow_dir = Path('.github/workflows')
+          workflow_files = sorted(workflow_dir.glob('*.yml')) + sorted(workflow_dir.glob('*.yaml'))
+
+          if not workflow_files:
+            raise SystemExit('No workflow files found under .github/workflows')
+
+          uses_pattern = re.compile(r'^\s*uses:\s*(\S+)\s*$')
+          step_start_pattern = re.compile(r'^\s*-\s*(name|uses|id|run|if|with)\s*:')
+
+          total_blocks = 0
+          failures = []
+
+          for workflow in workflow_files:
+            lines = workflow.read_text(encoding='utf-8').splitlines()
+            current_uses = ''
+            i = 0
+
+            while i < len(lines):
+              line = lines[i]
+              stripped = line.lstrip(' ')
+              indent = len(line) - len(stripped)
+
+              if step_start_pattern.match(line) and stripped.startswith('- '):
+                current_uses = ''
+
+              uses_match = uses_pattern.match(line)
+              if uses_match:
+                current_uses = uses_match.group(1)
+
+              if stripped == 'script: |' and current_uses.startswith('appleboy/ssh-action@'):
+                block_indent = indent + 2
+                i += 1
+                block = []
+
+                while i < len(lines):
+                  current = lines[i]
+                  current_stripped = current.lstrip(' ')
+                  current_indent = len(current) - len(current_stripped)
+
+                  if current.strip() == '':
+                    block.append('')
+                    i += 1
+                    continue
+
+                  if current_indent < block_indent:
+                    break
+
+                  block.append(current[block_indent:])
+                  i += 1
+
+                total_blocks += 1
+                script = '\n'.join(block) + '\n'
+
+                with tempfile.NamedTemporaryFile('w', suffix='.sh', delete=False) as tmp:
+                  tmp.write(script)
+                  tmp_path = tmp.name
+
+                result = subprocess.run(
+                  ['bash', '-n', tmp_path],
+                  capture_output=True,
+                  text=True,
+                  check=False,
+                )
+
+                if result.returncode != 0:
+                  failures.append((str(workflow), total_blocks, result.stderr.strip()))
+
+                continue
+
+              i += 1
+
+          if total_blocks == 0:
+            raise SystemExit('No appleboy/ssh-action script blocks found to lint')
+
+          if failures:
+            for workflow, block_idx, error in failures:
+              print(f'{workflow} block #{block_idx} failed bash -n:\n{error}\n')
+            raise SystemExit(1)
+
+          print(f'Validated {total_blocks} SSH script block(s) across {len(workflow_files)} workflow file(s)')
+          PY
+
   test:
+    needs: workflow-script-lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

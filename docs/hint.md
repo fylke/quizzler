@@ -9,8 +9,8 @@ sequenceDiagram
 
     alt Start a new quiz
         User->>Frontend: Clicks "Run Random Quiz"
-    else Skip hint
-        User->>Frontend: Clicks "Skip Hint"
+    else Next hint
+        User->>Frontend: Clicks "Next Hint"
     end
 
     Frontend->>Backend: GET /api/hint (sessionId: "token")

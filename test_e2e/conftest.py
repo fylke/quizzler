@@ -21,7 +21,7 @@ _db_fd, _DB_PATH = tempfile.mkstemp(suffix=".db")
 os.close(_db_fd)
 os.environ["QUIZ_DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
 
-_MEDIA_ROOT = tempfile.mkdtemp(prefix="travel-quizzer-media-")
+_MEDIA_ROOT = tempfile.mkdtemp(prefix="quizzler-media-")
 os.environ["MEDIA_DIR"] = _MEDIA_ROOT
 
 # Seed 0-prefixed result images for destination id=1 (caps at 10 in API).
