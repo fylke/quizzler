@@ -16,6 +16,8 @@ const API_BASE = window.location.origin;
 let authMode = 'login';
 let submitting = false; // guards against double-click on submit
 let hintCounterAnimationTimeout = null;
+let remainingGuessesAnimationTimeout = null;
+const COUNTER_PUFF_DURATION_MS = 340;
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -108,11 +110,35 @@ async function loadUser() {
         const data = await response.json();
         quizState.user = data;
         csrfToken = data.csrfToken || null;
-        showStatusScreen();
+        const restoredActiveQuiz = await restoreActiveQuiz();
+        if (!restoredActiveQuiz) {
+            showStatusScreen();
+        }
     } catch (error) {
         console.error('Error checking auth status:', error);
         showNotification('Cannot connect to server.');
         showScreen('welcomeScreen');
+    }
+}
+
+async function restoreActiveQuiz() {
+    try {
+        const response = await fetch(`${API_BASE}/api/quiz/active`);
+        if (response.status === 404) {
+            return false;
+        }
+        if (!response.ok) {
+            showNotification('Unable to restore active quiz.');
+            return false;
+        }
+
+        const activeQuiz = await response.json();
+        showScreen('quizScreen');
+        displayQuiz(activeQuiz);
+        return true;
+    } catch (error) {
+        console.error('Error restoring active quiz:', error);
+        return false;
     }
 }
 
@@ -316,12 +342,14 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
         document.getElementById('hint').textContent = hintText;
         updateHintProgressBar(null);
         updateNextHintCostPreview(null, null);
+        updateRemainingGuessesDisplay(null);
         return;
     }
 
     updateHintProgressBar(difficulty);
     updateHintCounter(difficulty, guesses, options);
     updateNextHintCostPreview(difficulty, guesses);
+    updateRemainingGuessesDisplay(guesses, options);
     addHintToHistory(hintText, difficulty, options.images);
     quizState.liveHintDifficulty = difficulty;
     quizState.liveRemainingGuesses = guesses;
@@ -403,9 +431,9 @@ function updateHintCounter(hintDifficulty, remainingGuesses, options = {}) {
             if (refreshedPointsEl) {
                 refreshedPointsEl.classList.remove('points-evaporate-in');
             }
-        }, 260);
+        }, COUNTER_PUFF_DURATION_MS);
         hintCounterAnimationTimeout = null;
-    }, 260);
+    }, COUNTER_PUFF_DURATION_MS);
 }
 
 function updateHintProgressBar(hintDifficulty) {
@@ -423,7 +451,8 @@ function updateHintProgressBar(hintDifficulty) {
     const totalHints = Number(validationRules.destination?.hintCount) || 5;
     const normalizedDifficulty = Math.min(totalHints, Math.max(1, difficulty));
     const progressPercentage = (normalizedDifficulty / totalHints) * 100;
-    progressFill.style.width = `${progressPercentage}%`;
+    const overlayPercentage = 100 - progressPercentage;
+    progressFill.style.width = `${overlayPercentage}%`;
 }
 
 function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
@@ -439,8 +468,59 @@ function updateNextHintCostPreview(hintDifficulty, remainingGuesses) {
         return;
     }
 
+    if (difficulty <= 1) {
+        previewEl.textContent = 'No more hints, might as well guess now!';
+        return;
+    }
+
     const pointsGivenUp = difficulty > 1 ? guesses : 0;
     previewEl.textContent = `(-${pointsGivenUp}p)`;
+}
+
+function updateRemainingGuessesDisplay(remainingGuesses, options = {}) {
+    const remainingGuessesEl = document.getElementById('remainingGuesses');
+    if (!remainingGuessesEl) {
+        return;
+    }
+
+    const guesses = Number(remainingGuesses);
+    if (!Number.isFinite(guesses)) {
+        remainingGuessesEl.textContent = '';
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        delete remainingGuessesEl.dataset.currentGuesses;
+        return;
+    }
+
+    const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
+
+    if (remainingGuessesAnimationTimeout !== null) {
+        clearTimeout(remainingGuessesAnimationTimeout);
+        remainingGuessesAnimationTimeout = null;
+    }
+
+    const currentGuesses = Number(remainingGuessesEl.dataset.currentGuesses);
+    if (!shouldAnimateEvaporation || !Number.isFinite(currentGuesses) || currentGuesses === guesses) {
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+        remainingGuessesEl.dataset.currentGuesses = String(guesses);
+        return;
+    }
+
+    remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+    void remainingGuessesEl.offsetWidth;
+    remainingGuessesEl.classList.add('remaining-guesses-evaporate-out');
+
+    remainingGuessesAnimationTimeout = window.setTimeout(() => {
+        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+        remainingGuessesEl.dataset.currentGuesses = String(guesses);
+        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out');
+        remainingGuessesEl.classList.add('remaining-guesses-evaporate-in');
+
+        window.setTimeout(() => {
+            remainingGuessesEl.classList.remove('remaining-guesses-evaporate-in');
+        }, COUNTER_PUFF_DURATION_MS);
+        remainingGuessesAnimationTimeout = null;
+    }, COUNTER_PUFF_DURATION_MS);
 }
 
 function resetHintReviewState() {
@@ -455,9 +535,14 @@ function resetHintReviewState() {
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
     const nextHintCostPreview = document.getElementById('nextHintCostPreview');
     const currentHint = document.getElementById('currentHint');
+    const remainingGuesses = document.getElementById('remainingGuesses');
     if (hintCounterAnimationTimeout !== null) {
         clearTimeout(hintCounterAnimationTimeout);
         hintCounterAnimationTimeout = null;
+    }
+    if (remainingGuessesAnimationTimeout !== null) {
+        clearTimeout(remainingGuessesAnimationTimeout);
+        remainingGuessesAnimationTimeout = null;
     }
     if (hintReviewSection) {
         hintReviewSection.classList.add('hidden');
@@ -468,6 +553,7 @@ function resetHintReviewState() {
     if (nextHintCostPreview) {
         nextHintCostPreview.textContent = '';
     }
+    updateRemainingGuessesDisplay(null);
     updateHintProgressBar(null);
     if (currentHint) {
         const pointsEl = currentHint.querySelector('.current-hint-points');
@@ -475,6 +561,10 @@ function resetHintReviewState() {
             pointsEl.classList.remove('points-evaporate-out', 'points-evaporate-in');
         }
         delete currentHint.dataset.currentPoints;
+    }
+    if (remainingGuesses) {
+        remainingGuesses.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
+        delete remainingGuesses.dataset.currentGuesses;
     }
 }
 
@@ -750,10 +840,6 @@ async function showStatusScreen() {
             document.getElementById('statsCumulativeScore').textContent = stats.cumulativeScore;
             document.getElementById('statsCompleted').textContent = stats.quizzesCompleted;
             document.getElementById('statsAverageScore').textContent = stats.averageScore;
-            document.getElementById('statsBestScore').textContent = stats.bestScore;
-            document.getElementById('statsAccuracyRate').textContent = stats.accuracyRate + '%';
-            document.getElementById('statsCurrentStreak').textContent = stats.currentStreak;
-            document.getElementById('statsOngoing').textContent = stats.quizzesOngoing;
         } else {
             showNotification('Failed to load statistics.');
         }

@@ -33,6 +33,8 @@ app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 
 # Media directory for quiz images (convention: media/<dest_id>/<hint_level>a.jpg)
 MEDIA_DIR = os.environ.get("MEDIA_DIR", os.path.join(PROJECT_ROOT, "media"))
+app.config["MEDIA_DIR"] = MEDIA_DIR
+logging.getLogger(__name__).debug("Configured MEDIA_DIR=%s", app.config["MEDIA_DIR"])
 
 # Restrict CORS to the app's own origin in production; allow all in dev.
 _env = os.environ.get('FLASK_ENV', 'development')
@@ -300,7 +302,8 @@ def index():
 @app.route("/media/<path:filename>")
 def serve_media(filename):
     """Serve quiz images from the media directory."""
-    return send_from_directory(MEDIA_DIR, filename)
+    media_dir = os.environ.get("MEDIA_DIR") or app.config["MEDIA_DIR"]
+    return send_from_directory(media_dir, filename)
 
 
 if __name__ == "__main__":

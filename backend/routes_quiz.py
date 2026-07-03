@@ -23,6 +23,14 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def _media_root() -> Path:
     """Return the media root directory from env or project default."""
+    media_dir = os.environ.get("MEDIA_DIR")
+    if media_dir:
+        return Path(str(media_dir))
+
+    media_dir = current_app.config.get("MEDIA_DIR")
+    if media_dir:
+        return Path(str(media_dir))
+
     default_media = Path(__file__).resolve().parent.parent / "media"
     return Path(os.environ.get("MEDIA_DIR", str(default_media)))
 
@@ -35,6 +43,11 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
     """
     destination_dir = _media_root() / "countries" / str(destination_id)
     if not destination_dir.is_dir():
+        current_app.logger.debug(
+            "Result images directory not found for destination %s: %s",
+            destination_id,
+            destination_dir,
+        )
         return []
 
     images: list[str] = []
@@ -49,6 +62,13 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
         images.append(f"/media/countries/{destination_id}/{file_path.name}")
         if len(images) >= RESULT_IMAGE_MAX_COUNT:
             break
+
+    current_app.logger.debug(
+        "Discovered %s result images for destination %s in %s",
+        len(images),
+        destination_id,
+        destination_dir,
+    )
 
     return images
 
@@ -116,6 +136,32 @@ def get_specific_quiz(destination_id):
 
     user = get_current_user()
     return jsonify(_start_quiz(user, destination))
+
+
+@quiz_bp.route("/api/quiz/active", methods=["GET"])
+@login_required
+def get_active_quiz():
+    """Return the active quiz state for the logged-in user."""
+    user = get_current_user()
+    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    if quiz_result is None:
+        return jsonify({"error": "No active quiz"}), 404
+
+    destination = Destination.query.filter_by(id=quiz_result.destination_id).first()
+    if destination is None:
+        return jsonify({"error": "Question not found"}), 404
+
+    difficulty = quiz_result.hint_difficulty
+    hint_text = getattr(destination, f"hint{difficulty}", "")
+    return jsonify(
+        {
+            "id": destination.id,
+            "hint": hint_text,
+            "hintDifficulty": difficulty,
+            "remainingGuesses": quiz_result.remaining_guesses,
+            "images": _hint_images_for_destination(destination.id, difficulty),
+        }
+    )
 
 
 @quiz_bp.route("/api/hint", methods=["GET"])
@@ -257,7 +303,11 @@ def submit_hint_complaint():
     if not question:
         return jsonify({"error": "Question not found"}), 404
 
-    admin_email = (os.environ.get("ADMIN_EMAIL") or "").strip()
+    admin_email = (
+        os.environ.get("ADMIN_EMAIL")
+        or os.environ.get("SMTP_FROM_ADDRESS")
+        or ""
+    ).strip()
 
     hint_text = getattr(question, f"hint{hint_difficulty}", "")
     try:

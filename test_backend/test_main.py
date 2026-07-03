@@ -219,6 +219,35 @@ class MainAppTestCase(unittest.TestCase):
             ],
         )
 
+    def test_get_active_quiz_returns_404_when_no_active_quiz(self):
+        response = self.client.get('/api/quiz/active')
+        self.assertEqual(response.status_code, 404)
+        data = response.get_json()
+        self.assertEqual(data['error'], 'No active quiz')
+
+    def test_get_active_quiz_returns_current_hint_state(self):
+        question = self.quiz_data[0]
+        self.client.get(f'/api/quiz/{question["id"]}')
+
+        # Move to the next hint so restored state is not just the initial default.
+        self.client.get('/api/hint')
+
+        response = self.client.get('/api/quiz/active')
+        self.assertEqual(response.status_code, 200)
+
+        data = response.get_json()
+        self.assertEqual(data['id'], question['id'])
+        self.assertEqual(data['hintDifficulty'], 4)
+        self.assertEqual(data['remainingGuesses'], 3)
+        self.assertEqual(data['hint'], question['hints']['4'])
+        self.assertEqual(
+            data['images'],
+            [
+                f"/media/countries/{question['id']}/4a.jpg",
+                f"/media/countries/{question['id']}/4b.jpg",
+            ],
+        )
+
     def test_check_answer_wrong_guess_keeps_current_hint_images(self):
         question = self.quiz_data[0]
         self.client.get(f'/api/quiz/{question["id"]}')

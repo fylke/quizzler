@@ -98,6 +98,29 @@ class HintComplaintAPITestCase(unittest.TestCase):
         self.assertEqual(kwargs["quiz_id"], 77)
         self.assertEqual(kwargs["hint_difficulty"], 4)
 
+    @patch.dict(
+        os.environ,
+        {"ADMIN_EMAIL": "", "SMTP_FROM_ADDRESS": "noreply@example.com"},
+        clear=False,
+    )
+    @patch("backend.routes_quiz.send_hint_complaint_email")
+    def test_uses_smtp_from_address_when_admin_email_missing(self, mock_send):
+        self._login()
+
+        response = self.client.post(
+            "/api/hint-complaint",
+            json={
+                "quizId": 77,
+                "hintDifficulty": 4,
+                "complainerEmail": "person@example.com",
+                "message": "Fallback recipient should be used.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        kwargs = mock_send.call_args.kwargs
+        self.assertEqual(kwargs["admin_address"], "noreply@example.com")
+
     def test_rejects_hint_that_is_not_unlocked(self):
         self._login()
 

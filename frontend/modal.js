@@ -102,8 +102,8 @@ async function openRulesModal(quizType) {
     const titleEl = document.getElementById('rulesModalTitle');
     const contentEl = document.getElementById('rulesModalContent');
 
-    // Show modal with loading state
-    titleEl.textContent = 'Rules';
+    // The markdown content already includes its own heading.
+    titleEl.textContent = '';
     contentEl.innerHTML = '<p class="rules-loading">Loading...</p>';
     modal.style.display = 'flex';
 
@@ -365,7 +365,7 @@ setupFocusTrap('hintComplaintModal', closeHintComplaintModal, [
 ]);
 
 setupFocusTrap('imageModal', closeImageModal, [
-    'imageModalCloseBtn'
+    'imageModalPrevBtn', 'imageModalNextBtn', 'imageModalCloseBtn'
 ]);
 
 // Wire up the rules modal close button
@@ -388,46 +388,149 @@ document.addEventListener('DOMContentLoaded', function () {
     if (imageModalCloseBtn) {
         imageModalCloseBtn.addEventListener('click', closeImageModal);
     }
+
+    const imageModalPrevBtn = document.getElementById('imageModalPrevBtn');
+    if (imageModalPrevBtn) {
+        imageModalPrevBtn.addEventListener('click', function () {
+            navigateImageModal(-1);
+        });
+    }
+
+    const imageModalNextBtn = document.getElementById('imageModalNextBtn');
+    if (imageModalNextBtn) {
+        imageModalNextBtn.addEventListener('click', function () {
+            navigateImageModal(1);
+        });
+    }
+
+    document.addEventListener('keydown', function (event) {
+        const imageModal = document.getElementById('imageModal');
+        if (!imageModal || imageModal.style.display === 'none') {
+            return;
+        }
+
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            navigateImageModal(-1);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            navigateImageModal(1);
+        }
+    });
 });
 
 // ==================== Image Modal ====================
 
 let _imageModalTrigger = null;
+let _imageModalHintPair = null;
 
-function openImageModal(imageUrl, altText) {
-    const modal = document.getElementById('imageModal');
-    const imageEl = document.getElementById('imageModalImage');
-    const captionEl = document.getElementById('imageModalCaption');
-    const closeBtn = document.getElementById('imageModalCloseBtn');
+function _applyImageModalOrientationClass(modal, imageEl) {
     const cardEl = modal ? modal.querySelector('.image-modal-card') : null;
-
-    if (!modal || !imageEl) {
+    if (!cardEl || !imageEl) {
         return;
     }
 
-    _imageModalTrigger = document.activeElement;
-    imageEl.src = imageUrl;
-    imageEl.alt = altText;
+    cardEl.classList.remove('is-portrait', 'is-landscape');
+    if (imageEl.naturalHeight > imageEl.naturalWidth) {
+        cardEl.classList.add('is-portrait');
+        return;
+    }
+    cardEl.classList.add('is-landscape');
+}
 
-    const applyModalOrientationClass = () => {
-        if (!cardEl) {
-            return;
-        }
-        cardEl.classList.remove('is-portrait', 'is-landscape');
-        if (imageEl.naturalHeight > imageEl.naturalWidth) {
-            cardEl.classList.add('is-portrait');
-            return;
-        }
-        cardEl.classList.add('is-landscape');
+function _setImageModalContent(entry) {
+    const modal = document.getElementById('imageModal');
+    const imageEl = document.getElementById('imageModalImage');
+    const captionEl = document.getElementById('imageModalCaption');
+
+    if (!modal || !imageEl || !entry) {
+        return;
+    }
+
+    imageEl.src = entry.url;
+    imageEl.alt = entry.alt;
+    imageEl.onload = function () {
+        _applyImageModalOrientationClass(modal, imageEl);
     };
-
-    imageEl.onload = applyModalOrientationClass;
     if (imageEl.complete && imageEl.naturalWidth > 0 && imageEl.naturalHeight > 0) {
-        applyModalOrientationClass();
+        _applyImageModalOrientationClass(modal, imageEl);
     }
 
     if (captionEl) {
-        captionEl.textContent = altText;
+        captionEl.textContent = entry.alt;
+    }
+}
+
+function _getHintPairFromTrigger(triggerEl) {
+    if (!triggerEl) {
+        return null;
+    }
+
+    const isHintImage = triggerEl.id === 'image1' || triggerEl.id === 'image2';
+    if (!isHintImage) {
+        return null;
+    }
+
+    const image1 = document.getElementById('image1');
+    const image2 = document.getElementById('image2');
+    if (!image1 || !image2 || !image1.src || !image2.src) {
+        return null;
+    }
+
+    const items = [
+        { url: image1.src, alt: image1.alt || 'Destination image 1', trigger: image1 },
+        { url: image2.src, alt: image2.alt || 'Destination image 2', trigger: image2 }
+    ];
+
+    const currentIndex = triggerEl.id === 'image2' ? 1 : 0;
+    return { items, index: currentIndex };
+}
+
+function _updateImageModalNavigation() {
+    const prevBtn = document.getElementById('imageModalPrevBtn');
+    const nextBtn = document.getElementById('imageModalNextBtn');
+    const hasPair = Boolean(_imageModalHintPair && Array.isArray(_imageModalHintPair.items) && _imageModalHintPair.items.length > 1);
+
+    [prevBtn, nextBtn].forEach(btn => {
+        if (!btn) {
+            return;
+        }
+        btn.classList.toggle('hidden', !hasPair);
+        btn.disabled = !hasPair;
+    });
+}
+
+function navigateImageModal(step) {
+    if (!_imageModalHintPair || !_imageModalHintPair.items.length) {
+        return;
+    }
+
+    const total = _imageModalHintPair.items.length;
+    const nextIndex = (_imageModalHintPair.index + step + total) % total;
+    _imageModalHintPair.index = nextIndex;
+
+    const nextEntry = _imageModalHintPair.items[nextIndex];
+    _setImageModalContent(nextEntry);
+    _imageModalTrigger = nextEntry.trigger;
+}
+
+function openImageModal(imageUrl, altText) {
+    const modal = document.getElementById('imageModal');
+    const closeBtn = document.getElementById('imageModalCloseBtn');
+    const trigger = document.activeElement;
+
+    if (!modal) {
+        return;
+    }
+
+    _imageModalTrigger = trigger;
+    _imageModalHintPair = _getHintPairFromTrigger(trigger);
+    _updateImageModalNavigation();
+
+    if (_imageModalHintPair) {
+        _setImageModalContent(_imageModalHintPair.items[_imageModalHintPair.index]);
+    } else {
+        _setImageModalContent({ url: imageUrl, alt: altText, trigger });
     }
 
     modal.style.display = 'flex';
@@ -454,5 +557,6 @@ function closeImageModal() {
     if (_imageModalTrigger && typeof _imageModalTrigger.focus === 'function') {
         _imageModalTrigger.focus();
     }
+    _imageModalHintPair = null;
     _imageModalTrigger = null;
 }
