@@ -136,15 +136,15 @@ describe('Hint Review', function () {
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
     });
 
-    it('progresses the top bar to the right as hints advance', function () {
+    it('starts full and shrinks from the left as hints advance', function () {
         updateHintDisplay('Hardest hint', 5, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('20%');
+        expect(document.getElementById('progressFill').style.width).toBe('100%');
 
         updateHintDisplay('Second hint', 4, 3);
-        expect(document.getElementById('progressFill').style.width).toBe('40%');
+        expect(document.getElementById('progressFill').style.width).toBe('80%');
 
         updateHintDisplay('Easiest hint', 1, 1);
-        expect(document.getElementById('progressFill').style.width).toBe('100%');
+        expect(document.getElementById('progressFill').style.width).toBe('20%');
     });
 
     it('animates top points when a wrong answer lowers points', function (done) {

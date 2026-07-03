@@ -399,9 +399,8 @@ function updateHintProgressBar(hintDifficulty) {
     }
 
     const totalHints = Number(validationRules.destination?.hintCount) || 5;
-    const hintPosition = (totalHints - difficulty) + 1;
-    const normalizedPosition = Math.min(totalHints, Math.max(1, hintPosition));
-    const progressPercentage = (normalizedPosition / totalHints) * 100;
+    const normalizedDifficulty = Math.min(totalHints, Math.max(1, difficulty));
+    const progressPercentage = (normalizedDifficulty / totalHints) * 100;
     progressFill.style.width = `${progressPercentage}%`;
 }
 
