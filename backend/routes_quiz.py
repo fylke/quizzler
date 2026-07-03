@@ -283,7 +283,11 @@ def submit_hint_complaint():
     if not question:
         return jsonify({"error": "Question not found"}), 404
 
-    admin_email = (os.environ.get("ADMIN_EMAIL") or "").strip()
+    admin_email = (
+        os.environ.get("ADMIN_EMAIL")
+        or os.environ.get("SMTP_FROM_ADDRESS")
+        or ""
+    ).strip()
 
     hint_text = getattr(question, f"hint{hint_difficulty}", "")
     try:
