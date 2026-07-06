@@ -221,6 +221,37 @@ class MainAppTestCase(unittest.TestCase):
             ],
         )
 
+    def test_hint_media_returns_403_for_locked_hint_difficulty(self):
+        question = self.quiz_data[0]
+        self.client.get(f'/api/quiz/{question["id"]}')
+
+        response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
+        self.assertEqual(response.status_code, 403)
+
+    def test_hint_media_returns_200_for_unlocked_hint_difficulty(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '4a.jpg').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get('/api/hint')
+
+                response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
+                self.assertEqual(response.status_code, 200)
+                response.close()
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
     def test_get_active_quiz_returns_404_when_no_active_quiz(self):
         response = self.client.get('/api/quiz/active')
         self.assertEqual(response.status_code, 404)

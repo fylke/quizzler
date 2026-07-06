@@ -145,6 +145,51 @@ describe('Wrong Guess Animation', function () {
         });
     });
 
+    // ========== Wrong answer waits for shake before hint counters update ==========
+    describe('wrong answer sequencing', function () {
+        beforeEach(function () {
+            spyOn(window, 'matchMedia').and.returnValue({ matches: false });
+            spyOn(window, 'fetch').and.callFake(function () {
+                return Promise.resolve({
+                    ok: true,
+                    json: function () {
+                        return Promise.resolve({
+                            correct: false,
+                            remainingGuesses: 2,
+                            hint: 'Next hint',
+                            hintDifficulty: 4,
+                            images: ['/media/countries/1/4a.jpg', '/media/countries/1/4b.jpg']
+                        });
+                    }
+                });
+            });
+            spyOn(window, 'updateHintDisplay').and.callFake(function () {});
+            spyOn(window, 'renderQuizImages').and.callFake(function () {});
+            inputElement.value = 'wrong answer';
+        });
+
+        afterEach(function () {
+            submitting = false;
+        });
+
+        it('defers hint update until the animation has ended', function (done) {
+            var submissionPromise = submitAnswer();
+
+            setTimeout(function () {
+                expect(window.updateHintDisplay).not.toHaveBeenCalled();
+
+                quizScreen.dispatchEvent(new Event('animationend'));
+
+                submissionPromise.then(function () {
+                    expect(window.updateHintDisplay).toHaveBeenCalled();
+                    done();
+                }).catch(function (error) {
+                    done.fail(error);
+                });
+            }, 0);
+        });
+    });
+
     // ========== Input remains enabled and focusable during animation ==========
     describe('input state during animation', function () {
         beforeEach(function () {

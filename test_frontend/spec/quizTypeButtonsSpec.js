@@ -85,11 +85,14 @@ describe('Quiz Type Buttons - Property Tests', function () {
             mockFetchSuccess(quizTypes);
 
             loadQuizTypeButtons().then(function () {
+                var heading = document.getElementById('availableQuizzesHeading');
                 var buttons = document.querySelectorAll('.quiz-type-btn');
                 var sortedNames = quizTypes.map(function (t) { return t.displayName; }).sort(function (a, b) {
                     return a.localeCompare(b);
                 });
 
+                expect(heading).not.toBeNull();
+                expect(heading.textContent).toBe('Available quizzes');
                 expect(buttons.length).toBe(quizTypes.length);
                 for (var i = 0; i < buttons.length; i++) {
                     expect(buttons[i].textContent).toBe(sortedNames[i]);
@@ -195,6 +198,33 @@ describe('Quiz Type Buttons - Property Tests', function () {
                 var buttons = document.querySelectorAll('.quiz-type-btn');
                 expect(buttons.length).toBe(1);
                 expect(buttons[0].textContent).toBe('Countries');
+                done();
+            }).catch(function (err) {
+                done.fail(err);
+            });
+        });
+
+        it('adds the countries hover text only to the countries button', function (done) {
+            var quizTypes = [
+                { identifier: 'cities', displayName: 'Cities' },
+                { identifier: 'countries', displayName: 'Countries' }
+            ];
+
+            mockFetchSuccess(quizTypes);
+
+            loadQuizTypeButtons().then(function () {
+                var buttons = document.querySelectorAll('.quiz-type-btn');
+                var countriesButton = Array.prototype.find.call(buttons, function (button) {
+                    return button.textContent === 'Countries';
+                });
+                var citiesButton = Array.prototype.find.call(buttons, function (button) {
+                    return button.textContent === 'Cities';
+                });
+
+                expect(countriesButton).not.toBeNull();
+                expect(countriesButton.title).toBe('Guess the country based on a text- and two picture hints. You have 5 hint levels and 3 guesses.');
+                expect(citiesButton).not.toBeNull();
+                expect(citiesButton.title).toBe('');
                 done();
             }).catch(function (err) {
                 done.fail(err);

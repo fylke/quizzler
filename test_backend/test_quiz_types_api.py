@@ -378,14 +378,43 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         # Score = 5 * 2 = 10
         self.assertEqual(data2["points"], 10)
 
+    def test_rerun_keeps_original_score_for_stats(self):
+        """Re-running a completed quiz must not overwrite the original stored score."""
+        # First run: solve immediately for 15 points (5 * 3)
+        self.client.get("/api/quiz/42")
+        first = self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.get_json()["points"], 15)
+
+        # Re-run the same quiz and score lower on this replay.
+        self.client.get("/api/quiz/42")
+        self.client.get("/api/hint")  # hint_difficulty 5 -> 4
+        replay = self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
+        self.assertEqual(replay.status_code, 200)
+
+        replay_data = replay.get_json()
+        self.assertTrue(replay_data["correct"])
+        self.assertEqual(replay_data["points"], 12)  # Attempt score (4 * 3)
+        self.assertTrue(replay_data["scorePreserved"])
+        self.assertEqual(replay_data["preservedScore"], 15)
+
+        # DB row remains at original completed score.
+        with app.app_context():
+            stored = QuizResult.query.filter_by(
+                user_id=self.test_user_id,
+                destination_id=42,
+            ).first()
+            self.assertIsNotNone(stored)
+            self.assertFalse(stored.ongoing)
+            self.assertEqual(stored.hint_difficulty * stored.remaining_guesses, 15)
+
     def test_media_endpoint_serves_files(self):
         """Requirement 5.5: /media/countries/{id}/{level}{a|b}.jpg path is served."""
         # The /media/<path:filename> route exists and responds
-        # (even if file doesn't exist on disk, the route should be registered)
+        # (protected hint images may return 403 when not unlocked)
         response = self.client.get("/media/countries/42/5a.jpg")
-        # Will be 404 because no actual file, but the route itself is active
-        # (not a 405 Method Not Allowed or similar)
-        self.assertIn(response.status_code, [200, 404])
+        # Route is active and enforces authorization (403) before file lookup (404).
+        self.assertIn(response.status_code, [200, 403, 404])
 
     def test_quiz_result_composite_key(self):
         """Requirement 5.4: Results stored with composite key (user_id, destination_id)."""

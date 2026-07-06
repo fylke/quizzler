@@ -10,9 +10,9 @@
     <div class="container">
         <div id="welcomeScreen" class="screen">
             <div class="welcome-content">
-                <h1 id="authHeading">✈️ Quizzler</h1>
+                <h1 id="authHeading">Quizzler</h1>
+                <p class="brand-subheading">The customizable quiz engine</p>
                 <p id="authSubtext">Log in to continue.</p>
-                <p id="guestRestrictionsWelcome" class="auth-toggle-link">Guest mode: progress is stored in this browser only and is lost if cookies are cleared.</p>
                 
                 <div class="input-group auth-group">
                     <input 
@@ -62,7 +62,7 @@
         <div id="statusScreen" class="screen hidden">
             <div class="status-content">
                 <h1>📊 Your Quiz Status</h1>
-                <p id="guestRestrictionsStatus" class="auth-toggle-link hidden">Guest mode: progress is browser-bound and may disappear if cookies are removed.</p>
+                <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can create an account at any time to retain your progress.</p>
                 <div class="stats-section">
                     <div class="stat-card">
                         <span class="stat-label">Cumulative Score</span>
@@ -78,13 +78,14 @@
                     </div>
                 </div>
 
+                <div class="status-separator" aria-hidden="true"></div>
+
                 <div class="quiz-actions">
                     <button onclick="showGuestUpgradeAuth()" class="btn btn-secondary hidden" id="guestUpgradeBtn">Create Account or Log In</button>
                     <div class="specific-quiz-section">
-                        <label for="specificQuizId">Run a specific quiz (enter ID):</label>
                         <div class="input-row">
-                            <input type="number" id="specificQuizId" placeholder="Quiz ID" min="1">
-                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Run Specific Quiz</button>
+                            <input type="text" id="specificQuizId" placeholder="Run quiz ID">
+                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
                         </div>
                     </div>
                     <button onclick="runRandomQuiz()" class="btn btn-primary" id="runRandomQuizBtn">Run Random Quiz</button>
@@ -300,13 +301,12 @@
     </div>
 
     <!-- Image Modal -->
-    <div id="imageModal" class="modal-overlay image-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="imageModalCaption">
+    <div id="imageModal" class="modal-overlay image-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Enlarged image">
         <div class="modal-card image-modal-card">
             <button type="button" id="imageModalPrevBtn" class="image-modal-nav image-modal-nav-prev" aria-label="Show previous hint image">&#8249;</button>
             <button type="button" id="imageModalNextBtn" class="image-modal-nav image-modal-nav-next" aria-label="Show next hint image">&#8250;</button>
             <button type="button" id="imageModalCloseBtn" class="image-modal-close" aria-label="Close enlarged image">×</button>
             <img id="imageModalImage" src="" alt="" class="image-modal-image">
-            <p id="imageModalCaption" class="image-modal-caption"></p>
         </div>
     </div>
 

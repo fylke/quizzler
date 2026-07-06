@@ -163,7 +163,7 @@ describe('Hint Review', function () {
         expect(document.getElementById('remainingGuesses').textContent).toBe('Remaining guesses: 2');
     });
 
-    it('starts clear and grows right-side overlay as hints advance', function () {
+    it('starts clear and grows left-to-right overlay as hints advance', function () {
         updateHintDisplay('Hardest hint', 5, 3);
         expect(document.getElementById('progressFill').style.width).toBe('0%');
 

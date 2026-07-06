@@ -4,6 +4,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
 
     var nameField, authSubtext, switchToRegister, switchToLogin, authButton, authHeading;
     var passwordStrengthContainer, fixtureContainer, emailInput, passwordInput, authError;
+    var initialHeadingText;
 
     beforeEach(function () {
         // Create DOM fixtures that replicate the welcome screen structure (unfixed code)
@@ -12,7 +13,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
         fixtureContainer.innerHTML =
             '<div id="welcomeScreen" class="screen">' +
                 '<div class="welcome-content">' +
-                    '<h1 id="authHeading">\u2708\uFE0F Quizzler</h1>' +
+                    '<h1 id="authHeading">Quizzler</h1>' +
                     '<p id="authSubtext">Log in or create an account to continue.</p>' +
                     '<div class="input-group auth-group">' +
                         '<input type="text" id="name" placeholder="Enter your name" maxlength="20" class="hidden">' +
@@ -40,6 +41,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
         switchToLogin = document.getElementById('switchToLogin');
         authButton = document.getElementById('authButton');
         authHeading = document.getElementById('authHeading');
+        initialHeadingText = authHeading.textContent;
         passwordStrengthContainer = document.getElementById('passwordStrengthContainer');
         emailInput = document.getElementById('email');
         passwordInput = document.getElementById('password');
@@ -58,7 +60,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
     // the register mode UI state is correct
     describe('Property: Register mode UI state after any toggle sequence', function () {
 
-        it('for any sequence of toggleAuthMode calls ending in register, name field is visible, button says "Create Account", heading and subtext are correct', function () {
+        it('for any sequence of toggleAuthMode calls ending in register, name field is visible, button says "Create Account", and the heading remains stable', function () {
             fc.assert(
                 fc.property(
                     fc.array(fc.constantFrom('login', 'register'), { minLength: 0, maxLength: 10 }),
@@ -81,8 +83,8 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
                         expect(nf.classList.contains('hidden')).toBe(false);
                         // authButton text is "Create Account"
                         expect(ab.textContent).toBe('Create Account');
-                        // authHeading text is "Create your account"
-                        expect(ah.textContent).toBe('Create your account');
+                        // authHeading remains the same regardless of auth mode
+                        expect(ah.textContent).toBe(initialHeadingText);
                         // authSubtext text is "Register and start the quiz."
                         expect(as.textContent).toBe('Register and start the quiz.');
                     }
@@ -96,7 +98,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
     // the login mode UI state is correct
     describe('Property: Login mode UI state after any toggle sequence', function () {
 
-        it('for any sequence of toggleAuthMode calls ending in login, name field is hidden, button says "Log In", heading is "Welcome Back", passwordStrengthContainer is hidden', function () {
+        it('for any sequence of toggleAuthMode calls ending in login, name field is hidden, button says "Log In", the heading remains stable, and passwordStrengthContainer is hidden', function () {
             fc.assert(
                 fc.property(
                     fc.array(fc.constantFrom('login', 'register'), { minLength: 0, maxLength: 10 }),
@@ -119,8 +121,8 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
                         expect(nf.classList.contains('hidden')).toBe(true);
                         // authButton text is "Log In"
                         expect(ab.textContent).toBe('Log In');
-                        // authHeading text is "Welcome Back"
-                        expect(ah.textContent).toBe('Welcome Back');
+                        // authHeading remains the same regardless of auth mode
+                        expect(ah.textContent).toBe(initialHeadingText);
                         // passwordStrengthContainer has class hidden
                         expect(psc.classList.contains('hidden')).toBe(true);
                     }

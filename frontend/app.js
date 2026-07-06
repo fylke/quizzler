@@ -160,11 +160,22 @@ async function continueAsGuest() {
     try {
         const response = await fetch(`${API_BASE}/api/guest-session`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            // No request body is sent for guest-session creation.
+            // Avoid sending JSON content-type to prevent strict parsers/proxies from rejecting an empty body.
+            credentials: 'same-origin'
         });
 
         if (!response.ok) {
-            showNotification('Unable to start guest session. Please try again.');
+            let errorMessage = 'Unable to start guest session. Please try again.';
+            try {
+                const errorPayload = await response.json();
+                if (typeof errorPayload?.error === 'string' && errorPayload.error.trim()) {
+                    errorMessage = errorPayload.error;
+                }
+            } catch (parseError) {
+                // Ignore non-JSON error responses and keep the generic message.
+            }
+            showNotification(errorMessage);
             return;
         }
 
@@ -184,6 +195,27 @@ async function continueAsGuest() {
 function showGuestUpgradeAuth() {
     clearAuthError();
     showScreen('welcomeScreen');
+}
+
+function updateGuestUpgradeVisibility() {
+    const guestRestrictions = document.getElementById('guestRestrictionsStatus');
+    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
+
+    if (guestRestrictions) {
+        if (quizState.isGuest) {
+            guestRestrictions.classList.remove('hidden');
+        } else {
+            guestRestrictions.classList.add('hidden');
+        }
+    }
+
+    if (guestUpgradeBtn) {
+        if (quizState.isGuest) {
+            guestUpgradeBtn.classList.remove('hidden');
+        } else {
+            guestUpgradeBtn.classList.add('hidden');
+        }
+    }
 }
 
 async function restoreActiveQuiz() {
@@ -221,7 +253,7 @@ function toggleAuthMode(mode) {
         authButton.textContent = 'Create Account';
         switchToRegister.classList.add('hidden');
         switchToLogin.classList.remove('hidden');
-        authHeading.textContent = 'Create your account';
+        authHeading.textContent = 'Quizzler';
         authSubtext.textContent = 'Register and start the quiz.';
         updatePasswordStrength();
     } else {
@@ -229,7 +261,7 @@ function toggleAuthMode(mode) {
         authButton.textContent = 'Log In';
         switchToRegister.classList.remove('hidden');
         switchToLogin.classList.add('hidden');
-        authHeading.textContent = 'Welcome Back';
+        authHeading.textContent = 'Quizzler';
         authSubtext.textContent = 'Log in to continue.';
         document.getElementById('passwordStrengthContainer').classList.add('hidden');
     }
@@ -320,6 +352,7 @@ async function handleAuth() {
         quizState.user = data;
         quizState.isGuest = false;
         csrfToken = data.csrfToken || null;
+        updateGuestUpgradeVisibility();
         showStatusScreen();
     } catch (error) {
         console.error('Auth error:', error);
@@ -340,6 +373,7 @@ async function handleLogout() {
     quizState.user = null;
     quizState.isGuest = false;
     csrfToken = null;
+    updateGuestUpgradeVisibility();
     showScreen('welcomeScreen');
 }
 
@@ -380,8 +414,14 @@ function renderQuizImages(images) {
     if (!Array.isArray(images) || images.length < 2) {
         return;
     }
-    wireZoomableImage(document.getElementById('image1'), images[0], 'Destination image 1');
-    wireZoomableImage(document.getElementById('image2'), images[1], 'Destination image 2');
+    wireZoomableImage(document.getElementById('image1'), images[0], 'Destination image 1', {
+        group: 'quiz-hint-images',
+        index: 0
+    });
+    wireZoomableImage(document.getElementById('image2'), images[1], 'Destination image 2', {
+        group: 'quiz-hint-images',
+        index: 1
+    });
 }
 
 async function loadQuestion() {
@@ -724,6 +764,9 @@ function renderHintFromState() {
 function renderImageGallery(container, imageUrls, variant = 'result') {
     if (!container) return;
     const images = Array.isArray(imageUrls) ? imageUrls.slice(0, 10) : [];
+    const lightboxGroup = container.id
+        ? `gallery-${container.id}`
+        : `gallery-${variant}`;
     container.innerHTML = '';
 
     if (images.length === 0) {
@@ -745,7 +788,10 @@ function renderImageGallery(container, imageUrls, variant = 'result') {
         }
 
         image.loading = 'lazy';
-        wireZoomableImage(image, url, `Additional destination image ${index + 1}`);
+        wireZoomableImage(image, url, `Additional destination image ${index + 1}`, {
+            group: lightboxGroup,
+            index
+        });
 
         imageContainer.appendChild(image);
         container.appendChild(imageContainer);
@@ -784,10 +830,15 @@ async function submitAnswer() {
         }
 
         if (result.correct) {
-            showFeedback(true, result.points, result.answer, result.resultImages || []);
+            showFeedback(true, result.points, result.answer, result.resultImages || [], {
+                scorePreserved: Boolean(result.scorePreserved),
+                preservedScore: Number.isFinite(Number(result.preservedScore))
+                    ? Number(result.preservedScore)
+                    : null
+            });
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
-            animateWrongGuess(answerInput);
+            await animateWrongGuess(answerInput);
             const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
                 ? result.images
                 : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);
@@ -801,7 +852,12 @@ async function submitAnswer() {
             submitting = false;
         } else {
             // Out of guesses
-            showFeedback(false, 0, result.answer, result.resultImages || []);
+            showFeedback(false, 0, result.answer, result.resultImages || [], {
+                scorePreserved: Boolean(result.scorePreserved),
+                preservedScore: Number.isFinite(Number(result.preservedScore))
+                    ? Number(result.preservedScore)
+                    : null
+            });
         }
     } catch (error) {
         console.error('Error checking answer:', error);
@@ -843,7 +899,7 @@ async function fetchHint() {
     }
 }
 
-function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
+function showFeedback(isCorrect, points, correctAnswer, resultImages = [], options = {}) {
     showScreen('feedbackScreen');
 
     const feedbackStatus = document.getElementById('feedbackStatus');
@@ -866,8 +922,15 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
     }
 
     // Store points in a data attribute for the results screen
-    document.getElementById('feedbackScreen').dataset.lastScore = points;
-    document.getElementById('feedbackScreen').dataset.resultImages = JSON.stringify(resultImages);
+    const feedbackScreenEl = document.getElementById('feedbackScreen');
+    feedbackScreenEl.dataset.lastScore = points;
+    feedbackScreenEl.dataset.resultImages = JSON.stringify(resultImages);
+    feedbackScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
+    if (Number.isFinite(options.preservedScore)) {
+        feedbackScreenEl.dataset.preservedScore = String(options.preservedScore);
+    } else {
+        delete feedbackScreenEl.dataset.preservedScore;
+    }
 
     const feedbackImagesHeading = document.getElementById('feedbackResultImagesHeading');
     const feedbackImagesContainer = document.getElementById('feedbackResultImages');
@@ -887,6 +950,8 @@ function endQuiz() {
     showScreen('resultsScreen');
     const feedbackScreen = document.getElementById('feedbackScreen');
     const score = parseInt(document.getElementById('feedbackScreen').dataset.lastScore || '0', 10);
+    const scorePreserved = feedbackScreen.dataset.scorePreserved === 'true';
+    const preservedScore = parseInt(feedbackScreen.dataset.preservedScore || '', 10);
     let resultImages = [];
     try {
         resultImages = JSON.parse(feedbackScreen.dataset.resultImages || '[]');
@@ -894,7 +959,8 @@ function endQuiz() {
         resultImages = [];
     }
 
-    document.getElementById('finalScore').textContent = score;
+    const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;
+    document.getElementById('finalScore').textContent = displayScore;
 
     let message = '';
     if (score >= 15) {
@@ -907,6 +973,10 @@ function endQuiz() {
         message = '📚 Not bad! Time to travel more!';
     } else {
         message = '🗺️ Keep learning about travel destinations!';
+    }
+
+    if (scorePreserved && Number.isFinite(preservedScore)) {
+        message += ` Replay result recorded, but your original score (${preservedScore}) is kept for stats.`;
     }
 
     document.getElementById('resultsMessage').textContent = message;
@@ -922,23 +992,7 @@ function retakeQuiz() {
 
 async function showStatusScreen() {
     showScreen('statusScreen');
-
-    const guestRestrictions = document.getElementById('guestRestrictionsStatus');
-    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
-    if (guestRestrictions) {
-        if (quizState.isGuest) {
-            guestRestrictions.classList.remove('hidden');
-        } else {
-            guestRestrictions.classList.add('hidden');
-        }
-    }
-    if (guestUpgradeBtn) {
-        if (quizState.isGuest) {
-            guestUpgradeBtn.classList.remove('hidden');
-        } else {
-            guestUpgradeBtn.classList.add('hidden');
-        }
-    }
+    updateGuestUpgradeVisibility();
 
     try {
         const response = await fetch(`${API_BASE}/api/stats`);
@@ -976,21 +1030,38 @@ async function loadQuizTypeButtons() {
         staticRunBtn.style.display = 'none';
     }
 
+    let quizTypeHeading = document.getElementById('availableQuizzesHeading');
     // Find or create the quiz type buttons container
     let quizTypeContainer = document.getElementById('quizTypeButtonsContainer');
+    const quizActions = document.querySelector('.quiz-actions');
+    if (!quizTypeHeading) {
+        quizTypeHeading = document.createElement('h2');
+        quizTypeHeading.id = 'availableQuizzesHeading';
+        quizTypeHeading.className = 'available-quizzes-heading';
+        quizTypeHeading.textContent = 'Available quizzes';
+    }
     if (!quizTypeContainer) {
         quizTypeContainer = document.createElement('div');
         quizTypeContainer.id = 'quizTypeButtonsContainer';
         quizTypeContainer.className = 'quiz-type-buttons-container';
-        // Insert before the admin link button
-        const quizActions = document.querySelector('.quiz-actions');
+        // Insert the heading and button list before the admin link button
         const adminLinkEl = quizActions ? quizActions.querySelector('#adminLink') : null;
         if (quizActions && adminLinkEl) {
+            quizActions.insertBefore(quizTypeHeading, adminLinkEl);
             quizActions.insertBefore(quizTypeContainer, adminLinkEl);
         } else if (quizActions && staticRunBtn && staticRunBtn.parentNode === quizActions) {
+            quizActions.insertBefore(quizTypeHeading, staticRunBtn.nextSibling);
             quizActions.insertBefore(quizTypeContainer, staticRunBtn.nextSibling);
         } else if (quizActions) {
+            quizActions.appendChild(quizTypeHeading);
             quizActions.appendChild(quizTypeContainer);
+        }
+    }
+    if (quizActions && quizTypeHeading.parentNode !== quizActions) {
+        if (quizTypeContainer.parentNode === quizActions) {
+            quizActions.insertBefore(quizTypeHeading, quizTypeContainer);
+        } else {
+            quizActions.appendChild(quizTypeHeading);
         }
     }
 
@@ -1022,6 +1093,9 @@ async function loadQuizTypeButtons() {
             const btn = document.createElement('button');
             btn.className = 'btn btn-primary quiz-type-btn';
             btn.textContent = type.displayName;
+            if (type.identifier === 'countries') {
+                btn.title = 'Guess the country based on a text- and two picture hints. You have 5 hint levels and 3 guesses.';
+            }
             btn.addEventListener('click', () => runRandomQuiz());
 
             const infoBtn = document.createElement('button');
@@ -1051,15 +1125,14 @@ async function runRandomQuiz() {
 
 async function runSpecificQuiz() {
     const quizId = document.getElementById('specificQuizId').value.trim();
-    if (!quizId) {
-        showNotification('Please enter a quiz ID.');
+    if (!/^[1-9]\d*$/.test(quizId)) {
+        showNotification('Quiz not found');
         return;
     }
     try {
         const response = await fetch(`${API_BASE}/api/quiz/${quizId}`);
         if (!response.ok) {
-            const err = await response.json();
-            showNotification(err.error || 'Quiz not found.');
+            showNotification('Quiz not found');
             return;
         }
         const data = await response.json();
@@ -1081,67 +1154,85 @@ async function runSpecificQuiz() {
  * - Cleans up all animation classes/styles on completion.
  *
  * @param {HTMLElement} inputElement - The input element (used for fallback/focus, animation targets #quizScreen)
+ * @returns {Promise<void>} Resolves after animation cleanup has completed.
  */
 function animateWrongGuess(inputElement) {
-    if (!inputElement) return;
+    return new Promise(resolve => {
+        if (!inputElement) {
+            resolve();
+            return;
+        }
 
-    const target = document.getElementById('quizScreen') || inputElement;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = document.getElementById('quizScreen') || inputElement;
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let resolved = false;
+        function finish() {
+            if (resolved) {
+                return;
+            }
+            resolved = true;
+            resolve();
+        }
 
-    if (prefersReducedMotion) {
-        // Static fallback: two-pulse glow animation (1.2s)
-        target.classList.remove('screen-fade-in');
-        target.classList.remove('wrong-guess-static');
-        void target.offsetWidth;
-        target.classList.add('wrong-guess-static');
-        setTimeout(() => {
+        if (prefersReducedMotion) {
+            // Static fallback: two-pulse glow animation (1.2s)
+            target.classList.remove('screen-fade-in');
             target.classList.remove('wrong-guess-static');
-        }, 1300);
-        return;
-    }
+            void target.offsetWidth;
+            target.classList.add('wrong-guess-static');
+            setTimeout(() => {
+                target.classList.remove('wrong-guess-static');
+                finish();
+            }, 1300);
+            return;
+        }
 
-    // Remove fade-in animation class to avoid conflict with wrong-guess animation
-    target.classList.remove('screen-fade-in');
+        // Remove fade-in animation class to avoid conflict with wrong-guess animation
+        target.classList.remove('screen-fade-in');
 
-    // Remove existing animation classes to allow re-trigger
-    target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
-
-    // Force reflow so re-adding classes restarts the animation
-    void target.offsetWidth;
-
-    // Apply animation classes
-    target.classList.add('wrong-guess-shake', 'wrong-guess-glow');
-
-    // Cleanup function to remove classes and residual inline styles
-    function cleanup() {
+        // Remove existing animation classes to allow re-trigger
         target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
-        target.style.removeProperty('left');
-        target.style.removeProperty('transform');
-        target.style.removeProperty('box-shadow');
-        target.style.removeProperty('border-color');
-        target.style.removeProperty('position');
-    }
 
-    // Listen for animationend to remove classes (once)
-    let cleaned = false;
-    function onAnimationEnd(e) {
-        // Only respond to animations on the target itself, not bubbled from children
-        if (e.target !== target) return;
-        if (cleaned) return;
-        cleaned = true;
-        cleanup();
-    }
+        // Force reflow so re-adding classes restarts the animation
+        void target.offsetWidth;
 
-    target.addEventListener('animationend', onAnimationEnd);
+        // Apply animation classes
+        target.classList.add('wrong-guess-shake', 'wrong-guess-glow');
 
-    // Defensive fallback: remove classes after 1500ms if animationend never fires
-    setTimeout(() => {
-        if (!cleaned) {
+        // Cleanup function to remove classes and residual inline styles
+        function cleanup() {
+            target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
+            target.style.removeProperty('left');
+            target.style.removeProperty('transform');
+            target.style.removeProperty('box-shadow');
+            target.style.removeProperty('border-color');
+            target.style.removeProperty('position');
+        }
+
+        // Listen for animationend to remove classes (once)
+        let cleaned = false;
+        function finishAnimation() {
+            if (cleaned) {
+                return;
+            }
             cleaned = true;
             target.removeEventListener('animationend', onAnimationEnd);
             cleanup();
+            finish();
         }
-    }, 1500);
+        function onAnimationEnd(e) {
+            // Only respond to animations on the target itself, not bubbled from children
+            if (e.target !== target) return;
+            finishAnimation();
+        }
+
+        target.addEventListener('animationend', onAnimationEnd);
+
+        // Defensive fallback: remove classes after 1500ms if animationend never fires
+        setTimeout(() => {
+            finishAnimation();
+        }, 1500);
+    });
 }
 
 // ==================== Initialization ====================
@@ -1151,6 +1242,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('answerInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             submitAnswer();
+        }
+    });
+
+    document.getElementById('specificQuizId')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            runSpecificQuiz();
         }
     });
 

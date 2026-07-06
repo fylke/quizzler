@@ -6,6 +6,7 @@ describe('Status Screen Stats', function () {
         'statsAverageScore'
     ];
     var statElements = {};
+    var statusSeparator;
     var adminLink;
     var originalQuizState;
 
@@ -27,6 +28,26 @@ describe('Status Screen Stats', function () {
             el.textContent = '0';
             statElements[id] = el;
         });
+
+        statusSeparator = document.getElementById('statusSeparator');
+        if (!statusSeparator) {
+            statusSeparator = document.createElement('div');
+            statusSeparator.id = 'statusSeparator';
+            statusSeparator.className = 'status-separator';
+            var statusContent = document.querySelector('#statusScreen .status-content');
+            if (statusContent) {
+                var statsSection = statusContent.querySelector('.stats-section');
+                if (statsSection && statsSection.nextSibling) {
+                    statusContent.insertBefore(statusSeparator, statsSection.nextSibling);
+                } else if (statsSection) {
+                    statusContent.appendChild(statusSeparator);
+                } else {
+                    statusContent.appendChild(statusSeparator);
+                }
+            } else {
+                document.body.appendChild(statusSeparator);
+            }
+        }
 
         // Set up adminLink element
         adminLink = document.getElementById('adminLink');
@@ -62,6 +83,7 @@ describe('Status Screen Stats', function () {
             expect(statElements['statsCumulativeScore'].textContent).toBe('42');
             expect(statElements['statsCompleted'].textContent).toBe('5');
             expect(statElements['statsAverageScore'].textContent).toBe('8.4');
+            expect(statusSeparator).not.toBeNull();
         });
     });
 

@@ -15,10 +15,9 @@ describe('Specific Quiz by ID', function () {
         fixtureContainer.innerHTML =
             '<div class="quiz-actions">' +
                 '<div class="specific-quiz-section">' +
-                    '<label for="specificQuizId">Run a specific quiz (enter ID):</label>' +
                     '<div class="input-row">' +
-                        '<input type="number" id="specificQuizId" placeholder="Quiz ID" min="1">' +
-                        '<button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Run Specific Quiz</button>' +
+                        '<input type="text" id="specificQuizId" placeholder="Run quiz ID">' +
+                        '<button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>' +
                     '</div>' +
                 '</div>' +
                 '<button id="runRandomQuizBtn">Run Random Quiz</button>' +
@@ -44,23 +43,22 @@ describe('Specific Quiz by ID', function () {
 
     describe('Requirement 6.1: Input field presence', function () {
 
-        it('has a numeric input field with min="1"', function () {
+        it('has a text input field', function () {
             var input = document.getElementById('specificQuizId');
             expect(input).not.toBeNull();
-            expect(input.type).toBe('number');
-            expect(input.min).toBe('1');
+            expect(input.type).toBe('text');
+            expect(input.placeholder).toBe('Run quiz ID');
         });
 
-        it('has a label "Run a specific quiz (enter ID)"', function () {
+        it('does not render a separate label for specific quiz input', function () {
             var label = fixtureContainer.querySelector('label[for="specificQuizId"]');
-            expect(label).not.toBeNull();
-            expect(label.textContent).toContain('Run a specific quiz (enter ID)');
+            expect(label).toBeNull();
         });
 
         it('has a submit button', function () {
             var btn = document.getElementById('runSpecificQuizBtn');
             expect(btn).not.toBeNull();
-            expect(btn.textContent).toContain('Run Specific Quiz');
+            expect(btn.textContent).toContain('Go');
         });
     });
 
@@ -74,7 +72,7 @@ describe('Specific Quiz by ID', function () {
 
             var notification = document.getElementById('appNotification');
             expect(notification).not.toBeNull();
-            expect(notification.textContent).toContain('quiz ID');
+            expect(notification.textContent).toContain('Quiz not found');
         });
 
         it('shows notification when quiz ID is whitespace only', function () {
@@ -85,7 +83,18 @@ describe('Specific Quiz by ID', function () {
 
             var notification = document.getElementById('appNotification');
             expect(notification).not.toBeNull();
-            expect(notification.textContent).toContain('quiz ID');
+            expect(notification.textContent).toContain('Quiz not found');
+        });
+
+        it('shows notification when quiz ID is non-numeric', function () {
+            var input = document.getElementById('specificQuizId');
+            input.value = 'abc';
+
+            runSpecificQuiz();
+
+            var notification = document.getElementById('appNotification');
+            expect(notification).not.toBeNull();
+            expect(notification.textContent).toContain('Quiz not found');
         });
     });
 
@@ -113,7 +122,7 @@ describe('Specific Quiz by ID', function () {
             setTimeout(function () {
                 var notification = document.getElementById('appNotification');
                 expect(notification).not.toBeNull();
-                expect(notification.textContent).toContain('not found');
+                expect(notification.textContent).toContain('Quiz not found');
                 done();
             }, 100);
         });
@@ -180,7 +189,7 @@ describe('Specific Quiz by ID', function () {
 
                 expect(input).not.toBeNull();
                 expect(btn).not.toBeNull();
-                expect(label).not.toBeNull();
+                expect(label).toBeNull();
                 done();
             }).catch(function (err) {
                 done.fail(err);

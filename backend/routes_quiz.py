@@ -5,7 +5,7 @@ import random
 import re
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, session
 
 from .auth import get_current_player, player_required
 from .email_service import EmailServiceError, send_hint_complaint_email
@@ -19,6 +19,7 @@ RESULT_IMAGE_PREFIX = "0"
 RESULT_IMAGE_MAX_COUNT = 10
 RESULT_IMAGE_NAME_RE = re.compile(r"^0.*\.jpg$", re.IGNORECASE)
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
 
 
 def _media_root() -> Path:
@@ -92,6 +93,51 @@ def _active_result_for_player(player):
     return None
 
 
+def _get_score_lock() -> dict | None:
+    lock = session.get(SCORE_LOCK_SESSION_KEY)
+    if not isinstance(lock, dict):
+        return None
+
+    required_keys = {"destination_id", "hint_difficulty", "remaining_guesses"}
+    if not required_keys.issubset(lock.keys()):
+        return None
+
+    try:
+        return {
+            "destination_id": int(lock["destination_id"]),
+            "hint_difficulty": int(lock["hint_difficulty"]),
+            "remaining_guesses": int(lock["remaining_guesses"]),
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _set_score_lock(destination_id: int, hint_difficulty: int, remaining_guesses: int):
+    session[SCORE_LOCK_SESSION_KEY] = {
+        "destination_id": int(destination_id),
+        "hint_difficulty": int(hint_difficulty),
+        "remaining_guesses": int(remaining_guesses),
+    }
+
+
+def _clear_score_lock():
+    session.pop(SCORE_LOCK_SESSION_KEY, None)
+
+
+def _restore_locked_score_if_needed(quiz_result) -> int | None:
+    """Restore preserved score fields for a rerun result when lock matches."""
+    lock = _get_score_lock()
+    if lock is None:
+        return None
+
+    if lock["destination_id"] != quiz_result.destination_id:
+        return None
+
+    quiz_result.hint_difficulty = lock["hint_difficulty"]
+    quiz_result.remaining_guesses = lock["remaining_guesses"]
+    return lock["hint_difficulty"] * lock["remaining_guesses"]
+
+
 def _result_for_player_and_destination(player, destination_id):
     if player.is_user:
         return QuizResult.query.filter_by(
@@ -108,16 +154,23 @@ def _result_for_player_and_destination(player, destination_id):
 
 def _end_active_quizzes_for_player(player):
     if player.is_user:
-        QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).update(
-            {"ongoing": False}
-        )
-        return
-
-    if player.is_guest:
-        GuestQuizResult.query.filter_by(
+        active_results = QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).all()
+    elif player.is_guest:
+        active_results = GuestQuizResult.query.filter_by(
             guest_session_id=player.guest_session_id,
             ongoing=True,
-        ).update({"ongoing": False})
+        ).all()
+    else:
+        active_results = []
+
+    for result in active_results:
+        _restore_locked_score_if_needed(result)
+        result.ongoing = False
+
+    if active_results:
+        db.session.commit()
+
+    _clear_score_lock()
 
 
 def _new_result_for_player(player, destination_id):
@@ -137,6 +190,15 @@ def _start_quiz_for_player(player, destination):
     _end_active_quizzes_for_player(player)
 
     quiz_result = _result_for_player_and_destination(player, destination.id)
+    if quiz_result is not None and not quiz_result.ongoing:
+        _set_score_lock(
+            destination_id=quiz_result.destination_id,
+            hint_difficulty=quiz_result.hint_difficulty,
+            remaining_guesses=quiz_result.remaining_guesses,
+        )
+    else:
+        _clear_score_lock()
+
     if quiz_result is None:
         quiz_result = _new_result_for_player(player, destination.id)
 
@@ -257,30 +319,44 @@ def check_answer():
     is_correct = user_answer in question.correct_answers
 
     if is_correct:
-        points = quiz_result.hint_difficulty * quiz_result.remaining_guesses
+        attempt_points = quiz_result.hint_difficulty * quiz_result.remaining_guesses
+        preserved_score = _restore_locked_score_if_needed(quiz_result)
+        score_preserved = preserved_score is not None
         quiz_result.ongoing = False
         db.session.commit()
+        _clear_score_lock()
+        response_payload = {
+            "correct": True,
+            "answer": question.name,
+            "points": attempt_points,
+            "scorePreserved": score_preserved,
+            "resultImages": _result_images_for_destination(question.id),
+        }
+        if score_preserved:
+            response_payload["preservedScore"] = preserved_score
         return jsonify(
-            {
-                "correct": True,
-                "answer": question.name,
-                "points": points,
-                "resultImages": _result_images_for_destination(question.id),
-            }
+            response_payload
         )
 
     # Wrong answer — decrement remaining guesses
     quiz_result.remaining_guesses -= 1
     if quiz_result.remaining_guesses <= 0:
+        preserved_score = _restore_locked_score_if_needed(quiz_result)
+        score_preserved = preserved_score is not None
         quiz_result.ongoing = False
         db.session.commit()
+        _clear_score_lock()
+        response_payload = {
+            "correct": False,
+            "answer": question.name,
+            "points": 0,
+            "scorePreserved": score_preserved,
+            "resultImages": _result_images_for_destination(question.id),
+        }
+        if score_preserved:
+            response_payload["preservedScore"] = preserved_score
         return jsonify(
-            {
-                "correct": False,
-                "answer": question.name,
-                "points": 0,
-                "resultImages": _result_images_for_destination(question.id),
-            }
+            response_payload
         )
 
     # Still has guesses left — keep same hint difficulty.
