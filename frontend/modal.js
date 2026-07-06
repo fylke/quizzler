@@ -52,7 +52,7 @@ function setupFocusTrap(modalId, closeCallback, focusableIds) {
     });
 }
 
-function wireZoomableImage(imageEl, imageUrl, altText) {
+function wireZoomableImage(imageEl, imageUrl, altText, lightboxOptions = null) {
     if (!imageEl) {
         return;
     }
@@ -63,6 +63,14 @@ function wireZoomableImage(imageEl, imageUrl, altText) {
     imageEl.setAttribute('role', 'button');
     imageEl.setAttribute('aria-label', `${altText}. Click to enlarge.`);
     imageEl.title = 'Click to enlarge';
+
+    if (lightboxOptions && lightboxOptions.group) {
+        imageEl.dataset.lightboxGroup = lightboxOptions.group;
+        imageEl.dataset.lightboxIndex = String(Number(lightboxOptions.index) || 0);
+    } else {
+        delete imageEl.dataset.lightboxGroup;
+        delete imageEl.dataset.lightboxIndex;
+    }
 
     const applyOrientationClass = () => {
         imageEl.classList.remove('is-portrait', 'is-landscape');
@@ -79,13 +87,13 @@ function wireZoomableImage(imageEl, imageUrl, altText) {
     }
 
     imageEl.onclick = function () {
-        openImageModal(imageUrl, altText);
+        openImageModal(imageUrl, altText, imageEl);
     };
 
     imageEl.onkeydown = function (event) {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            openImageModal(imageUrl, altText);
+            openImageModal(imageUrl, altText, imageEl);
         }
     };
 }
@@ -422,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // ==================== Image Modal ====================
 
 let _imageModalTrigger = null;
-let _imageModalHintPair = null;
+let _imageModalGallery = null;
 
 function _applyImageModalOrientationClass(modal, imageEl) {
     const cardEl = modal ? modal.querySelector('.image-modal-card') : null;
@@ -456,74 +464,82 @@ function _setImageModalContent(entry) {
     }
 }
 
-function _getHintPairFromTrigger(triggerEl) {
+function _getGalleryFromTrigger(triggerEl) {
     if (!triggerEl) {
         return null;
     }
 
-    const isHintImage = triggerEl.id === 'image1' || triggerEl.id === 'image2';
-    if (!isHintImage) {
+    const groupName = triggerEl.dataset ? triggerEl.dataset.lightboxGroup : '';
+    if (!groupName) {
         return null;
     }
 
-    const image1 = document.getElementById('image1');
-    const image2 = document.getElementById('image2');
-    if (!image1 || !image2 || !image1.src || !image2.src) {
+    const groupItems = Array.from(document.querySelectorAll('img[data-lightbox-group]'))
+        .filter(item => item.dataset.lightboxGroup === groupName && item.src)
+        .sort((a, b) => Number(a.dataset.lightboxIndex || 0) - Number(b.dataset.lightboxIndex || 0));
+
+    if (groupItems.length === 0) {
         return null;
     }
 
-    const items = [
-        { url: image1.src, alt: image1.alt || 'Destination image 1', trigger: image1 },
-        { url: image2.src, alt: image2.alt || 'Destination image 2', trigger: image2 }
-    ];
+    const items = groupItems.map((item, index) => ({
+        url: item.src,
+        alt: item.alt || `Destination image ${index + 1}`,
+        trigger: item
+    }));
 
-    const currentIndex = triggerEl.id === 'image2' ? 1 : 0;
+    const selectedIndex = Number(triggerEl.dataset.lightboxIndex);
+    const fallbackIndex = items.findIndex(item => item.trigger === triggerEl);
+    const currentIndex = Number.isFinite(selectedIndex)
+        ? Math.min(Math.max(selectedIndex, 0), items.length - 1)
+        : Math.max(fallbackIndex, 0);
+
     return { items, index: currentIndex };
 }
 
 function _updateImageModalNavigation() {
     const prevBtn = document.getElementById('imageModalPrevBtn');
     const nextBtn = document.getElementById('imageModalNextBtn');
-    const hasPair = Boolean(_imageModalHintPair && Array.isArray(_imageModalHintPair.items) && _imageModalHintPair.items.length > 1);
+    const hasGalleryNavigation = Boolean(_imageModalGallery && Array.isArray(_imageModalGallery.items) && _imageModalGallery.items.length > 1);
 
     [prevBtn, nextBtn].forEach(btn => {
         if (!btn) {
             return;
         }
-        btn.classList.toggle('hidden', !hasPair);
-        btn.disabled = !hasPair;
+        btn.classList.toggle('hidden', !hasGalleryNavigation);
+        btn.disabled = !hasGalleryNavigation;
     });
 }
 
 function navigateImageModal(step) {
-    if (!_imageModalHintPair || !_imageModalHintPair.items.length) {
+    if (!_imageModalGallery || !_imageModalGallery.items.length) {
         return;
     }
 
-    const total = _imageModalHintPair.items.length;
-    const nextIndex = (_imageModalHintPair.index + step + total) % total;
-    _imageModalHintPair.index = nextIndex;
+    const total = _imageModalGallery.items.length;
+    const nextIndex = (_imageModalGallery.index + step + total) % total;
+    _imageModalGallery.index = nextIndex;
 
-    const nextEntry = _imageModalHintPair.items[nextIndex];
+    const nextEntry = _imageModalGallery.items[nextIndex];
     _setImageModalContent(nextEntry);
     _imageModalTrigger = nextEntry.trigger;
 }
 
-function openImageModal(imageUrl, altText) {
+function openImageModal(imageUrl, altText, triggerEl) {
     const modal = document.getElementById('imageModal');
     const closeBtn = document.getElementById('imageModalCloseBtn');
-    const trigger = document.activeElement;
+    const trigger = triggerEl || document.activeElement;
 
     if (!modal) {
         return;
     }
 
     _imageModalTrigger = trigger;
-    _imageModalHintPair = _getHintPairFromTrigger(trigger);
+    _imageModalGallery = _getGalleryFromTrigger(trigger);
     _updateImageModalNavigation();
 
-    if (_imageModalHintPair) {
-        _setImageModalContent(_imageModalHintPair.items[_imageModalHintPair.index]);
+    if (_imageModalGallery) {
+        _setImageModalContent(_imageModalGallery.items[_imageModalGallery.index]);
     } else {
         _setImageModalContent({ url: imageUrl, alt: altText, trigger });
     }
@@ -552,6 +568,6 @@ function closeImageModal() {
     if (_imageModalTrigger && typeof _imageModalTrigger.focus === 'function') {
         _imageModalTrigger.focus();
     }
-    _imageModalHintPair = null;
+    _imageModalGallery = null;
     _imageModalTrigger = null;
 }

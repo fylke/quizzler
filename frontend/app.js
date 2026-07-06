@@ -403,8 +403,14 @@ function renderQuizImages(images) {
     if (!Array.isArray(images) || images.length < 2) {
         return;
     }
-    wireZoomableImage(document.getElementById('image1'), images[0], 'Destination image 1');
-    wireZoomableImage(document.getElementById('image2'), images[1], 'Destination image 2');
+    wireZoomableImage(document.getElementById('image1'), images[0], 'Destination image 1', {
+        group: 'quiz-hint-images',
+        index: 0
+    });
+    wireZoomableImage(document.getElementById('image2'), images[1], 'Destination image 2', {
+        group: 'quiz-hint-images',
+        index: 1
+    });
 }
 
 async function loadQuestion() {
@@ -747,6 +753,9 @@ function renderHintFromState() {
 function renderImageGallery(container, imageUrls, variant = 'result') {
     if (!container) return;
     const images = Array.isArray(imageUrls) ? imageUrls.slice(0, 10) : [];
+    const lightboxGroup = container.id
+        ? `gallery-${container.id}`
+        : `gallery-${variant}`;
     container.innerHTML = '';
 
     if (images.length === 0) {
@@ -768,7 +777,10 @@ function renderImageGallery(container, imageUrls, variant = 'result') {
         }
 
         image.loading = 'lazy';
-        wireZoomableImage(image, url, `Additional destination image ${index + 1}`);
+        wireZoomableImage(image, url, `Additional destination image ${index + 1}`, {
+            group: lightboxGroup,
+            index
+        });
 
         imageContainer.appendChild(image);
         container.appendChild(imageContainer);
