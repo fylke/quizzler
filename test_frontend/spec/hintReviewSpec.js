@@ -152,7 +152,7 @@ describe('Hint Review', function () {
         expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-3p)');
 
         updateHintDisplay('Easiest hint', 1, 2);
-        expect(document.getElementById('nextHintCostPreview').textContent).toBe('(-0p)');
+        expect(document.getElementById('nextHintCostPreview').textContent).toBe('No more hints, might as well guess now!');
     });
 
     it('shows remaining guesses in the top-right counter', function () {
@@ -183,6 +183,6 @@ describe('Hint Review', function () {
         setTimeout(function () {
             expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');
             done();
-        }, 320);
+        }, 360);
     });
 });
