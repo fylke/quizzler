@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import UTC, datetime
 
 # Shared SQLAlchemy instance used by the app and tests
 # Flask-SQLAlchemy will bind this to the Flask app in src/main/__init__.py
@@ -47,6 +48,42 @@ class QuizResult(db.Model):
 
     user = db.relationship('User', back_populates='results')
     country = db.relationship('Destination', back_populates='results')
+
+
+def _utcnow_naive() -> datetime:
+    """Return current UTC time as a naive datetime for DB storage."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+class GuestSession(db.Model):
+    __tablename__ = 'guest_session'
+
+    id = db.Column(db.Integer, primary_key=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
+
+    results = db.relationship(
+        'GuestQuizResult',
+        back_populates='guest_session',
+        cascade='all, delete-orphan'
+    )
+
+
+class GuestQuizResult(db.Model):
+    __tablename__ = 'guest_quiz_result'
+
+    guest_session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('guest_session.id'),
+        primary_key=True,
+    )
+    destination_id = db.Column(db.Integer, db.ForeignKey('countries.id'), primary_key=True)
+    hint_difficulty = db.Column(db.Integer, nullable=False, default=5)
+    remaining_guesses = db.Column(db.Integer, nullable=False, default=3)
+    ongoing = db.Column(db.Boolean, nullable=False, default=True)
+
+    guest_session = db.relationship('GuestSession', back_populates='results')
+    country = db.relationship('Destination')
 
 
 class PasswordResetToken(db.Model):

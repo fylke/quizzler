@@ -9,10 +9,17 @@ from flask import Blueprint, current_app, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .auth import (
+    GUEST_TOKEN_COOKIE,
+    GUEST_TOKEN_MAX_AGE_SECONDS,
+    check_csrf_token,
     csrf_protected,
+    create_guest_session,
+    delete_guest_session,
     generate_csrf_token,
+    get_current_guest_session,
     get_current_user,
     login_user_session,
+    migrate_guest_session_to_user,
     user_response,
 )
 from .email_service import EmailServiceError, send_password_reset_email
@@ -27,6 +34,21 @@ _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 _FUNNY_NAMES = (Path(__file__).parent / "assets" / "names.txt").read_text().splitlines()
 _FUNNY_NAMES = [n for n in _FUNNY_NAMES if n.strip()]
+
+
+def _guest_payload(guest_session):
+    return {
+        "guest": {
+            "id": guest_session.id,
+            "name": f"Guest #{guest_session.id}",
+            "isGuest": True,
+        }
+    }
+
+
+def _clear_guest_cookie(response):
+    response.delete_cookie(GUEST_TOKEN_COOKIE, samesite="Lax")
+    return response
 
 
 @auth_bp.route("/api/register", methods=["POST"])
@@ -60,8 +82,15 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    guest_session = get_current_guest_session()
+    if guest_session is not None:
+        migrate_guest_session_to_user(user, guest_session)
+
     login_user_session(user)
-    return jsonify(user_response(user))
+    response = jsonify(user_response(user))
+    if guest_session is not None:
+        _clear_guest_cookie(response)
+    return response
 
 
 @auth_bp.route("/api/login", methods=["POST"])
@@ -77,14 +106,36 @@ def login():
     if user is None or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Invalid credentials"}), 401
 
+    guest_session = get_current_guest_session()
+    if guest_session is not None:
+        migrate_guest_session_to_user(user, guest_session)
+
     login_user_session(user)
-    return jsonify(user_response(user))
+    response = jsonify(user_response(user))
+    if guest_session is not None:
+        _clear_guest_cookie(response)
+    return response
 
 
 @auth_bp.route("/api/logout", methods=["POST"])
-@csrf_protected
 def logout():
-    session.clear()
+    user = get_current_user()
+    guest_session = get_current_guest_session()
+
+    if user is not None:
+        if not check_csrf_token():
+            return jsonify({"error": "Invalid or missing CSRF token"}), 403
+        session.clear()
+        response = jsonify({"message": "Logged out"})
+        if guest_session is not None:
+            _clear_guest_cookie(response)
+        return response
+
+    if guest_session is not None:
+        delete_guest_session(guest_session)
+        response = jsonify({"message": "Logged out"})
+        return _clear_guest_cookie(response)
+
     return jsonify({"message": "Logged out"})
 
 
@@ -94,6 +145,39 @@ def me():
     if user is None:
         return jsonify({"error": "Not authenticated"}), 401
     return jsonify(user_response(user))
+
+
+@auth_bp.route("/api/guest-session", methods=["GET", "POST"])
+def create_or_restore_guest_session():
+    """Create or restore a guest session and return guest identity metadata."""
+    user = get_current_user()
+    if user is not None:
+        return jsonify(user_response(user))
+
+    guest_session = get_current_guest_session()
+
+    if request.method == "GET":
+        if guest_session is None:
+            return jsonify({"error": "No guest session"}), 404
+        return jsonify(_guest_payload(guest_session))
+
+    raw_token = None
+
+    if guest_session is None:
+        guest_session, raw_token = create_guest_session()
+
+    response = jsonify(_guest_payload(guest_session))
+    if raw_token:
+        response.set_cookie(
+            GUEST_TOKEN_COOKIE,
+            raw_token,
+            max_age=GUEST_TOKEN_MAX_AGE_SECONDS,
+            httponly=True,
+            secure=current_app.config.get("SESSION_COOKIE_SECURE", False),
+            samesite="Lax",
+        )
+
+    return response
 
 
 @auth_bp.route("/api/forgot-password", methods=["POST"])

@@ -12,6 +12,7 @@
             <div class="welcome-content">
                 <h1 id="authHeading">✈️ Quizzler</h1>
                 <p id="authSubtext">Log in to continue.</p>
+                <p id="guestRestrictionsWelcome" class="auth-toggle-link">Guest mode: progress is stored in this browser only and is lost if cookies are cleared.</p>
                 
                 <div class="input-group auth-group">
                     <input 
@@ -44,6 +45,7 @@
                         <span id="passwordStrengthLabel" class="password-strength-label"></span>
                     </div>
                     <button onclick="handleAuth()" class="btn btn-primary" id="authButton">Log In</button>
+                    <button onclick="continueAsGuest()" class="btn btn-secondary" id="guestButton">Continue as Guest</button>
                     <p class="auth-error" id="authError" style="display: none;"></p>
                 </div>
 
@@ -60,6 +62,7 @@
         <div id="statusScreen" class="screen hidden">
             <div class="status-content">
                 <h1>📊 Your Quiz Status</h1>
+                <p id="guestRestrictionsStatus" class="auth-toggle-link hidden">Guest mode: progress is browser-bound and may disappear if cookies are removed.</p>
                 <div class="stats-section">
                     <div class="stat-card">
                         <span class="stat-label">Cumulative Score</span>
@@ -76,6 +79,7 @@
                 </div>
 
                 <div class="quiz-actions">
+                    <button onclick="showGuestUpgradeAuth()" class="btn btn-secondary hidden" id="guestUpgradeBtn">Create Account or Log In</button>
                     <div class="specific-quiz-section">
                         <label for="specificQuizId">Run a specific quiz (enter ID):</label>
                         <div class="input-row">

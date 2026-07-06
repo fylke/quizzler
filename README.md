@@ -107,6 +107,23 @@ uv run e2e-test
 
 ## Running the Application
 
+## Guest Mode
+
+You can now play quizzes without creating an account by clicking **Continue as Guest** on the welcome screen.
+
+Guest mode behavior:
+
+- Quiz progress and scoring are tracked server-side.
+- The browser stores a guest token cookie that links to that server-side state.
+- You can run random/specific quizzes, use hints, submit answers, view quiz rules, and see stats.
+- You can create an account or log in later and keep your guest progress.
+
+Guest restrictions:
+
+- Guest progress is bound to the current browser cookie.
+- Clearing cookies (or moving to another browser/device) loses guest progress.
+- Account-only features (for example admin access and account-based continuity) still require login.
+
 ### Podman
 
 #### Prerequisites

@@ -101,8 +101,10 @@ def base_url(app_server):
 def clean_db(app_server):
     """Reset user data between tests while keeping destinations."""
     with app.app_context():
-        from backend.models import User, QuizResult
+        from backend.models import GuestQuizResult, GuestSession, QuizResult, User
 
+        GuestQuizResult.query.delete()
+        GuestSession.query.delete()
         QuizResult.query.delete()
         User.query.delete()
         db.session.commit()

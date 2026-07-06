@@ -37,6 +37,17 @@ def test_register_new_user(page: Page, base_url: str):
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
 
 
+def test_continue_as_guest_shows_status_and_restrictions(page: Page, base_url: str):
+    """Guest mode can be entered from the welcome screen and shows restrictions."""
+    page.goto(base_url)
+
+    page.click("#guestButton")
+
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#guestRestrictionsStatus")).to_be_visible()
+    expect(page.locator("#guestUpgradeBtn")).to_be_visible()
+
+
 def test_login_with_invalid_credentials(page: Page, base_url: str):
     """Login with wrong credentials should show an error."""
     page.goto(base_url)
