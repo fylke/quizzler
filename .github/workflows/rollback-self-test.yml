@@ -1,6 +1,6 @@
 name: Rollback Self-Test
 
-"on":
+on:
   schedule:
     - cron: "15 4 * * 1"
   workflow_dispatch:
