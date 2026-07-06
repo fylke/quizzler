@@ -119,16 +119,41 @@ just test
 
 This will install the test dependency group and then run backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence.
 
+`just test` now randomizes test/spec execution order by default and prints the per-suite seeds it used.
+
 If you prefer running the equivalent commands directly:
 
 ```bash
 uv sync --group test
-uv run python -m unittest discover -s test_backend -p 'test_*.py'
+just backend
 just frontend
-uv run --group test python -m pytest test_e2e/
+just e2e
 ```
 
 This runs backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence. The frontend step is now executed directly from the `justfile` and no longer uses a separate wrapper script.
+
+## Randomized Test Order
+
+Randomized ordering is the default for backend, frontend, e2e, and the aggregate `test` target.
+
+Run randomized suites with auto-generated seeds:
+
+```bash
+just backend
+just frontend
+just e2e
+just test
+```
+
+Use a fixed seed to reproduce a failure:
+
+```bash
+just backend 12345
+just frontend 12345
+just e2e 12345
+```
+
+The backend and e2e randomized commands use `pytest-randomly`.
 
 ## Running E2E Tests
 

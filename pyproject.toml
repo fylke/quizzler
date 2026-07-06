@@ -24,6 +24,7 @@ seed-db = "scripts.seed_db:seed"
 [dependency-groups]
 test = [
     "pytest>=8.0,<9.0",
+    "pytest-randomly>=3.15,<4.0",
     "pytest-playwright>=0.5,<1.0",
     "hypothesis>=6.0,<7.0",
 ]

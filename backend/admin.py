@@ -1,5 +1,7 @@
 """Admin helpers for destination validation and normalization."""
 
+from urllib.parse import urlparse
+
 from .validation_rules import (
     ANSWER_MAX_LENGTH,
     ANSWERS_MAX_COUNT,
@@ -55,6 +57,30 @@ def validate_destination_payload(data: dict) -> tuple[bool, list[str]]:
                 errors.append(
                     f"hints[{i}]: must be between 1 and {HINT_MAX_LENGTH} characters"
                 )
+
+    # --- correct_answers validation ---
+    # Images are currently optional in payloads, but if provided they must be
+    # a bounded list of valid HTTP(S) URLs.
+    images = data.get("images")
+    if images is not None:
+        if not isinstance(images, list):
+            errors.append("images: must be a list")
+        elif len(images) < IMAGES_MIN_COUNT or len(images) > IMAGES_MAX_COUNT:
+            errors.append(
+                f"images: must contain between {IMAGES_MIN_COUNT} and {IMAGES_MAX_COUNT} items"
+            )
+        else:
+            for i, image_url in enumerate(images):
+                if not isinstance(image_url, str):
+                    errors.append(f"images[{i}]: must be a string")
+                    continue
+                candidate = image_url.strip()
+                if len(candidate) == 0:
+                    errors.append(f"images[{i}]: must not be blank")
+                    continue
+                parsed = urlparse(candidate)
+                if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                    errors.append(f"images[{i}]: must be a valid http(s) URL")
 
     # --- correct_answers validation ---
     correct_answers = data.get("correct_answers")
