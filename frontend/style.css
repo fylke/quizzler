@@ -369,7 +369,7 @@ body {
 
 .progress-fill {
     position: absolute;
-    right: 0;
+    left: 0;
     top: 0;
     height: 100%;
     background: rgba(255, 255, 255, 0.55);
@@ -388,6 +388,8 @@ body {
     font-size: 1.3em;
     color: #333;
     line-height: 1.6;
+    min-height: calc(1.6em * 2);
+    margin: 0;
 }
 
 .images-section {
@@ -434,10 +436,12 @@ body {
     border: 1px solid #d9e3ff;
     border-radius: 12px;
     padding: 12px 14px;
+    height: 96px;
+    overflow-y: auto;
 }
 
 .hint-review.hidden {
-    display: none;
+    visibility: hidden;
 }
 
 .hint-review-label {
