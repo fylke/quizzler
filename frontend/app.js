@@ -160,11 +160,22 @@ async function continueAsGuest() {
     try {
         const response = await fetch(`${API_BASE}/api/guest-session`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            // No request body is sent for guest-session creation.
+            // Avoid sending JSON content-type to prevent strict parsers/proxies from rejecting an empty body.
+            credentials: 'same-origin'
         });
 
         if (!response.ok) {
-            showNotification('Unable to start guest session. Please try again.');
+            let errorMessage = 'Unable to start guest session. Please try again.';
+            try {
+                const errorPayload = await response.json();
+                if (typeof errorPayload?.error === 'string' && errorPayload.error.trim()) {
+                    errorMessage = errorPayload.error;
+                }
+            } catch (parseError) {
+                // Ignore non-JSON error responses and keep the generic message.
+            }
+            showNotification(errorMessage);
             return;
         }
 
