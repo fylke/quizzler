@@ -819,7 +819,12 @@ async function submitAnswer() {
         }
 
         if (result.correct) {
-            showFeedback(true, result.points, result.answer, result.resultImages || []);
+            showFeedback(true, result.points, result.answer, result.resultImages || [], {
+                scorePreserved: Boolean(result.scorePreserved),
+                preservedScore: Number.isFinite(Number(result.preservedScore))
+                    ? Number(result.preservedScore)
+                    : null
+            });
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
             await animateWrongGuess(answerInput);
@@ -836,7 +841,12 @@ async function submitAnswer() {
             submitting = false;
         } else {
             // Out of guesses
-            showFeedback(false, 0, result.answer, result.resultImages || []);
+            showFeedback(false, 0, result.answer, result.resultImages || [], {
+                scorePreserved: Boolean(result.scorePreserved),
+                preservedScore: Number.isFinite(Number(result.preservedScore))
+                    ? Number(result.preservedScore)
+                    : null
+            });
         }
     } catch (error) {
         console.error('Error checking answer:', error);
@@ -878,7 +888,7 @@ async function fetchHint() {
     }
 }
 
-function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
+function showFeedback(isCorrect, points, correctAnswer, resultImages = [], options = {}) {
     showScreen('feedbackScreen');
 
     const feedbackStatus = document.getElementById('feedbackStatus');
@@ -901,8 +911,15 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = []) {
     }
 
     // Store points in a data attribute for the results screen
-    document.getElementById('feedbackScreen').dataset.lastScore = points;
-    document.getElementById('feedbackScreen').dataset.resultImages = JSON.stringify(resultImages);
+    const feedbackScreenEl = document.getElementById('feedbackScreen');
+    feedbackScreenEl.dataset.lastScore = points;
+    feedbackScreenEl.dataset.resultImages = JSON.stringify(resultImages);
+    feedbackScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
+    if (Number.isFinite(options.preservedScore)) {
+        feedbackScreenEl.dataset.preservedScore = String(options.preservedScore);
+    } else {
+        delete feedbackScreenEl.dataset.preservedScore;
+    }
 
     const feedbackImagesHeading = document.getElementById('feedbackResultImagesHeading');
     const feedbackImagesContainer = document.getElementById('feedbackResultImages');
@@ -922,6 +939,8 @@ function endQuiz() {
     showScreen('resultsScreen');
     const feedbackScreen = document.getElementById('feedbackScreen');
     const score = parseInt(document.getElementById('feedbackScreen').dataset.lastScore || '0', 10);
+    const scorePreserved = feedbackScreen.dataset.scorePreserved === 'true';
+    const preservedScore = parseInt(feedbackScreen.dataset.preservedScore || '', 10);
     let resultImages = [];
     try {
         resultImages = JSON.parse(feedbackScreen.dataset.resultImages || '[]');
@@ -929,7 +948,8 @@ function endQuiz() {
         resultImages = [];
     }
 
-    document.getElementById('finalScore').textContent = score;
+    const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;
+    document.getElementById('finalScore').textContent = displayScore;
 
     let message = '';
     if (score >= 15) {
@@ -942,6 +962,10 @@ function endQuiz() {
         message = '📚 Not bad! Time to travel more!';
     } else {
         message = '🗺️ Keep learning about travel destinations!';
+    }
+
+    if (scorePreserved && Number.isFinite(preservedScore)) {
+        message += ` Replay result recorded, but your original score (${preservedScore}) is kept for stats.`;
     }
 
     document.getElementById('resultsMessage').textContent = message;
