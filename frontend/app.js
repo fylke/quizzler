@@ -186,6 +186,27 @@ function showGuestUpgradeAuth() {
     showScreen('welcomeScreen');
 }
 
+function updateGuestUpgradeVisibility() {
+    const guestRestrictions = document.getElementById('guestRestrictionsStatus');
+    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
+
+    if (guestRestrictions) {
+        if (quizState.isGuest) {
+            guestRestrictions.classList.remove('hidden');
+        } else {
+            guestRestrictions.classList.add('hidden');
+        }
+    }
+
+    if (guestUpgradeBtn) {
+        if (quizState.isGuest) {
+            guestUpgradeBtn.classList.remove('hidden');
+        } else {
+            guestUpgradeBtn.classList.add('hidden');
+        }
+    }
+}
+
 async function restoreActiveQuiz() {
     try {
         const response = await fetch(`${API_BASE}/api/quiz/active`);
@@ -320,6 +341,7 @@ async function handleAuth() {
         quizState.user = data;
         quizState.isGuest = false;
         csrfToken = data.csrfToken || null;
+        updateGuestUpgradeVisibility();
         showStatusScreen();
     } catch (error) {
         console.error('Auth error:', error);
@@ -340,6 +362,7 @@ async function handleLogout() {
     quizState.user = null;
     quizState.isGuest = false;
     csrfToken = null;
+    updateGuestUpgradeVisibility();
     showScreen('welcomeScreen');
 }
 
@@ -922,23 +945,7 @@ function retakeQuiz() {
 
 async function showStatusScreen() {
     showScreen('statusScreen');
-
-    const guestRestrictions = document.getElementById('guestRestrictionsStatus');
-    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
-    if (guestRestrictions) {
-        if (quizState.isGuest) {
-            guestRestrictions.classList.remove('hidden');
-        } else {
-            guestRestrictions.classList.add('hidden');
-        }
-    }
-    if (guestUpgradeBtn) {
-        if (quizState.isGuest) {
-            guestUpgradeBtn.classList.remove('hidden');
-        } else {
-            guestUpgradeBtn.classList.add('hidden');
-        }
-    }
+    updateGuestUpgradeVisibility();
 
     try {
         const response = await fetch(`${API_BASE}/api/stats`);
@@ -976,21 +983,38 @@ async function loadQuizTypeButtons() {
         staticRunBtn.style.display = 'none';
     }
 
+    let quizTypeHeading = document.getElementById('availableQuizzesHeading');
     // Find or create the quiz type buttons container
     let quizTypeContainer = document.getElementById('quizTypeButtonsContainer');
+    const quizActions = document.querySelector('.quiz-actions');
+    if (!quizTypeHeading) {
+        quizTypeHeading = document.createElement('h2');
+        quizTypeHeading.id = 'availableQuizzesHeading';
+        quizTypeHeading.className = 'available-quizzes-heading';
+        quizTypeHeading.textContent = 'Available quizzes';
+    }
     if (!quizTypeContainer) {
         quizTypeContainer = document.createElement('div');
         quizTypeContainer.id = 'quizTypeButtonsContainer';
         quizTypeContainer.className = 'quiz-type-buttons-container';
-        // Insert before the admin link button
-        const quizActions = document.querySelector('.quiz-actions');
+        // Insert the heading and button list before the admin link button
         const adminLinkEl = quizActions ? quizActions.querySelector('#adminLink') : null;
         if (quizActions && adminLinkEl) {
+            quizActions.insertBefore(quizTypeHeading, adminLinkEl);
             quizActions.insertBefore(quizTypeContainer, adminLinkEl);
         } else if (quizActions && staticRunBtn && staticRunBtn.parentNode === quizActions) {
+            quizActions.insertBefore(quizTypeHeading, staticRunBtn.nextSibling);
             quizActions.insertBefore(quizTypeContainer, staticRunBtn.nextSibling);
         } else if (quizActions) {
+            quizActions.appendChild(quizTypeHeading);
             quizActions.appendChild(quizTypeContainer);
+        }
+    }
+    if (quizActions && quizTypeHeading.parentNode !== quizActions) {
+        if (quizTypeContainer.parentNode === quizActions) {
+            quizActions.insertBefore(quizTypeHeading, quizTypeContainer);
+        } else {
+            quizActions.appendChild(quizTypeHeading);
         }
     }
 
@@ -1051,15 +1075,14 @@ async function runRandomQuiz() {
 
 async function runSpecificQuiz() {
     const quizId = document.getElementById('specificQuizId').value.trim();
-    if (!quizId) {
-        showNotification('Please enter a quiz ID.');
+    if (!/^[1-9]\d*$/.test(quizId)) {
+        showNotification('Quiz not found');
         return;
     }
     try {
         const response = await fetch(`${API_BASE}/api/quiz/${quizId}`);
         if (!response.ok) {
-            const err = await response.json();
-            showNotification(err.error || 'Quiz not found.');
+            showNotification('Quiz not found');
             return;
         }
         const data = await response.json();
@@ -1151,6 +1174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('answerInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             submitAnswer();
+        }
+    });
+
+    document.getElementById('specificQuizId')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            runSpecificQuiz();
         }
     });
 

@@ -78,13 +78,14 @@
                     </div>
                 </div>
 
+                <div class="status-separator" aria-hidden="true"></div>
+
                 <div class="quiz-actions">
                     <button onclick="showGuestUpgradeAuth()" class="btn btn-secondary hidden" id="guestUpgradeBtn">Create Account or Log In</button>
                     <div class="specific-quiz-section">
-                        <label for="specificQuizId">Run a specific quiz (enter ID):</label>
                         <div class="input-row">
-                            <input type="number" id="specificQuizId" placeholder="Quiz ID" min="1">
-                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Run Specific Quiz</button>
+                            <input type="text" id="specificQuizId" placeholder="Run quiz ID">
+                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
                         </div>
                     </div>
                     <button onclick="runRandomQuiz()" class="btn btn-primary" id="runRandomQuizBtn">Run Random Quiz</button>

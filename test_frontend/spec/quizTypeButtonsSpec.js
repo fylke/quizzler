@@ -85,11 +85,14 @@ describe('Quiz Type Buttons - Property Tests', function () {
             mockFetchSuccess(quizTypes);
 
             loadQuizTypeButtons().then(function () {
+                var heading = document.getElementById('availableQuizzesHeading');
                 var buttons = document.querySelectorAll('.quiz-type-btn');
                 var sortedNames = quizTypes.map(function (t) { return t.displayName; }).sort(function (a, b) {
                     return a.localeCompare(b);
                 });
 
+                expect(heading).not.toBeNull();
+                expect(heading.textContent).toBe('Available quizzes');
                 expect(buttons.length).toBe(quizTypes.length);
                 for (var i = 0; i < buttons.length; i++) {
                     expect(buttons[i].textContent).toBe(sortedNames[i]);

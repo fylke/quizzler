@@ -101,6 +101,29 @@ describe('Guest Mode', function () {
         expect(adminLink.style.display).toBe('none');
     });
 
+    it('showStatusScreen keeps the upgrade button hidden for signed-in users', async function () {
+        quizState.user = { id: 8, isAdmin: false };
+        quizState.isGuest = false;
+        guestRestrictionsStatus.classList.remove('hidden');
+        guestUpgradeBtn.classList.remove('hidden');
+        spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
+        spyOn(window, 'fetch').and.returnValue(Promise.resolve({
+            ok: true,
+            json: function () {
+                return Promise.resolve({
+                    cumulativeScore: 12,
+                    quizzesCompleted: 1,
+                    averageScore: 12
+                });
+            }
+        }));
+
+        await showStatusScreen();
+
+        expect(guestRestrictionsStatus.classList.contains('hidden')).toBe(true);
+        expect(guestUpgradeBtn.classList.contains('hidden')).toBe(true);
+    });
+
     it('restoreGuestSession returns false when no guest cookie-backed session exists', async function () {
         spyOn(window, 'fetch').and.returnValue(Promise.resolve({
             status: 404,
