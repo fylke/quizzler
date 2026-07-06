@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -115,6 +116,46 @@ def _disable_limiter_in_testing():
 # ---------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
+
+_HINT_IMAGE_PATH_RE = re.compile(
+    r"^countries/(?P<destination_id>\d+)/(?P<hint_difficulty>[1-5])[ab]\.jpg$",
+    re.IGNORECASE,
+)
+
+
+def _active_quiz_result_for_player(player):
+    if player.is_user:
+        return QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).first()
+    if player.is_guest:
+        return GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id,
+            ongoing=True,
+        ).first()
+    return None
+
+
+def _can_access_media_path(filename: str) -> bool:
+    """Authorize direct media URL access for hint images based on server-side state."""
+    match = _HINT_IMAGE_PATH_RE.fullmatch(filename)
+    if match is None:
+        return True
+
+    player = get_current_player()
+    if player is None:
+        return False
+
+    quiz_result = _active_quiz_result_for_player(player)
+    if quiz_result is None:
+        return False
+
+    requested_destination_id = int(match.group("destination_id"))
+    requested_hint_difficulty = int(match.group("hint_difficulty"))
+
+    if requested_destination_id != quiz_result.destination_id:
+        return False
+
+    # Unlocked hints are the current live hint and all previously revealed harder hints.
+    return requested_hint_difficulty >= quiz_result.hint_difficulty
 
 
 def resolve_database_uri(quiz_db_url=None, database_url=None, default_path=None):
@@ -306,6 +347,9 @@ def index():
 @app.route("/media/<path:filename>")
 def serve_media(filename):
     """Serve quiz images from the media directory."""
+    if not _can_access_media_path(filename):
+        return jsonify({"error": "Media access denied"}), 403
+
     media_dir = os.environ.get("MEDIA_DIR") or app.config["MEDIA_DIR"]
     return send_from_directory(media_dir, filename)
 

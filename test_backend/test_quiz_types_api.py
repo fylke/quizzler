@@ -381,11 +381,10 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
     def test_media_endpoint_serves_files(self):
         """Requirement 5.5: /media/countries/{id}/{level}{a|b}.jpg path is served."""
         # The /media/<path:filename> route exists and responds
-        # (even if file doesn't exist on disk, the route should be registered)
+        # (protected hint images may return 403 when not unlocked)
         response = self.client.get("/media/countries/42/5a.jpg")
-        # Will be 404 because no actual file, but the route itself is active
-        # (not a 405 Method Not Allowed or similar)
-        self.assertIn(response.status_code, [200, 404])
+        # Route is active and enforces authorization (403) before file lookup (404).
+        self.assertIn(response.status_code, [200, 403, 404])
 
     def test_quiz_result_composite_key(self):
         """Requirement 5.4: Results stored with composite key (user_id, destination_id)."""
