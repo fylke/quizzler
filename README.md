@@ -91,19 +91,23 @@ quizzler/
 
    Now the venv activates/deactivates automatically as you enter/leave the directory.
 
-## Running Unit Tests
-
-```bash
-just backend
-```
-
 ## Common Tasks
 
 ```bash
 just hardening
+just format
+just playwright-install
+just podman-up
+just podman-up-local
+just podman-down
 ```
 
 - `just hardening` runs the repository hardening policy checks.
+- `just format` runs `black` and `isort` across the repo.
+- `just playwright-install` installs Playwright browser dependencies for e2e/frontend testing.
+- `just podman-up` starts the Podman stack with the standard compose settings.
+- `just podman-up-local` starts the Podman stack with local compatibility overrides for hosts that do not support CPU/memory cgroup limits.
+- `just podman-down` stops the Podman stack.
 
 ## Running All Tests
 
@@ -130,11 +134,9 @@ This runs backend unit tests, frontend Jasmine tests, and Playwright end-to-end 
 
 ```bash
 uv sync --group test
-uv run playwright install
+just playwright-install
 just e2e
 ```
-
-## Running the Application
 
 ## Guest Mode
 
@@ -163,18 +165,12 @@ Guest restrictions:
 
 1. **Build and start the container (-d for detached, to not block terminal):**
    ```bash
-   podman-compose -p quizzler -f podman-compose.yml up --build -d
+   just podman-up
    ```
 
-   If your host does not support container CPU/memory cgroup limits (for example `cpu.max` errors), disable CPU/memory limits for local runs but keep a non-zero process limit:
+   If you get `cpu.max` errors, that's likely because your host doesn't support container CPU/memory cgroup limits. Use this target as workaround:
    ```bash
-   QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 podman-compose -p quizzler -f podman-compose.yml up --build -d
-   ```
-
-   Or make the override persistent for your local checkout:
-   ```bash
-   cp .env.example .env
-   podman-compose -p quizzler -f podman-compose.yml up --build -d
+   just podman-up-local
    ```
 
 2. **Open your browser and go to:**
@@ -184,7 +180,7 @@ Guest restrictions:
 
 3. **Stop the container:**
    ```bash
-   podman-compose -p quizzler -f podman-compose.yml down
+   just podman-down
    ```
 
 ## Environment Variables

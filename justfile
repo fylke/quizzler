@@ -6,6 +6,22 @@ sync:
 hardening:
     uv run python -m scripts.check_hardening
 
+podman-up:
+    podman-compose -p quizzler -f podman-compose.yml up --build -d
+
+podman-up-local:
+    QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 podman-compose -p quizzler -f podman-compose.yml up --build -d
+
+podman-down:
+    podman-compose -p quizzler -f podman-compose.yml down
+
+format:
+    uv run black .
+    uv run isort .
+
+playwright-install:
+    uv run --group test playwright install
+
 backend:
     uv run python -m unittest discover -s test_backend -p 'test_*.py'
 
