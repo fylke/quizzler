@@ -13,7 +13,7 @@ def test_welcome_screen_loads(page: Page, base_url: str):
     """The welcome screen should display login form elements."""
     page.goto(base_url)
 
-    expect(page.locator("#authHeading")).to_have_text("✈️ Quizzler")
+    expect(page.locator("#authHeading")).to_be_visible()
     expect(page.locator("#email")).to_be_visible()
     expect(page.locator("#password")).to_be_visible()
     expect(page.locator("#authButton")).to_have_text("Log In")

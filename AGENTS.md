@@ -147,3 +147,4 @@ test_frontend/    # Frontend Jasmine specs
 - Tests use an in-memory SQLite database — never modify `database/quiz_data.db` in tests.
 - When designing solutions, the policy should be to "fail fast" - if input data is not on the expected form, no attempt should be made to fix it in the app, instead more care should be take at system boundry to make sure input is on the correct format before sending it on.
 - Deprecation warnings should be taken seriously and be fixed.
+- When adding tests; avoid testing specific strings, unless they represent state.
