@@ -95,6 +95,22 @@ class StatsAPITestCase(unittest.TestCase):
         data = response.get_json()
         self.assertEqual(data['error'], 'Authentication required')
 
+    def test_guest_session_can_fetch_zero_stats(self):
+        """Guest session can access /api/stats and gets all-zero metrics initially."""
+        guest_response = self.client.post('/api/guest-session')
+        self.assertEqual(guest_response.status_code, 200)
+
+        response = self.client.get('/api/stats')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data['cumulativeScore'], 0)
+        self.assertEqual(data['quizzesCompleted'], 0)
+        self.assertEqual(data['averageScore'], 0)
+        self.assertEqual(data['bestScore'], 0)
+        self.assertEqual(data['accuracyRate'], 0)
+        self.assertEqual(data['currentStreak'], 0)
+        self.assertEqual(data['quizzesOngoing'], 0)
+
     def test_zero_completed_quizzes_returns_all_zeros(self):
         """Authenticated user with no completed quizzes gets all-zero stats."""
         self._login(self.client, self._user_id)

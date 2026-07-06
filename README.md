@@ -6,34 +6,52 @@
 [![E2E Nightly](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/quizzler/blob/main/.github/dependabot.yml)
 
-A fun interactive quiz game where you guess travel destinations based on hints and images. 
+A quiz game where you are presented with a number of progressively easier hints that are both text- and picture based. The earlier you guess correctly, the higher the score.
 
 ## Project Structure
 
 ```
 quizzler/
+├── data/
+│   ├── countries.example.json  # Example country data
+│   └── destinations.json       # Quiz destination seed data
 ├── backend/
-│   ├── __init__.py        # Flask app initialization
-│   ├── __main__.py        # Entry point
-│   └── models.py          # SQLAlchemy models
+│   ├── __init__.py          # Flask app initialization
+│   ├── __main__.py          # Entry point
+│   ├── admin.py             # Admin helpers and operations
+│   ├── auth.py              # Authentication/session helpers
+│   ├── email_service.py     # Password reset email delivery
+│   ├── models.py            # SQLAlchemy models
+│   ├── quiz_types.py        # Quiz mode/type logic
+│   ├── reset_tokens.py      # Password reset token utilities
+│   ├── routes_admin.py      # Admin API routes
+│   ├── routes_auth.py       # Auth API routes
+│   ├── routes_quiz.py       # Quiz API routes
+│   ├── stats.py             # Statistics helpers
+│   ├── validation_rules.py  # Validation helpers
+│   └── assets/
+│       ├── names.txt        # Name source data
+│       └── rules/
+│           └── countries.md # Country rule definitions
 ├── frontend/
-│   ├── index.html         # Main HTML page
-│   ├── style.css          # Styling
-│   ├── app.js             # Core app logic (state, auth, quiz flow)
-│   ├── admin.js           # Admin panel
-│   ├── modal.js           # Modal dialogs and focus traps
-│   └── markdown.js        # Markdown renderer
-├── database/
-│   └── .gitkeep           # Placeholder for the local SQLite database folder
-├── test_backend/            # Backend unit tests
-├── test_e2e/              # End-to-end Playwright tests
-├── pyproject.toml         # Project configuration
-├── Containerfile          # Container build configuration
-├── podman-compose.yml     # Podman Compose orchestration
-└── README.md              # This file
+│   ├── index.html          # Main HTML page
+│   ├── style.css           # Styling
+│   ├── app.js              # Core app logic (state, auth, quiz flow)
+│   ├── admin.js            # Admin panel
+│   ├── modal.js            # Modal dialogs and focus traps
+│   ├── markdown.js         # Markdown renderer
+│   └── reset_password.html # Password reset page
+├── docs/                   # Design and operations documentation
+├── scripts/                # Test and utility entry points
+├── test_backend/           # Backend unit tests
+├── test_e2e/               # End-to-end Playwright tests
+├── test_frontend/          # Frontend Jasmine spec unit tests
+├── media/                  # Media storage directory
+├── pyproject.toml          # Project configuration
+├── Containerfile           # Container build configuration
+├── podman-compose.yml      # Podman Compose orchestration
+└── README.md               # This file
 ```
-
-The `database/` directory is kept in the repo as a placeholder for local SQLite files, but the actual `quiz_data.db` file is generated locally and ignored by git.
 
 ## Setup Instructions
 
@@ -73,21 +91,69 @@ The `database/` directory is kept in the repo as a placeholder for local SQLite 
 
    Now the venv activates/deactivates automatically as you enter/leave the directory.
 
-## Running Unit Tests
+## Common Tasks
 
 ```bash
-uv run unit-test
+just hardening
+just format
+just playwright-install
+just podman-up
+just podman-up-local
+just podman-down
 ```
+
+- `just hardening` runs the repository hardening policy checks.
+- `just format` runs `black` and `isort` across the repo.
+- `just playwright-install` installs Playwright browser dependencies for e2e/frontend testing.
+- `just podman-up` starts the Podman stack with the standard compose settings.
+- `just podman-up-local` starts the Podman stack with local compatibility overrides for hosts that do not support CPU/memory cgroup limits.
+- `just podman-down` stops the Podman stack.
+
+## Running All Tests
+
+If you use [just](https://github.com/casey/just), the repo provides a top-level `justfile`:
+
+```bash
+just test
+```
+
+This will install the test dependency group and then run backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence.
+
+If you prefer running the equivalent commands directly:
+
+```bash
+uv sync --group test
+uv run python -m unittest discover -s test_backend -p 'test_*.py'
+just frontend
+uv run --group test python -m pytest test_e2e/
+```
+
+This runs backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence. The frontend step is now executed directly from the `justfile` and no longer uses a separate wrapper script.
 
 ## Running E2E Tests
 
 ```bash
 uv sync --group test
-uv run playwright install
-uv run e2e-test
+just playwright-install
+just e2e
 ```
 
-## Running the Application
+## Guest Mode
+
+You can now play quizzes without creating an account by clicking **Continue as Guest** on the welcome screen.
+
+Guest mode behavior:
+
+- Quiz progress and scoring are tracked server-side.
+- The browser stores a guest token cookie that links to that server-side state.
+- You can run random/specific quizzes, use hints, submit answers, view quiz rules, and see stats.
+- You can create an account or log in later and keep your guest progress.
+
+Guest restrictions:
+
+- Guest progress is bound to the current browser cookie.
+- Clearing cookies (or moving to another browser/device) loses guest progress.
+- Account-only features (for example admin access and account-based continuity) still require login.
 
 ### Podman
 
@@ -99,18 +165,12 @@ uv run e2e-test
 
 1. **Build and start the container (-d for detached, to not block terminal):**
    ```bash
-   podman-compose -p quizzler -f podman-compose.yml up --build -d
+   just podman-up
    ```
 
-   If your host does not support container CPU/memory cgroup limits (for example `cpu.max` errors), disable CPU/memory limits for local runs but keep a non-zero process limit:
+   If you get `cpu.max` errors, that's likely because your host doesn't support container CPU/memory cgroup limits. Use this target as workaround:
    ```bash
-   QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 podman-compose -p quizzler -f podman-compose.yml up --build -d
-   ```
-
-   Or make the override persistent for your local checkout:
-   ```bash
-   cp .env.example .env
-   podman-compose -p quizzler -f podman-compose.yml up --build -d
+   just podman-up-local
    ```
 
 2. **Open your browser and go to:**
@@ -120,20 +180,20 @@ uv run e2e-test
 
 3. **Stop the container:**
    ```bash
-   podman-compose -p quizzler -f podman-compose.yml down
+   just podman-down
    ```
 
 ## Environment Variables
 
 | Variable            | Description                                                                     | Example                           |
-| ---------------------| ---------------------------------------------------------------------------------| -----------------------------------|
+| --------------------| --------------------------------------------------------------------------------| ----------------------------------|
 | `SECRET_KEY`        | Flask session signing key (required in production)                              | `change-me-in-production`         |
 | `QUIZ_DATABASE_URL` | SQLAlchemy database URI                                                         | `sqlite:///database/quiz_data.db` |
 | `SMTP_HOST`         | SMTP server hostname for sending password reset emails                          | `smtp.gmail.com`                  |
 | `SMTP_PORT`         | SMTP server port (1–65535)                                                      | `587`                             |
 | `SMTP_USERNAME`     | SMTP authentication username                                                    | `user@gmail.com`                  |
 | `SMTP_PASSWORD`     | SMTP authentication password                                                    | `app-password`                    |
-| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@quizzler.com`       |
+| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@quizzler.com`            |
 | `SMTP_USE_TLS`      | Use TLS for SMTP connection (`"true"` enables, any other value uses plain SMTP) | `true`                            |
 | `ADMIN_EMAIL`       | Destination address for hint complaint emails                                   | _(none)_                          |
 
@@ -223,4 +283,4 @@ If you encounter any issues:
 4. Check that the server is running on `http://localhost:5000`
 5. Check browser console for any JavaScript errors (F12 → Console)
 
-Enjoy the quiz! 🌍✨
+Enjoy the quizzes! 🌍✨

@@ -1,12 +1,42 @@
 """Authentication and CSRF utilities shared across blueprints."""
 
+import hashlib
 import secrets
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import wraps
 
 from flask import jsonify, request, session
 
-from .models import User, db
+from .models import GuestQuizResult, GuestSession, QuizResult, User, db
+
+GUEST_TOKEN_COOKIE = "guest_token"
+GUEST_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 365 * 20
+
+
+@dataclass(frozen=True)
+class PlayerContext:
+    """Represents the active player for a request (user or guest)."""
+
+    kind: str
+    user: User | None = None
+    guest: GuestSession | None = None
+
+    @property
+    def is_user(self) -> bool:
+        return self.kind == "user" and self.user is not None
+
+    @property
+    def is_guest(self) -> bool:
+        return self.kind == "guest" and self.guest is not None
+
+    @property
+    def user_id(self) -> int | None:
+        return self.user.id if self.user is not None else None
+
+    @property
+    def guest_session_id(self) -> int | None:
+        return self.guest.id if self.guest is not None else None
 
 
 def generate_csrf_token():
@@ -14,6 +44,82 @@ def generate_csrf_token():
     token = secrets.token_hex(32)
     session["csrf_token"] = token
     return token
+
+
+def _hash_guest_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode()).hexdigest()
+
+
+def create_guest_session() -> tuple[GuestSession, str]:
+    """Create a new guest session and return (record, raw_token)."""
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = _hash_guest_token(raw_token)
+    guest_session = GuestSession(token_hash=token_hash)
+    db.session.add(guest_session)
+    db.session.commit()
+    return guest_session, raw_token
+
+
+def delete_guest_session(guest_session: GuestSession) -> None:
+    """Delete a guest session and all associated server-side progress."""
+    db.session.delete(guest_session)
+    db.session.commit()
+
+
+def get_current_guest_session() -> GuestSession | None:
+    """Resolve guest session from the signed guest token cookie."""
+    raw_token = request.cookies.get(GUEST_TOKEN_COOKIE, "")
+    if not raw_token:
+        return None
+
+    token_hash = _hash_guest_token(raw_token)
+    return GuestSession.query.filter_by(token_hash=token_hash).first()
+
+
+def migrate_guest_session_to_user(user: User, guest_session: GuestSession) -> None:
+    """Move guest quiz progress into the authenticated user's account."""
+    guest_results = GuestQuizResult.query.filter_by(
+        guest_session_id=guest_session.id
+    ).all()
+    if not guest_results:
+        db.session.delete(guest_session)
+        db.session.commit()
+        return
+
+    if any(result.ongoing for result in guest_results):
+        QuizResult.query.filter_by(user_id=user.id, ongoing=True).update({"ongoing": False})
+
+    for guest_result in guest_results:
+        user_result = QuizResult.query.filter_by(
+            user_id=user.id,
+            destination_id=guest_result.destination_id,
+        ).first()
+        if user_result is None:
+            user_result = QuizResult(
+                user_id=user.id,
+                destination_id=guest_result.destination_id,
+            )
+
+        user_result.hint_difficulty = guest_result.hint_difficulty
+        user_result.remaining_guesses = guest_result.remaining_guesses
+        user_result.ongoing = guest_result.ongoing
+        db.session.add(user_result)
+
+    db.session.delete(guest_session)
+    db.session.commit()
+
+
+def get_current_player() -> PlayerContext | None:
+    """Resolve request actor as authenticated user or guest session."""
+    user = get_current_user()
+    if user is not None:
+        return PlayerContext(kind="user", user=user)
+
+    guest_session = get_current_guest_session()
+    if guest_session is not None:
+        return PlayerContext(kind="guest", guest=guest_session)
+
+    return None
 
 
 def check_csrf_token():
@@ -60,6 +166,18 @@ def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         if get_current_user() is None:
+            return jsonify({"error": "Authentication required"}), 401
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def player_required(fn):
+    """Decorator requiring either authenticated user or active guest session."""
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if get_current_player() is None:
             return jsonify({"error": "Authentication required"}), 401
         return fn(*args, **kwargs)
 

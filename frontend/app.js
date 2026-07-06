@@ -1,6 +1,7 @@
 // Quiz State — only tracks the authenticated user; all quiz progress lives on the backend.
 let quizState = {
     user: null,
+    isGuest: false,
     currentQuizId: null,
     hintHistory: {},
     hintImagesByDifficulty: {},
@@ -99,6 +100,14 @@ async function loadUser() {
     try {
         const response = await fetch(`${API_BASE}/api/me`);
         if (response.status === 401) {
+            const restoredGuest = await restoreGuestSession();
+            if (restoredGuest) {
+                const restoredActiveQuiz = await restoreActiveQuiz();
+                if (!restoredActiveQuiz) {
+                    showStatusScreen();
+                }
+                return;
+            }
             showScreen('welcomeScreen');
             return;
         }
@@ -109,6 +118,7 @@ async function loadUser() {
         }
         const data = await response.json();
         quizState.user = data;
+        quizState.isGuest = false;
         csrfToken = data.csrfToken || null;
         const restoredActiveQuiz = await restoreActiveQuiz();
         if (!restoredActiveQuiz) {
@@ -119,6 +129,61 @@ async function loadUser() {
         showNotification('Cannot connect to server.');
         showScreen('welcomeScreen');
     }
+}
+
+async function restoreGuestSession() {
+    try {
+        const response = await fetch(`${API_BASE}/api/guest-session`);
+        if (response.status === 404) {
+            return false;
+        }
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.json();
+        applyGuestSession(data);
+        return true;
+    } catch (error) {
+        console.error('Guest restore error:', error);
+        return false;
+    }
+}
+
+function applyGuestSession(data) {
+    quizState.user = data.guest || null;
+    quizState.isGuest = true;
+    csrfToken = null;
+}
+
+async function continueAsGuest() {
+    try {
+        const response = await fetch(`${API_BASE}/api/guest-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            showNotification('Unable to start guest session. Please try again.');
+            return;
+        }
+
+        const data = await response.json();
+        applyGuestSession(data);
+
+        const restoredActiveQuiz = await restoreActiveQuiz();
+        if (!restoredActiveQuiz) {
+            showStatusScreen();
+        }
+    } catch (error) {
+        console.error('Guest session error:', error);
+        showNotification('Unable to continue as guest.');
+    }
+}
+
+function showGuestUpgradeAuth() {
+    clearAuthError();
+    showScreen('welcomeScreen');
 }
 
 async function restoreActiveQuiz() {
@@ -253,6 +318,7 @@ async function handleAuth() {
         }
 
         quizState.user = data;
+        quizState.isGuest = false;
         csrfToken = data.csrfToken || null;
         showStatusScreen();
     } catch (error) {
@@ -272,6 +338,7 @@ async function handleLogout() {
         console.error('Logout error:', error);
     }
     quizState.user = null;
+    quizState.isGuest = false;
     csrfToken = null;
     showScreen('welcomeScreen');
 }
@@ -855,6 +922,24 @@ function retakeQuiz() {
 
 async function showStatusScreen() {
     showScreen('statusScreen');
+
+    const guestRestrictions = document.getElementById('guestRestrictionsStatus');
+    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
+    if (guestRestrictions) {
+        if (quizState.isGuest) {
+            guestRestrictions.classList.remove('hidden');
+        } else {
+            guestRestrictions.classList.add('hidden');
+        }
+    }
+    if (guestUpgradeBtn) {
+        if (quizState.isGuest) {
+            guestUpgradeBtn.classList.remove('hidden');
+        } else {
+            guestUpgradeBtn.classList.add('hidden');
+        }
+    }
+
     try {
         const response = await fetch(`${API_BASE}/api/stats`);
         if (response.ok) {
@@ -873,7 +958,7 @@ async function showStatusScreen() {
     // Show/hide admin link based on user role
     const adminLink = document.getElementById('adminLink');
     if (adminLink) {
-        if (quizState.user && quizState.user.isAdmin) {
+        if (quizState.user && quizState.user.isAdmin && !quizState.isGuest) {
             adminLink.style.display = '';
         } else {
             adminLink.style.display = 'none';

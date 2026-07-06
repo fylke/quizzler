@@ -28,6 +28,20 @@ def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
     expect(page.locator("#hint")).not_to_be_empty(timeout=5000)
 
 
+def _continue_as_guest_and_start(page: Page, base_url: str):
+    """Helper to enter guest mode and start a quiz."""
+    page.goto(base_url)
+    page.click("#guestButton")
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+
+    quiz_type_button = page.locator(".quiz-type-btn").first
+    expect(quiz_type_button).to_be_visible(timeout=5000)
+    quiz_type_button.click()
+
+    expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#hint")).not_to_be_empty(timeout=5000)
+
+
 def test_quiz_screen_shows_hint_and_images(page: Page, base_url: str):
     """After login, the quiz screen displays a hint and images."""
     _register_and_start(page, base_url)
@@ -99,3 +113,39 @@ def test_results_screen_shows_up_to_ten_zero_prefixed_images(page: Page, base_ur
     expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#resultImages")).to_be_visible(timeout=5000)
     expect(page.locator("#resultImages .result-image")).to_have_count(10)
+
+
+def test_guest_refresh_restores_active_quiz(page: Page, base_url: str):
+    """Refreshing during a guest quiz restores the active server-side guest quiz."""
+    _continue_as_guest_and_start(page, base_url)
+
+    initial_hint = page.locator("#hint").text_content()
+    page.reload()
+
+    expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#hint")).to_have_text(initial_hint)
+
+
+def test_guest_register_migrates_completed_score(page: Page, base_url: str):
+    """Completing a quiz as guest and then registering preserves the score."""
+    _continue_as_guest_and_start(page, base_url)
+
+    page.fill("#answerInput", "Paris")
+    page.click("text=Submit Answer")
+    expect(page.locator("#feedbackScreen")).to_be_visible(timeout=5000)
+
+    page.click("text=Back to Status")
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+
+    page.click("#guestUpgradeBtn")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
+
+    page.click("#switchToRegister a")
+    page.fill("#name", "Migrated Guest")
+    page.fill("#email", "migrated-guest@test.com")
+    page.fill("#password", "password123")
+    page.click("#authButton")
+
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#statsCumulativeScore")).to_have_text("15")
+    expect(page.locator("#statsCompleted")).to_have_text("1")

@@ -7,9 +7,9 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request
 
-from .auth import get_current_user, login_required
+from .auth import get_current_player, player_required
 from .email_service import EmailServiceError, send_hint_complaint_email
-from .models import Destination, QuizResult, db
+from .models import Destination, GuestQuizResult, QuizResult, db
 from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 
 quiz_bp = Blueprint("quiz", __name__)
@@ -81,23 +81,65 @@ def _hint_images_for_destination(destination_id: int, hint_difficulty: int) -> l
     ]
 
 
-def _start_quiz(user, destination):
-    """Set up server-side state for a new quiz and return the response dict.
+def _active_result_for_player(player):
+    if player.is_user:
+        return QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).first()
+    if player.is_guest:
+        return GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id,
+            ongoing=True,
+        ).first()
+    return None
 
-    Ends any previously active quiz for this user, creates or resets
-    the QuizResult row, and commits the transaction.
-    """
+
+def _result_for_player_and_destination(player, destination_id):
+    if player.is_user:
+        return QuizResult.query.filter_by(
+            user_id=player.user_id,
+            destination_id=destination_id,
+        ).first()
+    if player.is_guest:
+        return GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id,
+            destination_id=destination_id,
+        ).first()
+    return None
+
+
+def _end_active_quizzes_for_player(player):
+    if player.is_user:
+        QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).update(
+            {"ongoing": False}
+        )
+        return
+
+    if player.is_guest:
+        GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id,
+            ongoing=True,
+        ).update({"ongoing": False})
+
+
+def _new_result_for_player(player, destination_id):
+    if player.is_user:
+        return QuizResult(user_id=player.user_id, destination_id=destination_id)
+    return GuestQuizResult(
+        guest_session_id=player.guest_session_id,
+        destination_id=destination_id,
+    )
+
+
+def _start_quiz_for_player(player, destination):
+    """Set up server-side state for a new quiz and return response payload."""
     hint_difficulty = STARTING_HINT_DIFFICULTY
     hint_text = getattr(destination, f"hint{hint_difficulty}", "")
 
-    # End any previously active quiz
-    QuizResult.query.filter_by(user_id=user.id, ongoing=True).update({"ongoing": False})
+    _end_active_quizzes_for_player(player)
 
-    quiz_result = QuizResult.query.filter_by(
-        user_id=user.id, destination_id=destination.id
-    ).first()
+    quiz_result = _result_for_player_and_destination(player, destination.id)
     if quiz_result is None:
-        quiz_result = QuizResult(user_id=user.id, destination_id=destination.id)
+        quiz_result = _new_result_for_player(player, destination.id)
+
     quiz_result.hint_difficulty = hint_difficulty
     quiz_result.remaining_guesses = MAX_GUESSES
     quiz_result.ongoing = True
@@ -114,7 +156,7 @@ def _start_quiz(user, destination):
 
 
 @quiz_bp.route("/api/quiz", methods=["GET"])
-@login_required
+@player_required
 def get_quiz():
     """Return a random destination along with its first hint and pictures."""
     destinations = Destination.query.all()
@@ -122,28 +164,28 @@ def get_quiz():
         return jsonify({"error": "No quiz data available"}), 404
 
     random_destination = random.choice(destinations)
-    user = get_current_user()
-    return jsonify(_start_quiz(user, random_destination))
+    player = get_current_player()
+    return jsonify(_start_quiz_for_player(player, random_destination))
 
 
 @quiz_bp.route("/api/quiz/<int:destination_id>", methods=["GET"])
-@login_required
+@player_required
 def get_specific_quiz(destination_id):
     """Return a specific destination for a quiz."""
     destination = Destination.query.filter_by(id=destination_id).first()
     if not destination:
         return jsonify({"error": "Destination not found"}), 404
 
-    user = get_current_user()
-    return jsonify(_start_quiz(user, destination))
+    player = get_current_player()
+    return jsonify(_start_quiz_for_player(player, destination))
 
 
 @quiz_bp.route("/api/quiz/active", methods=["GET"])
-@login_required
+@player_required
 def get_active_quiz():
     """Return the active quiz state for the logged-in user."""
-    user = get_current_user()
-    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    player = get_current_player()
+    quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -165,11 +207,11 @@ def get_active_quiz():
 
 
 @quiz_bp.route("/api/hint", methods=["GET"])
-@login_required
+@player_required
 def get_hint():
     """Fetch the next hint for the user's active quiz, decrementing difficulty."""
-    user = get_current_user()
-    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    player = get_current_player()
+    quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -197,14 +239,14 @@ def get_hint():
 
 
 @quiz_bp.route("/api/check-answer", methods=["POST"])
-@login_required
+@player_required
 def check_answer():
     """Check if the answer is correct, using server-side state for scoring."""
     data = request.json or {}
     user_answer = (data.get("answer") or "").lower().strip()
 
-    user = get_current_user()
-    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    player = get_current_player()
+    quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -261,7 +303,7 @@ def check_answer():
 
 
 @quiz_bp.route("/api/hint-complaint", methods=["POST"])
-@login_required
+@player_required
 def submit_hint_complaint():
     """Submit a hint complaint to admin email for the active quiz."""
     data = request.json or {}
@@ -284,8 +326,8 @@ def submit_hint_complaint():
     if len(complaint_message) > 2000:
         return jsonify({"error": "Complaint message is too long."}), 400
 
-    user = get_current_user()
-    quiz_result = QuizResult.query.filter_by(user_id=user.id, ongoing=True).first()
+    player = get_current_player()
+    quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -314,7 +356,9 @@ def submit_hint_complaint():
         send_hint_complaint_email(
             admin_address=admin_email,
             reporter_email=complainer_email,
-            reporter_name=user.name,
+            reporter_name=(
+                player.user.name if player.is_user else f"Guest #{player.guest_session_id}"
+            ),
             quiz_id=quiz_id,
             hint_difficulty=hint_difficulty,
             hint_text=hint_text,

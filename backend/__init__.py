@@ -12,10 +12,12 @@ from flask_limiter.util import get_remote_address
 from .auth import (  # noqa: F401 — re-exported for backward compatibility
     admin_required,
     csrf_protected,
+    get_current_player,
     get_current_user,
     login_required,
+    player_required,
 )
-from .models import Destination, QuizResult, User, db
+from .models import Destination, GuestQuizResult, QuizResult, User, db
 from .quiz_types import IDENTIFIER_PATTERN, get_registry, validate_registry
 from .routes_admin import admin_bp
 from .routes_auth import auth_bp
@@ -140,17 +142,8 @@ if db_url.startswith("sqlite:///") and db_url != "sqlite:///:memory:":
     db_path = os.path.abspath(db_path)
     db_dir = os.path.dirname(db_path)
     if db_dir:
-        if not os.path.isdir(db_dir):
-            if not _env_db_url:
-                # No env var set and database directory missing — container mode
-                logger.error(
-                    "no database configured: no QUIZ_DATABASE_URL or DATABASE_URL set "
-                    "and the database/ directory does not exist"
-                )
-                sys.exit(1)
-            # Env var pointed to a SQLite path whose directory doesn't exist; create it
-            os.makedirs(db_dir, exist_ok=True)
-        # Directory already exists — local development, nothing to do
+        # Ensure SQLite parent directory exists for both default and env-provided paths.
+        os.makedirs(db_dir, exist_ok=True)
     db_url = f"sqlite:///{db_path}"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
@@ -212,11 +205,17 @@ def get_validation_rules():
 
 
 @app.route("/api/status", methods=["GET"])
-@login_required
+@player_required
 def get_status():
     """Return quiz stats for the current user."""
-    user = get_current_user()
-    results = QuizResult.query.filter_by(user_id=user.id).all()
+    player = get_current_player()
+    if player.is_user:
+        results = QuizResult.query.filter_by(user_id=player.user_id).all()
+    else:
+        results = GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id
+        ).all()
+
     completed = [r for r in results if not r.ongoing]
     total_points = sum(
         r.hint_difficulty * r.remaining_guesses
@@ -233,7 +232,7 @@ def get_status():
 
 
 @app.route("/api/quiz-types", methods=["GET"])
-@login_required
+@player_required
 def list_quiz_types():
     """Return the list of registered quiz types."""
     registry = get_registry()
@@ -246,7 +245,7 @@ def list_quiz_types():
 
 
 @app.route("/api/rules/<quiz_type>", methods=["GET"])
-@login_required
+@player_required
 def get_rules(quiz_type):
     """Return raw markdown rules content for a given quiz type."""
     if "/" in quiz_type or "\\" in quiz_type:
@@ -264,11 +263,16 @@ def get_rules(quiz_type):
 
 
 @app.route("/api/stats", methods=["GET"])
-@login_required
+@player_required
 def get_stats():
     """Return detailed cumulative statistics for the current user."""
-    user = get_current_user()
-    results = QuizResult.query.filter_by(user_id=user.id).all()
+    player = get_current_player()
+    if player.is_user:
+        results = QuizResult.query.filter_by(user_id=player.user_id).all()
+    else:
+        results = GuestQuizResult.query.filter_by(
+            guest_session_id=player.guest_session_id
+        ).all()
 
     completed = [r for r in results if not r.ongoing]
     ongoing = [r for r in results if r.ongoing]

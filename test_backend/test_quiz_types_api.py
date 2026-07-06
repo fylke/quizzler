@@ -57,6 +57,18 @@ class QuizTypesAPITestCase(unittest.TestCase):
         data = response.get_json()
         self.assertEqual(data["error"], "Authentication required")
 
+    def test_quiz_types_with_guest_session_returns_registered_types(self):
+        """GET /api/quiz-types with a guest cookie returns available types."""
+        guest_response = self.client.post("/api/guest-session")
+        self.assertEqual(guest_response.status_code, 200)
+
+        response = self.client.get("/api/quiz-types")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        identifiers = [qt["identifier"] for qt in data]
+        self.assertIn("countries", identifiers)
+
     def test_quiz_types_default_registry_includes_countries(self):
         """GET /api/quiz-types with auth returns list including 'countries'."""
         self._login(self.client, self._user_id)
@@ -109,6 +121,17 @@ class QuizTypesAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         data = response.get_json()
         self.assertEqual(data["error"], "Authentication required")
+
+    def test_rules_with_guest_session_returns_content(self):
+        """GET /api/rules/countries with guest session returns markdown."""
+        guest_response = self.client.post("/api/guest-session")
+        self.assertEqual(guest_response.status_code, 200)
+
+        response = self.client.get("/api/rules/countries")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIn("content", data)
+        self.assertIn("# Countries Quiz Rules", data["content"])
 
     def test_rules_returns_file_content_in_json_wrapper(self):
         """GET /api/rules/countries with auth returns 200 with content key."""
