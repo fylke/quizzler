@@ -646,6 +646,22 @@ body {
     font-size: 2em;
 }
 
+.guest-mode-banner {
+    margin: 0 0 var(--space-6);
+    padding: 12px 14px;
+    border: 1px solid #f0c36d;
+    border-left: 4px solid #e09f2a;
+    border-radius: 10px;
+    background: #fff8e8;
+    color: #5b460f;
+    font-size: 0.95em;
+    line-height: 1.45;
+}
+
+.guest-mode-banner.hidden {
+    display: none;
+}
+
 .stats-section {
     display: flex;
     gap: var(--space-5);

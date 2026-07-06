@@ -35,6 +35,7 @@ def test_register_new_user(page: Page, base_url: str):
 
     # Should navigate to status screen
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#guestRestrictionsStatus")).to_be_hidden()
 
 
 def test_continue_as_guest_shows_status_and_restrictions(page: Page, base_url: str):
@@ -46,6 +47,27 @@ def test_continue_as_guest_shows_status_and_restrictions(page: Page, base_url: s
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#guestRestrictionsStatus")).to_be_visible()
     expect(page.locator("#guestUpgradeBtn")).to_be_visible()
+
+
+def test_guest_upgrade_to_registered_user_hides_guest_banner(page: Page, base_url: str):
+    """The guest-mode banner should disappear after upgrading to an authenticated user."""
+    page.goto(base_url)
+
+    page.click("#guestButton")
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#guestRestrictionsStatus")).to_be_visible()
+
+    page.click("#guestUpgradeBtn")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
+
+    page.click("#switchToRegister a")
+    page.fill("#name", "Guest Upgrade User")
+    page.fill("#email", "guest-upgrade@example.com")
+    page.fill("#password", "password123")
+    page.click("#authButton")
+
+    expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#guestRestrictionsStatus")).to_be_hidden()
 
 
 def test_login_with_invalid_credentials(page: Page, base_url: str):
