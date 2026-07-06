@@ -1,11 +1,10 @@
 name: CI
 
 on:
-  push:
   pull_request:
 
 jobs:
-  workflow-script-lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -104,15 +103,6 @@ jobs:
 
           print(f'Validated {total_blocks} SSH script block(s) across {len(workflow_files)} workflow file(s)')
           PY
-
-  test:
-    needs: workflow-script-lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 0
 
       - name: Scan for committed secrets
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
