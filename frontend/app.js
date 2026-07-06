@@ -1093,6 +1093,9 @@ async function loadQuizTypeButtons() {
             const btn = document.createElement('button');
             btn.className = 'btn btn-primary quiz-type-btn';
             btn.textContent = type.displayName;
+            if (type.identifier === 'countries') {
+                btn.title = 'Guess the country based on a text- and two picture hints. You have 5 hint levels and 3 guesses.';
+            }
             btn.addEventListener('click', () => runRandomQuiz());
 
             const infoBtn = document.createElement('button');
