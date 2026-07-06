@@ -99,7 +99,7 @@ uv run isort .
 ```
 backend/          # Flask application (routes, models, admin helpers, stats)
 frontend/         # Static HTML/CSS/JS served by Flask
-database/         # SQLite database file (quiz_data.db)
+database/         # Runtime-generated SQLite database directory
 docs/             # Design documentation and diagrams
 scripts/          # CLI entry points for test runners
 test_backend/     # Unit tests (unittest + hypothesis)

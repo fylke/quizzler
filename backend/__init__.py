@@ -140,17 +140,8 @@ if db_url.startswith("sqlite:///") and db_url != "sqlite:///:memory:":
     db_path = os.path.abspath(db_path)
     db_dir = os.path.dirname(db_path)
     if db_dir:
-        if not os.path.isdir(db_dir):
-            if not _env_db_url:
-                # No env var set and database directory missing — container mode
-                logger.error(
-                    "no database configured: no QUIZ_DATABASE_URL or DATABASE_URL set "
-                    "and the database/ directory does not exist"
-                )
-                sys.exit(1)
-            # Env var pointed to a SQLite path whose directory doesn't exist; create it
-            os.makedirs(db_dir, exist_ok=True)
-        # Directory already exists — local development, nothing to do
+        # Ensure SQLite parent directory exists for both default and env-provided paths.
+        os.makedirs(db_dir, exist_ok=True)
     db_url = f"sqlite:///{db_path}"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url

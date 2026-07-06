@@ -50,11 +50,11 @@ class TestConnectionFailureExit(unittest.TestCase):
 
 
 class TestMissingDatabaseDirectory(unittest.TestCase):
-    """Test that missing database/ directory without env vars causes non-zero exit.
+    """Test auto-creation behavior when database/ directory is missing.
 
     Validates Requirement 8.3: If the App_Container starts without a
     QUIZ_DATABASE_URL or DATABASE_URL and without a database/ directory,
-    it SHALL exit with a non-zero status code.
+    it SHALL create the directory and start successfully.
     """
 
     def _run_app_in_temp_dir(self, env_overrides=None):
@@ -93,11 +93,14 @@ class TestMissingDatabaseDirectory(unittest.TestCase):
             )
         return result
 
-    def test_no_env_vars_and_no_database_dir_causes_nonzero_exit(self):
-        """App exits with non-zero status when no env vars set and database/ missing."""
+    def test_no_env_vars_and_no_database_dir_is_created(self):
+        """App starts successfully when database/ is missing and no env vars are set."""
         result = self._run_app_in_temp_dir()
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("no database configured", result.stderr.lower())
+        self.assertEqual(
+            result.returncode,
+            0,
+            msg=f"Expected success but got: {result.stderr}",
+        )
 
     def test_with_quiz_database_url_set_no_database_dir_needed(self):
         """App does NOT fail when QUIZ_DATABASE_URL is set even without database/ dir."""

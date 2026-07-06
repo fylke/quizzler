@@ -6,34 +6,52 @@
 [![E2E Nightly](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml/badge.svg?branch=main)](https://github.com/fylke/quizzler/actions/workflows/e2e-nightly.yml)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/fylke/quizzler/blob/main/.github/dependabot.yml)
 
-A fun interactive quiz game where you guess travel destinations based on hints and images. 
+A quiz game where you are presented with a number of progressively easier hints that are both text- and picture based. The earlier you guess correctly, the higher the score.
 
 ## Project Structure
 
 ```
 quizzler/
+├── data/
+│   ├── countries.example.json  # Example country data
+│   └── destinations.json       # Quiz destination seed data
 ├── backend/
-│   ├── __init__.py        # Flask app initialization
-│   ├── __main__.py        # Entry point
-│   └── models.py          # SQLAlchemy models
+│   ├── __init__.py          # Flask app initialization
+│   ├── __main__.py          # Entry point
+│   ├── admin.py             # Admin helpers and operations
+│   ├── auth.py              # Authentication/session helpers
+│   ├── email_service.py     # Password reset email delivery
+│   ├── models.py            # SQLAlchemy models
+│   ├── quiz_types.py        # Quiz mode/type logic
+│   ├── reset_tokens.py      # Password reset token utilities
+│   ├── routes_admin.py      # Admin API routes
+│   ├── routes_auth.py       # Auth API routes
+│   ├── routes_quiz.py       # Quiz API routes
+│   ├── stats.py             # Statistics helpers
+│   ├── validation_rules.py  # Validation helpers
+│   └── assets/
+│       ├── names.txt        # Name source data
+│       └── rules/
+│           └── countries.md # Country rule definitions
 ├── frontend/
-│   ├── index.html         # Main HTML page
-│   ├── style.css          # Styling
-│   ├── app.js             # Core app logic (state, auth, quiz flow)
-│   ├── admin.js           # Admin panel
-│   ├── modal.js           # Modal dialogs and focus traps
-│   └── markdown.js        # Markdown renderer
-├── database/
-│   └── .gitkeep           # Placeholder for the local SQLite database folder
-├── test_backend/            # Backend unit tests
-├── test_e2e/              # End-to-end Playwright tests
-├── pyproject.toml         # Project configuration
-├── Containerfile          # Container build configuration
-├── podman-compose.yml     # Podman Compose orchestration
-└── README.md              # This file
+│   ├── index.html          # Main HTML page
+│   ├── style.css           # Styling
+│   ├── app.js              # Core app logic (state, auth, quiz flow)
+│   ├── admin.js            # Admin panel
+│   ├── modal.js            # Modal dialogs and focus traps
+│   ├── markdown.js         # Markdown renderer
+│   └── reset_password.html # Password reset page
+├── docs/                   # Design and operations documentation
+├── scripts/                # Test and utility entry points
+├── test_backend/           # Backend unit tests
+├── test_e2e/               # End-to-end Playwright tests
+├── test_frontend/          # Frontend Jasmine spec unit tests
+├── media/                  # Media storage directory
+├── pyproject.toml          # Project configuration
+├── Containerfile           # Container build configuration
+├── podman-compose.yml      # Podman Compose orchestration
+└── README.md               # This file
 ```
-
-The `database/` directory is kept in the repo as a placeholder for local SQLite files, but the actual `quiz_data.db` file is generated locally and ignored by git.
 
 ## Setup Instructions
 
@@ -126,14 +144,14 @@ uv run e2e-test
 ## Environment Variables
 
 | Variable            | Description                                                                     | Example                           |
-| ---------------------| ---------------------------------------------------------------------------------| -----------------------------------|
+| --------------------| --------------------------------------------------------------------------------| ----------------------------------|
 | `SECRET_KEY`        | Flask session signing key (required in production)                              | `change-me-in-production`         |
 | `QUIZ_DATABASE_URL` | SQLAlchemy database URI                                                         | `sqlite:///database/quiz_data.db` |
 | `SMTP_HOST`         | SMTP server hostname for sending password reset emails                          | `smtp.gmail.com`                  |
 | `SMTP_PORT`         | SMTP server port (1–65535)                                                      | `587`                             |
 | `SMTP_USERNAME`     | SMTP authentication username                                                    | `user@gmail.com`                  |
 | `SMTP_PASSWORD`     | SMTP authentication password                                                    | `app-password`                    |
-| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@quizzler.com`       |
+| `SMTP_FROM_ADDRESS` | Sender address for outgoing emails                                              | `noreply@quizzler.com`            |
 | `SMTP_USE_TLS`      | Use TLS for SMTP connection (`"true"` enables, any other value uses plain SMTP) | `true`                            |
 | `ADMIN_EMAIL`       | Destination address for hint complaint emails                                   | _(none)_                          |
 
@@ -223,4 +241,4 @@ If you encounter any issues:
 4. Check that the server is running on `http://localhost:5000`
 5. Check browser console for any JavaScript errors (F12 → Console)
 
-Enjoy the quiz! 🌍✨
+Enjoy the quizzes! 🌍✨
