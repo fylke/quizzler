@@ -253,7 +253,7 @@ function toggleAuthMode(mode) {
         authButton.textContent = 'Create Account';
         switchToRegister.classList.add('hidden');
         switchToLogin.classList.remove('hidden');
-        authHeading.textContent = 'Create your account';
+        authHeading.textContent = 'Quizzler';
         authSubtext.textContent = 'Register and start the quiz.';
         updatePasswordStrength();
     } else {
@@ -261,7 +261,7 @@ function toggleAuthMode(mode) {
         authButton.textContent = 'Log In';
         switchToRegister.classList.remove('hidden');
         switchToLogin.classList.add('hidden');
-        authHeading.textContent = 'Welcome Back';
+        authHeading.textContent = 'Quizzler';
         authSubtext.textContent = 'Log in to continue.';
         document.getElementById('passwordStrengthContainer').classList.add('hidden');
     }

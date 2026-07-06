@@ -64,6 +64,14 @@ body {
 .welcome-content h1 {
     font-size: 3em;
     color: #667eea;
+    margin-bottom: var(--space-2);
+}
+
+.welcome-content .brand-subheading {
+    font-size: 1em;
+    color: #4b5d8f;
+    letter-spacing: 0.03em;
+    text-transform: none;
     margin-bottom: var(--space-5);
 }
 
@@ -286,13 +294,10 @@ body {
 }
 
 .remaining-guesses {
-    font-size: 0.72em;
-    font-weight: 700;
-    color: #1f3d58;
-    background: #eef5fb;
-    border: 1px solid #c6daea;
-    border-radius: 999px;
-    padding: 5px 10px;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    letter-spacing: 0.02em;
     white-space: nowrap;
 }
 
@@ -850,6 +855,10 @@ body {
 
     .welcome-content h1 {
         font-size: 2em;
+    }
+
+    .welcome-content .brand-subheading {
+        font-size: 0.9em;
     }
 
     .timer {

@@ -12,7 +12,7 @@ describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead 
         fixtureContainer.innerHTML =
             '<div id="welcomeScreen" class="screen">' +
                 '<div class="welcome-content">' +
-                    '<h1 id="authHeading">✈️ Quizzler</h1>' +
+                    '<h1 id="authHeading">Quizzler</h1>' +
                     '<p id="authSubtext">Log in to continue.</p>' +
                     '<div class="input-group auth-group">' +
                         '<input type="text" id="name" placeholder="Skip at your peril!" maxlength="20" class="hidden">' +
