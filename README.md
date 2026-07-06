@@ -94,15 +94,44 @@ quizzler/
 ## Running Unit Tests
 
 ```bash
-uv run unit-test
+just backend
 ```
+
+## Common Tasks
+
+```bash
+just hardening
+```
+
+- `just hardening` runs the repository hardening policy checks.
+
+## Running All Tests
+
+If you use [just](https://github.com/casey/just), the repo provides a top-level `justfile`:
+
+```bash
+just test
+```
+
+This will install the test dependency group and then run backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence.
+
+If you prefer running the equivalent commands directly:
+
+```bash
+uv sync --group test
+uv run python -m unittest discover -s test_backend -p 'test_*.py'
+just frontend
+uv run --group test python -m pytest test_e2e/
+```
+
+This runs backend unit tests, frontend Jasmine tests, and Playwright end-to-end tests in sequence. The frontend step is now executed directly from the `justfile` and no longer uses a separate wrapper script.
 
 ## Running E2E Tests
 
 ```bash
 uv sync --group test
 uv run playwright install
-uv run e2e-test
+just e2e
 ```
 
 ## Running the Application

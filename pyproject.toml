@@ -19,8 +19,6 @@ dependencies = [
 ]
 
 [project.scripts]
-unit-test = "scripts.unit_test:main"
-e2e-test = "scripts.e2e_test:main"
 seed-db = "scripts.seed_db:seed"
 
 [dependency-groups]

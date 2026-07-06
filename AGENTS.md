@@ -32,12 +32,20 @@ Or via Podman:
 podman-compose -f podman-compose.yml up --build
 ```
 
+## Common Tasks
+
+```bash
+just hardening
+```
+
+- `just hardening` runs the repository hardening policy checks.
+
 ## Testing
 
 ### Unit Tests
 
 ```bash
-uv run unit-test
+just backend
 ```
 
 Uses `unittest` and discovers tests in the `test_backend/` directory. Some test files use the `hypothesis` library for property-based testing.
@@ -46,7 +54,7 @@ Uses `unittest` and discovers tests in the `test_backend/` directory. Some test 
 
 ```bash
 uv run playwright install   # First time only
-uv run e2e-test
+just e2e
 ```
 
 Uses `pytest` + `playwright` against `test_e2e/`.
@@ -72,15 +80,14 @@ for p in targets:
 Always run all relevant tests locally before pushing:
 
 ```bash
-uv run unit-test    # Unit tests
-uv run e2e-test     # End-to-end tests
+just test           # Full backend + frontend + e2e suite
 ```
 
 Do not rely on CI round-trips to catch failures. Iterate locally until tests pass, then push once.
 
 ### Frontend Tests
 
-Jasmine specs live in `test_frontend/spec/`. Run via `test_frontend/run_tests.py`.
+Jasmine specs live in `test_frontend/spec/`. Run them with `just frontend`.
 
 ## Code Style
 
@@ -101,7 +108,7 @@ backend/          # Flask application (routes, models, admin helpers, stats)
 frontend/         # Static HTML/CSS/JS served by Flask
 database/         # Runtime-generated SQLite database directory
 docs/             # Design documentation and diagrams
-scripts/          # CLI entry points for test runners
+scripts/          # CLI entry points and utility scripts
 test_backend/     # Unit tests (unittest + hypothesis)
 test_e2e/         # End-to-end tests (pytest + playwright)
 test_frontend/    # Frontend Jasmine specs
