@@ -27,11 +27,10 @@ describe('Image Enlargement', function () {
                 '<div id="feedbackResultImages" class="images-section hidden"></div>' +
             '</div>' +
             '<div id="resultImages" class="result-images hidden"></div>' +
-            '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="imageModalCaption">' +
+            '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Enlarged image">' +
                 '<div class="modal-card image-modal-card">' +
                     '<button id="imageModalCloseBtn" type="button" class="image-modal-close" aria-label="Close enlarged image">×</button>' +
                     '<img id="imageModalImage" src="" alt="" class="image-modal-image">' +
-                    '<p id="imageModalCaption" class="image-modal-caption"></p>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(fixtureContainer);
@@ -59,7 +58,6 @@ describe('Image Enlargement', function () {
 
         expect(document.getElementById('imageModal').style.display).toBe('flex');
         expect(document.getElementById('imageModalImage').src).toContain('quiz-1.jpg');
-        expect(document.getElementById('imageModalCaption').textContent).toBe('Destination image 1');
 
         closeImageModal();
         expect(document.getElementById('imageModal').style.display).toBe('none');
@@ -72,7 +70,6 @@ describe('Image Enlargement', function () {
 
         expect(document.getElementById('imageModal').style.display).toBe('flex');
         expect(document.getElementById('imageModalImage').src).toContain('result-1.jpg');
-        expect(document.getElementById('imageModalCaption').textContent).toBe('Additional destination image 1');
     });
 
     it('renders result images on the feedback screen shown after quiz completion', function () {

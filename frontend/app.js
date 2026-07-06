@@ -810,7 +810,7 @@ async function submitAnswer() {
             showFeedback(true, result.points, result.answer, result.resultImages || []);
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             // Wrong but still has guesses — backend returned next hint
-            animateWrongGuess(answerInput);
+            await animateWrongGuess(answerInput);
             const nextHintImages = Array.isArray(result.images) && result.images.length >= 2
                 ? result.images
                 : getHintImageUrls(quizState.currentQuizId, result.hintDifficulty);
@@ -1104,67 +1104,85 @@ async function runSpecificQuiz() {
  * - Cleans up all animation classes/styles on completion.
  *
  * @param {HTMLElement} inputElement - The input element (used for fallback/focus, animation targets #quizScreen)
+ * @returns {Promise<void>} Resolves after animation cleanup has completed.
  */
 function animateWrongGuess(inputElement) {
-    if (!inputElement) return;
+    return new Promise(resolve => {
+        if (!inputElement) {
+            resolve();
+            return;
+        }
 
-    const target = document.getElementById('quizScreen') || inputElement;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = document.getElementById('quizScreen') || inputElement;
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let resolved = false;
+        function finish() {
+            if (resolved) {
+                return;
+            }
+            resolved = true;
+            resolve();
+        }
 
-    if (prefersReducedMotion) {
-        // Static fallback: two-pulse glow animation (1.2s)
-        target.classList.remove('screen-fade-in');
-        target.classList.remove('wrong-guess-static');
-        void target.offsetWidth;
-        target.classList.add('wrong-guess-static');
-        setTimeout(() => {
+        if (prefersReducedMotion) {
+            // Static fallback: two-pulse glow animation (1.2s)
+            target.classList.remove('screen-fade-in');
             target.classList.remove('wrong-guess-static');
-        }, 1300);
-        return;
-    }
+            void target.offsetWidth;
+            target.classList.add('wrong-guess-static');
+            setTimeout(() => {
+                target.classList.remove('wrong-guess-static');
+                finish();
+            }, 1300);
+            return;
+        }
 
-    // Remove fade-in animation class to avoid conflict with wrong-guess animation
-    target.classList.remove('screen-fade-in');
+        // Remove fade-in animation class to avoid conflict with wrong-guess animation
+        target.classList.remove('screen-fade-in');
 
-    // Remove existing animation classes to allow re-trigger
-    target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
-
-    // Force reflow so re-adding classes restarts the animation
-    void target.offsetWidth;
-
-    // Apply animation classes
-    target.classList.add('wrong-guess-shake', 'wrong-guess-glow');
-
-    // Cleanup function to remove classes and residual inline styles
-    function cleanup() {
+        // Remove existing animation classes to allow re-trigger
         target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
-        target.style.removeProperty('left');
-        target.style.removeProperty('transform');
-        target.style.removeProperty('box-shadow');
-        target.style.removeProperty('border-color');
-        target.style.removeProperty('position');
-    }
 
-    // Listen for animationend to remove classes (once)
-    let cleaned = false;
-    function onAnimationEnd(e) {
-        // Only respond to animations on the target itself, not bubbled from children
-        if (e.target !== target) return;
-        if (cleaned) return;
-        cleaned = true;
-        cleanup();
-    }
+        // Force reflow so re-adding classes restarts the animation
+        void target.offsetWidth;
 
-    target.addEventListener('animationend', onAnimationEnd);
+        // Apply animation classes
+        target.classList.add('wrong-guess-shake', 'wrong-guess-glow');
 
-    // Defensive fallback: remove classes after 1500ms if animationend never fires
-    setTimeout(() => {
-        if (!cleaned) {
+        // Cleanup function to remove classes and residual inline styles
+        function cleanup() {
+            target.classList.remove('wrong-guess-shake', 'wrong-guess-glow');
+            target.style.removeProperty('left');
+            target.style.removeProperty('transform');
+            target.style.removeProperty('box-shadow');
+            target.style.removeProperty('border-color');
+            target.style.removeProperty('position');
+        }
+
+        // Listen for animationend to remove classes (once)
+        let cleaned = false;
+        function finishAnimation() {
+            if (cleaned) {
+                return;
+            }
             cleaned = true;
             target.removeEventListener('animationend', onAnimationEnd);
             cleanup();
+            finish();
         }
-    }, 1500);
+        function onAnimationEnd(e) {
+            // Only respond to animations on the target itself, not bubbled from children
+            if (e.target !== target) return;
+            finishAnimation();
+        }
+
+        target.addEventListener('animationend', onAnimationEnd);
+
+        // Defensive fallback: remove classes after 1500ms if animationend never fires
+        setTimeout(() => {
+            finishAnimation();
+        }, 1500);
+    });
 }
 
 // ==================== Initialization ====================

@@ -441,7 +441,6 @@ function _applyImageModalOrientationClass(modal, imageEl) {
 function _setImageModalContent(entry) {
     const modal = document.getElementById('imageModal');
     const imageEl = document.getElementById('imageModalImage');
-    const captionEl = document.getElementById('imageModalCaption');
 
     if (!modal || !imageEl || !entry) {
         return;
@@ -454,10 +453,6 @@ function _setImageModalContent(entry) {
     };
     if (imageEl.complete && imageEl.naturalWidth > 0 && imageEl.naturalHeight > 0) {
         _applyImageModalOrientationClass(modal, imageEl);
-    }
-
-    if (captionEl) {
-        captionEl.textContent = entry.alt;
     }
 }
 
