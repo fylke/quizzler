@@ -46,7 +46,7 @@ def test_continue_as_guest_shows_status_and_restrictions(page: Page, base_url: s
 
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#guestRestrictionsStatus")).to_be_visible()
-    expect(page.locator("#guestUpgradeBtn")).to_be_visible()
+    expect(page.locator("#guestRestrictionsStatus a")).to_have_text("create an account")
 
 
 def test_guest_upgrade_to_registered_user_hides_guest_banner(page: Page, base_url: str):
@@ -57,10 +57,11 @@ def test_guest_upgrade_to_registered_user_hides_guest_banner(page: Page, base_ur
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#guestRestrictionsStatus")).to_be_visible()
 
-    page.click("#guestUpgradeBtn")
+    page.click("#guestRestrictionsStatus a")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
 
-    page.click("#switchToRegister a")
+    expect(page.locator("#name")).to_be_visible()
+    expect(page.locator("#authButton")).to_have_text("Create Account")
     page.fill("#name", "Guest Upgrade User")
     page.fill("#email", "guest-upgrade@example.com")
     page.fill("#password", "password123")

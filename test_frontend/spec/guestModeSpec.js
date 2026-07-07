@@ -2,7 +2,6 @@ describe('Guest Mode', function () {
     var originalQuizState;
     var originalFetch;
     var guestRestrictionsStatus;
-    var guestUpgradeBtn;
     var adminLink;
 
     beforeEach(function () {
@@ -26,14 +25,6 @@ describe('Guest Mode', function () {
             guestRestrictionsStatus.id = 'guestRestrictionsStatus';
             guestRestrictionsStatus.className = 'hidden';
             document.body.appendChild(guestRestrictionsStatus);
-        }
-
-        guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
-        if (!guestUpgradeBtn) {
-            guestUpgradeBtn = document.createElement('button');
-            guestUpgradeBtn.id = 'guestUpgradeBtn';
-            guestUpgradeBtn.className = 'hidden';
-            document.body.appendChild(guestUpgradeBtn);
         }
 
         adminLink = document.getElementById('adminLink');
@@ -97,15 +88,13 @@ describe('Guest Mode', function () {
         await showStatusScreen();
 
         expect(guestRestrictionsStatus.classList.contains('hidden')).toBe(false);
-        expect(guestUpgradeBtn.classList.contains('hidden')).toBe(false);
         expect(adminLink.style.display).toBe('none');
     });
 
-    it('showStatusScreen keeps the upgrade button hidden for signed-in users', async function () {
+    it('showStatusScreen hides guest restrictions for signed-in users', async function () {
         quizState.user = { id: 8, isAdmin: false };
         quizState.isGuest = false;
         guestRestrictionsStatus.classList.remove('hidden');
-        guestUpgradeBtn.classList.remove('hidden');
         spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
         spyOn(window, 'fetch').and.returnValue(Promise.resolve({
             ok: true,
@@ -121,7 +110,6 @@ describe('Guest Mode', function () {
         await showStatusScreen();
 
         expect(guestRestrictionsStatus.classList.contains('hidden')).toBe(true);
-        expect(guestUpgradeBtn.classList.contains('hidden')).toBe(true);
     });
 
     it('restoreGuestSession returns false when no guest cookie-backed session exists', async function () {

@@ -62,7 +62,7 @@
         <div id="statusScreen" class="screen hidden">
             <div class="status-content">
                 <h1>📊 Your Quiz Status</h1>
-                <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can create an account at any time to retain your progress.</p>
+                <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can <a href="#" onclick="openCreateAccountFromGuestBanner(); return false;">create an account</a> at any time to retain your progress.</p>
                 <div class="stats-section">
                     <div class="stat-card">
                         <span class="stat-label">Cumulative Score</span>
@@ -81,7 +81,6 @@
                 <div class="status-separator" aria-hidden="true"></div>
 
                 <div class="quiz-actions">
-                    <button onclick="showGuestUpgradeAuth()" class="btn btn-secondary hidden" id="guestUpgradeBtn">Create Account or Log In</button>
                     <div class="specific-quiz-section">
                         <div class="input-row">
                             <input type="text" id="specificQuizId" placeholder="Run quiz ID">

@@ -89,7 +89,10 @@ describe('Status Screen Stats', function () {
 
     // ========== Fetch failure leaves defaults ==========
     describe('fetch failure handling', function () {
-        it('leaves all stat cards at default "0" on network error', async function () {
+        it('resets stale stat cards to default "0" on network error', async function () {
+            statElements['statsCumulativeScore'].textContent = '42';
+            statElements['statsCompleted'].textContent = '5';
+            statElements['statsAverageScore'].textContent = '8.4';
             spyOn(window, 'fetch').and.returnValue(Promise.reject(new Error('Network error')));
 
             await showStatusScreen();
@@ -99,7 +102,10 @@ describe('Status Screen Stats', function () {
             });
         });
 
-        it('leaves all stat cards at default "0" on non-ok response', async function () {
+        it('resets stale stat cards to default "0" on non-ok response', async function () {
+            statElements['statsCumulativeScore'].textContent = '42';
+            statElements['statsCompleted'].textContent = '5';
+            statElements['statsAverageScore'].textContent = '8.4';
             spyOn(window, 'fetch').and.returnValue(Promise.resolve({
                 ok: false,
                 json: function () {

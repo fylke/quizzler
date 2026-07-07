@@ -137,10 +137,11 @@ def test_guest_register_migrates_completed_score(page: Page, base_url: str):
     page.click("text=Back to Status")
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
 
-    page.click("#guestUpgradeBtn")
+    page.click("#guestRestrictionsStatus a")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
 
-    page.click("#switchToRegister a")
+    expect(page.locator("#name")).to_be_visible()
+    expect(page.locator("#authButton")).to_have_text("Create Account")
     page.fill("#name", "Migrated Guest")
     page.fill("#email", "migrated-guest@test.com")
     page.fill("#password", "password123")

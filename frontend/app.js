@@ -192,28 +192,20 @@ async function continueAsGuest() {
     }
 }
 
-function showGuestUpgradeAuth() {
+function openCreateAccountFromGuestBanner() {
     clearAuthError();
+    toggleAuthMode('register');
     showScreen('welcomeScreen');
 }
 
 function updateGuestUpgradeVisibility() {
     const guestRestrictions = document.getElementById('guestRestrictionsStatus');
-    const guestUpgradeBtn = document.getElementById('guestUpgradeBtn');
 
     if (guestRestrictions) {
         if (quizState.isGuest) {
             guestRestrictions.classList.remove('hidden');
         } else {
             guestRestrictions.classList.add('hidden');
-        }
-    }
-
-    if (guestUpgradeBtn) {
-        if (quizState.isGuest) {
-            guestUpgradeBtn.classList.remove('hidden');
-        } else {
-            guestUpgradeBtn.classList.add('hidden');
         }
     }
 }
@@ -993,6 +985,9 @@ function retakeQuiz() {
 async function showStatusScreen() {
     showScreen('statusScreen');
     updateGuestUpgradeVisibility();
+    document.getElementById('statsCumulativeScore').textContent = '0';
+    document.getElementById('statsCompleted').textContent = '0';
+    document.getElementById('statsAverageScore').textContent = '0';
 
     try {
         const response = await fetch(`${API_BASE}/api/stats`);

@@ -663,6 +663,17 @@ body {
     line-height: 1.45;
 }
 
+.guest-mode-banner a {
+    color: #8c5a00;
+    font-weight: 600;
+}
+
+.guest-mode-banner a:hover,
+.guest-mode-banner a:focus {
+    color: #5b460f;
+    text-decoration: underline;
+}
+
 .guest-mode-banner.hidden {
     display: none;
 }
