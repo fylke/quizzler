@@ -338,7 +338,7 @@ jobs:
             > .tmp-reports/backup-report.json
 
       - name: Upload backup report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backup-report-${{ github.run_id }}
           path: .tmp-reports/backup-report.json
@@ -554,7 +554,7 @@ jobs:
             > .tmp-reports/restore-report.json
 
       - name: Upload restore report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: restore-report-${{ github.run_id }}
           path: .tmp-reports/restore-report.json
