@@ -1,9 +1,10 @@
 ```mermaid
 stateDiagram-v2
-    [*] --> WelcomeScreen
+    [*] --> MainScreen
+    MainScreen --> WelcomeScreen: LoginIcon
     WelcomeScreen --> WelcomeScreen: Incorrect login
-    WelcomeScreen --> StatusScreen: ButtonLogin
-    WelcomeScreen --> StatusScreen: ButtonTryIt
+    WelcomeScreen --> MainScreen: ButtonLogin
+    WelcomeScreen --> MainScreen: ButtonTryIt
     WelcomeScreen --> [*]
 
     state WelcomeScreen {
@@ -13,16 +14,24 @@ stateDiagram-v2
         ButtonTryIt
     }
 
-    StatusScreen --> QuizScreen: ButtonRunSpecificQuiz
-    StatusScreen --> QuizScreen: ButtonRunRandomQuiz
-    StatusScreen --> WelcomeScreen: ButtonLogout
+    MainScreen --> QuizScreen: ButtonRunSpecificQuiz
+    MainScreen --> QuizScreen: ButtonRunRandomQuiz
+    MainScreen --> StatsScreen: ButtonStats
+    MainScreen --> WelcomeScreen: ButtonLogout
 
-    state StatusScreen {
-        TextfieldQuizStats
+    state MainScreen {
         InputfieldRunSpecificQuiz
         ButtonRunSpecificQuiz
         ButtonRunRandomQuiz
+        ButtonStats
         ButtonLogout
+    }
+
+    StatsScreen --> MainScreen: ButtonBackToMain
+
+    state StatsScreen {
+        TextfieldQuizStats
+        ButtonBackToMain
     }
 
     QuizScreen --> QuizScreen: ButtonNextHint
@@ -37,19 +46,19 @@ stateDiagram-v2
         ButtonNextHint
     }
 
-    CorrectScreen --> StatusScreen: ButtonBackToStatus
+    CorrectScreen --> MainScreen: ButtonBackToMain
 
     state CorrectScreen {
         TextfieldNumberOfPoints
         TextfieldPercentageOfPeopleWhoGotIt
-        ButtonBackToStatus_Correct
+        ButtonBackToMain_Correct
     }
 
-    FailureScreen --> StatusScreen: ButtonBackToStatus
+    FailureScreen --> MainScreen: ButtonBackToMain
 
     state FailureScreen {
         TextfieldCorrectAnswer
-        ButtonBackToStatus_Failure
+        ButtonBackToMain_Failure
     }
 ```
 

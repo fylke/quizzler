@@ -179,9 +179,12 @@ describe('Hint Review', function () {
         updateHintDisplay('Hardest hint', 5, 2, { animatePointsEvaporation: true });
 
         expect(document.querySelector('#currentHint .current-hint-points').classList.contains('points-evaporate-out')).toBe(true);
+        expect(document.getElementById('remainingGuesses').classList.contains('remaining-guesses-evaporate-out')).toBe(false);
+        expect(document.getElementById('remainingGuesses').textContent).toBe('Remaining guesses: 2');
 
         setTimeout(function () {
             expect(document.getElementById('currentHint').textContent).toBe('Hardest difficulty (10p)');
+            expect(document.getElementById('remainingGuesses').classList.contains('remaining-guesses-evaporate-in')).toBe(false);
             done();
         }, 360);
     });

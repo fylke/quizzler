@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <div id="welcomeScreen" class="screen">
+        <div id="welcomeScreen" class="screen hidden">
             <div class="welcome-content">
                 <h1 id="authHeading">Quizzler</h1>
                 <p class="brand-subheading">The customizable quiz engine</p>
@@ -59,9 +59,38 @@
             </div>
         </div>
 
-        <div id="statusScreen" class="screen hidden">
+        <div id="statusScreen" class="screen">
             <div class="status-content">
-                <h1>📊 Your Quiz Status</h1>
+                <a
+                    href="#"
+                    id="statusLoginLink"
+                    class="status-login-link"
+                    onclick="openLoginFromStatus(); return false;"
+                    aria-label="Log in"
+                    title="Log in"
+                >
+                    <span class="status-login-icon" aria-hidden="true"></span>
+                </a>
+                <h1>🏠 Main Screen</h1>
+
+                <div class="quiz-actions">
+                    <div class="specific-quiz-section">
+                        <div class="input-row">
+                            <input type="text" id="specificQuizId" placeholder="Run quiz ID">
+                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
+                        </div>
+                    </div>
+                    <button onclick="runRandomQuiz()" class="btn btn-primary" id="runRandomQuizBtn">Run Random Quiz</button>
+                    <button onclick="showStatsScreen()" class="btn btn-secondary" id="statsBtn">Stats</button>
+                    <button onclick="showAdminScreen()" class="btn btn-admin" id="adminLink" style="display:none;">🔧 Admin Panel</button>
+                    <button onclick="handleLogout()" class="btn btn-secondary" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statsScreen" class="screen hidden">
+            <div class="stats-content">
+                <h1>📊 Your Stats</h1>
                 <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can <a href="#" onclick="openCreateAccountFromGuestBanner(); return false;">create an account</a> at any time to retain your progress.</p>
                 <div class="stats-section">
                     <div class="stat-card">
@@ -77,19 +106,8 @@
                         <span id="statsAverageScore" class="stat-value">0</span>
                     </div>
                 </div>
-
-                <div class="status-separator" aria-hidden="true"></div>
-
-                <div class="quiz-actions">
-                    <div class="specific-quiz-section">
-                        <div class="input-row">
-                            <input type="text" id="specificQuizId" placeholder="Run quiz ID">
-                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
-                        </div>
-                    </div>
-                    <button onclick="runRandomQuiz()" class="btn btn-primary" id="runRandomQuizBtn">Run Random Quiz</button>
-                    <button onclick="showAdminScreen()" class="btn btn-admin" id="adminLink" style="display:none;">🔧 Admin Panel</button>
-                    <button onclick="handleLogout()" class="btn btn-secondary" id="logoutBtn">Logout</button>
+                <div class="stats-actions">
+                    <button onclick="backToStatus()" class="btn btn-secondary" id="backToMainFromStatsBtn">Back to Main</button>
                 </div>
             </div>
         </div>
@@ -155,7 +173,7 @@
                 <div id="feedbackDetails" class="feedback-details"></div>
                 <h3 id="feedbackResultImagesHeading" class="hidden"></h3>
                 <div id="feedbackResultImages" class="images-section hidden" aria-label="Additional destination images"></div>
-                <button onclick="backToStatus()" class="btn btn-primary">Back to Status</button>
+                <button onclick="backToStatus()" class="btn btn-primary">Back to Main</button>
             </div>
         </div>
 
@@ -173,7 +191,7 @@
                 <div id="resultImages" class="result-images hidden" aria-label="Additional destination images"></div>
                 <div class="button-group">
                     <button onclick="retakeQuiz()" class="btn btn-primary">Retake Quiz</button>
-                    <button onclick="backToStatus()" class="btn btn-secondary">Back to Status</button>
+                    <button onclick="backToStatus()" class="btn btn-secondary">Back to Main</button>
                 </div>
             </div>
         </div>
@@ -182,7 +200,7 @@
         <div id="adminScreen" class="screen hidden">
             <div class="admin-header">
                 <h1>🔧 Admin: Quiz Management</h1>
-                <button onclick="hideAdminScreen()" class="btn btn-secondary">← Back to Status</button>
+                <button onclick="hideAdminScreen()" class="btn btn-secondary">← Back to Main</button>
             </div>
             <p id="adminDestCount"></p>
             <div class="admin-actions">

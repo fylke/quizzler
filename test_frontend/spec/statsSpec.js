@@ -1,4 +1,4 @@
-describe('Status Screen Stats', function () {
+describe('Stats Screen', function () {
 
     var statIds = [
         'statsCumulativeScore',
@@ -6,7 +6,7 @@ describe('Status Screen Stats', function () {
         'statsAverageScore'
     ];
     var statElements = {};
-    var statusSeparator;
+    var statsScreen;
     var adminLink;
     var originalQuizState;
 
@@ -29,24 +29,12 @@ describe('Status Screen Stats', function () {
             statElements[id] = el;
         });
 
-        statusSeparator = document.getElementById('statusSeparator');
-        if (!statusSeparator) {
-            statusSeparator = document.createElement('div');
-            statusSeparator.id = 'statusSeparator';
-            statusSeparator.className = 'status-separator';
-            var statusContent = document.querySelector('#statusScreen .status-content');
-            if (statusContent) {
-                var statsSection = statusContent.querySelector('.stats-section');
-                if (statsSection && statsSection.nextSibling) {
-                    statusContent.insertBefore(statusSeparator, statsSection.nextSibling);
-                } else if (statsSection) {
-                    statusContent.appendChild(statusSeparator);
-                } else {
-                    statusContent.appendChild(statusSeparator);
-                }
-            } else {
-                document.body.appendChild(statusSeparator);
-            }
+        statsScreen = document.getElementById('statsScreen');
+        if (!statsScreen) {
+            statsScreen = document.createElement('div');
+            statsScreen.id = 'statsScreen';
+            statsScreen.className = 'screen hidden';
+            document.body.appendChild(statsScreen);
         }
 
         // Set up adminLink element
@@ -78,12 +66,12 @@ describe('Status Screen Stats', function () {
                 }
             }));
 
-            await showStatusScreen();
+            await showStatsScreen();
 
             expect(statElements['statsCumulativeScore'].textContent).toBe('42');
             expect(statElements['statsCompleted'].textContent).toBe('5');
             expect(statElements['statsAverageScore'].textContent).toBe('8.4');
-            expect(statusSeparator).not.toBeNull();
+            expect(statsScreen).not.toBeNull();
         });
     });
 
@@ -95,7 +83,7 @@ describe('Status Screen Stats', function () {
             statElements['statsAverageScore'].textContent = '8.4';
             spyOn(window, 'fetch').and.returnValue(Promise.reject(new Error('Network error')));
 
-            await showStatusScreen();
+            await showStatsScreen();
 
             statIds.forEach(function (id) {
                 expect(statElements[id].textContent).toBe('0');
@@ -113,7 +101,7 @@ describe('Status Screen Stats', function () {
                 }
             }));
 
-            await showStatusScreen();
+            await showStatsScreen();
 
             statIds.forEach(function (id) {
                 expect(statElements[id].textContent).toBe('0');

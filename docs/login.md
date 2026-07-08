@@ -18,5 +18,5 @@ sequenceDiagram
         Backend->>Frontend: (401, {error: "Invalid credentials"})
     end
 
-    Frontend->>User: Display StatusScreen
+    Frontend->>User: Display MainScreen
 ```

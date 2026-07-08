@@ -6,9 +6,9 @@ The admin page allows users with the `is_admin` flag to manage quiz destinations
 
 ```mermaid
 flowchart TD
-    Login[Login Screen] --> Status[Status Screen]
-    Status -->|"Admin Panel button<br>(admin users only)"| Admin[Admin Screen]
-    Admin -->|"← Back to Status"| Status
+    Login[Login Screen] --> Main[Main Screen]
+    Main -->|"Admin Panel button<br>(admin users only)"| Admin[Admin Screen]
+    Admin -->|"← Back to Main"| Main
 
     Admin --> List[Destinations List]
     Admin --> Form[Destination Form]
@@ -64,7 +64,7 @@ flowchart LR
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  🔧 Admin: Quiz Management        [← Back to Status]│
+│  🔧 Admin: Quiz Management          [← Back to Main]│
 ├─────────────────────────────────────────────────────┤
 │  Total destinations: 3                               │
 │  [Add New Destination]                               │

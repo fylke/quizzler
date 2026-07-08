@@ -17,6 +17,8 @@ def setup(clean_db):
 def _register_and_start(page: Page, base_url: str):
     """Register a user and navigate to the quiz screen."""
     page.goto(base_url)
+    page.click("#statusLoginLink")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.click("#switchToRegister a")
     page.fill("#name", "Tester")
     page.fill("#email", "tester@test.com")

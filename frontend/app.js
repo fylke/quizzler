@@ -108,7 +108,11 @@ async function loadUser() {
                 }
                 return;
             }
-            showScreen('welcomeScreen');
+            const startedGuest = await continueAsGuest();
+            if (!startedGuest) {
+                toggleAuthMode('login');
+                showScreen('welcomeScreen');
+            }
             return;
         }
         if (!response.ok) {
@@ -176,7 +180,7 @@ async function continueAsGuest() {
                 // Ignore non-JSON error responses and keep the generic message.
             }
             showNotification(errorMessage);
-            return;
+            return false;
         }
 
         const data = await response.json();
@@ -186,10 +190,18 @@ async function continueAsGuest() {
         if (!restoredActiveQuiz) {
             showStatusScreen();
         }
+        return true;
     } catch (error) {
         console.error('Guest session error:', error);
         showNotification('Unable to continue as guest.');
+        return false;
     }
+}
+
+function openLoginFromStatus() {
+    clearAuthError();
+    toggleAuthMode('login');
+    showScreen('welcomeScreen');
 }
 
 function openCreateAccountFromGuestBanner() {
@@ -590,36 +602,15 @@ function updateRemainingGuessesDisplay(remainingGuesses, options = {}) {
         return;
     }
 
-    const shouldAnimateEvaporation = Boolean(options.animatePointsEvaporation);
-
     if (remainingGuessesAnimationTimeout !== null) {
         clearTimeout(remainingGuessesAnimationTimeout);
         remainingGuessesAnimationTimeout = null;
     }
 
     const currentGuesses = Number(remainingGuessesEl.dataset.currentGuesses);
-    if (!shouldAnimateEvaporation || !Number.isFinite(currentGuesses) || currentGuesses === guesses) {
-        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
-        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
-        remainingGuessesEl.dataset.currentGuesses = String(guesses);
-        return;
-    }
-
     remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out', 'remaining-guesses-evaporate-in');
-    void remainingGuessesEl.offsetWidth;
-    remainingGuessesEl.classList.add('remaining-guesses-evaporate-out');
-
-    remainingGuessesAnimationTimeout = window.setTimeout(() => {
-        remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
-        remainingGuessesEl.dataset.currentGuesses = String(guesses);
-        remainingGuessesEl.classList.remove('remaining-guesses-evaporate-out');
-        remainingGuessesEl.classList.add('remaining-guesses-evaporate-in');
-
-        window.setTimeout(() => {
-            remainingGuessesEl.classList.remove('remaining-guesses-evaporate-in');
-        }, COUNTER_PUFF_DURATION_MS);
-        remainingGuessesAnimationTimeout = null;
-    }, COUNTER_PUFF_DURATION_MS);
+    remainingGuessesEl.textContent = `Remaining guesses: ${guesses}`;
+    remainingGuessesEl.dataset.currentGuesses = String(guesses);
 }
 
 function resetHintReviewState() {
@@ -980,10 +971,34 @@ function retakeQuiz() {
     loadQuestion();
 }
 
-// ==================== Status Screen ====================
+// ==================== Main + Stats Screens ====================
+
+async function showMainScreen() {
+    showScreen('statusScreen');
+    updateGuestUpgradeVisibility();
+    updateStatusLoginLinkVisibility();
+
+    // Show/hide admin link based on user role
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink) {
+        if (quizState.user && quizState.user.isAdmin && !quizState.isGuest) {
+            adminLink.style.display = '';
+        } else {
+            adminLink.style.display = 'none';
+        }
+    }
+
+    // Fetch and render quiz type buttons
+    await loadQuizTypeButtons();
+}
 
 async function showStatusScreen() {
-    showScreen('statusScreen');
+    // Backward-compatible alias: status screen is now the main screen.
+    await showMainScreen();
+}
+
+async function showStatsScreen() {
+    showScreen('statsScreen');
     updateGuestUpgradeVisibility();
     document.getElementById('statsCumulativeScore').textContent = '0';
     document.getElementById('statsCompleted').textContent = '0';
@@ -1003,19 +1018,16 @@ async function showStatusScreen() {
         console.error('Error loading stats:', error);
         showNotification('Cannot connect to server.');
     }
+}
 
-    // Show/hide admin link based on user role
-    const adminLink = document.getElementById('adminLink');
-    if (adminLink) {
-        if (quizState.user && quizState.user.isAdmin && !quizState.isGuest) {
-            adminLink.style.display = '';
-        } else {
-            adminLink.style.display = 'none';
-        }
+function updateStatusLoginLinkVisibility() {
+    const statusLoginLink = document.getElementById('statusLoginLink');
+    if (!statusLoginLink) {
+        return;
     }
 
-    // Fetch and render quiz type buttons
-    await loadQuizTypeButtons();
+    const shouldShow = quizState.isGuest || !quizState.user;
+    statusLoginLink.classList.toggle('hidden', !shouldShow);
 }
 
 async function loadQuizTypeButtons() {
@@ -1110,7 +1122,7 @@ async function loadQuizTypeButtons() {
 }
 
 function backToStatus() {
-    showStatusScreen();
+    showMainScreen();
 }
 
 async function runRandomQuiz() {

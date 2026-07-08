@@ -12,6 +12,8 @@ def setup(clean_db):
 def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
     """Helper to register a user and land on the quiz screen via status."""
     page.goto(base_url)
+    page.click("#statusLoginLink")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.click("#switchToRegister a")
     page.fill("#name", name)
     page.fill("#email", f"{name.lower().replace(' ', '')}@test.com")
@@ -29,9 +31,8 @@ def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
 
 
 def _continue_as_guest_and_start(page: Page, base_url: str):
-    """Helper to enter guest mode and start a quiz."""
+    """Helper to start a quiz in default guest mode."""
     page.goto(base_url)
-    page.click("#guestButton")
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
 
     quiz_type_button = page.locator(".quiz-type-btn").first
@@ -134,9 +135,11 @@ def test_guest_register_migrates_completed_score(page: Page, base_url: str):
     page.click("text=Submit Answer")
     expect(page.locator("#feedbackScreen")).to_be_visible(timeout=5000)
 
-    page.click("text=Back to Status")
+    page.locator("#feedbackScreen button", has_text="Back to Main").click()
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
 
+    page.click("#statsBtn")
+    expect(page.locator("#statsScreen")).to_be_visible(timeout=5000)
     page.click("#guestRestrictionsStatus a")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
 
@@ -148,5 +151,7 @@ def test_guest_register_migrates_completed_score(page: Page, base_url: str):
     page.click("#authButton")
 
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
+    page.click("#statsBtn")
+    expect(page.locator("#statsScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#statsCumulativeScore")).to_have_text("15")
     expect(page.locator("#statsCompleted")).to_have_text("1")

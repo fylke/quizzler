@@ -70,44 +70,41 @@ describe('Guest Mode', function () {
         expect(window.showStatusScreen).toHaveBeenCalled();
     });
 
-    it('showStatusScreen shows guest restrictions and upgrade button for guest users', async function () {
+    it('showStatsScreen shows guest restrictions for guest users', async function () {
         quizState.user = { id: 7, isAdmin: false };
         quizState.isGuest = true;
-        spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
         spyOn(window, 'fetch').and.returnValue(Promise.resolve({
             ok: true,
             json: function () {
                 return Promise.resolve({
-                    cumulativeScore: 12,
-                    quizzesCompleted: 1,
-                    averageScore: 12
+                    cumulativeScore: 0,
+                    quizzesCompleted: 0,
+                    averageScore: 0
                 });
             }
         }));
 
-        await showStatusScreen();
+        await showStatsScreen();
 
         expect(guestRestrictionsStatus.classList.contains('hidden')).toBe(false);
-        expect(adminLink.style.display).toBe('none');
     });
 
-    it('showStatusScreen hides guest restrictions for signed-in users', async function () {
+    it('showStatsScreen hides guest restrictions for signed-in users', async function () {
         quizState.user = { id: 8, isAdmin: false };
         quizState.isGuest = false;
         guestRestrictionsStatus.classList.remove('hidden');
-        spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
         spyOn(window, 'fetch').and.returnValue(Promise.resolve({
             ok: true,
             json: function () {
                 return Promise.resolve({
-                    cumulativeScore: 12,
-                    quizzesCompleted: 1,
-                    averageScore: 12
+                    cumulativeScore: 0,
+                    quizzesCompleted: 0,
+                    averageScore: 0
                 });
             }
         }));
 
-        await showStatusScreen();
+        await showStatsScreen();
 
         expect(guestRestrictionsStatus.classList.contains('hidden')).toBe(true);
     });

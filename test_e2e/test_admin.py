@@ -29,6 +29,8 @@ def admin_page(clean_db, page: Page, base_url: str):
 
     # Login via UI
     page.goto(base_url)
+    page.click("#statusLoginLink")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.fill("#email", "admin@test.com")
     page.fill("#password", "adminpass123")
     page.click("#authButton")
@@ -54,6 +56,8 @@ def regular_page(clean_db, page: Page, base_url: str):
         db.session.commit()
 
     page.goto(base_url)
+    page.click("#statusLoginLink")
+    expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.fill("#email", "regular@test.com")
     page.fill("#password", "password123")
     page.click("#authButton")
@@ -103,11 +107,11 @@ def test_admin_screen_shows_destination_count(admin_page: Page):
 
 
 def test_back_to_status_button(admin_page: Page):
-    """Clicking 'Back to Status' returns to status screen."""
+    """Clicking 'Back to Main' returns to status screen."""
     admin_page.click("#adminLink")
     expect(admin_page.locator("#adminScreen")).to_be_visible(timeout=3000)
 
-    admin_page.locator("#adminScreen button", has_text="Back to Status").click()
+    admin_page.locator("#adminScreen button", has_text="Back to Main").click()
     expect(admin_page.locator("#statusScreen")).to_be_visible(timeout=3000)
     expect(admin_page.locator("#adminScreen")).to_be_hidden()
 
