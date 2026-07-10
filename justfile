@@ -96,6 +96,7 @@ frontend seed='':
 e2e seed='':
     #!/usr/bin/env bash
     set -euo pipefail
+    # Always run E2E through this target to keep runner configuration consistent.
     seed_value="{{seed}}"
     seed_value="${seed_value#seed=}"
     if [[ -z "$seed_value" ]]; then
@@ -103,6 +104,24 @@ e2e seed='':
     fi
     echo "Running e2e tests with random seed: $seed_value"
     uv run --group test python -m pytest test_e2e/ --randomly-seed="$seed_value"
+
+e2e-single selector seed='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Use this for single E2E tests instead of calling pytest directly.
+    seed_value="{{seed}}"
+    seed_value="${seed_value#seed=}"
+    if [[ -z "$seed_value" ]]; then
+        seed_value="$(date +%s)"
+    fi
+    selector_value="{{selector}}"
+    selector_value="${selector_value#selector=}"
+    if [[ -z "$selector_value" ]]; then
+        echo "Usage: just e2e-single <pytest-selector> [seed]"
+        exit 2
+    fi
+    echo "Running e2e selector '$selector_value' with random seed: $seed_value"
+    uv run --group test python -m pytest "$selector_value" --randomly-seed="$seed_value"
 
 test:
     #!/usr/bin/env bash

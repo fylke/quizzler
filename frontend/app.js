@@ -15,6 +15,7 @@ let csrfToken = null;
 
 const API_BASE = window.location.origin;
 let authMode = 'login';
+let suppressNextAutoStatusScreen = false;
 let submitting = false; // guards against double-click on submit
 let hintCounterAnimationTimeout = null;
 let remainingGuessesAnimationTimeout = null;
@@ -104,11 +105,15 @@ async function loadUser() {
             if (restoredGuest) {
                 const restoredActiveQuiz = await restoreActiveQuiz();
                 if (!restoredActiveQuiz) {
-                    showStatusScreen();
+                    if (suppressNextAutoStatusScreen) {
+                        suppressNextAutoStatusScreen = false;
+                    } else {
+                        showStatusScreen();
+                    }
                 }
                 return;
             }
-            const startedGuest = await continueAsGuest();
+            const startedGuest = await continueAsGuest(true);
             if (!startedGuest) {
                 toggleAuthMode('login');
                 showScreen('welcomeScreen');
@@ -160,7 +165,7 @@ function applyGuestSession(data) {
     csrfToken = null;
 }
 
-async function continueAsGuest() {
+async function continueAsGuest(isAutoStart = false) {
     try {
         const response = await fetch(`${API_BASE}/api/guest-session`, {
             method: 'POST',
@@ -188,7 +193,11 @@ async function continueAsGuest() {
 
         const restoredActiveQuiz = await restoreActiveQuiz();
         if (!restoredActiveQuiz) {
-            showStatusScreen();
+            if (isAutoStart && suppressNextAutoStatusScreen) {
+                suppressNextAutoStatusScreen = false;
+            } else {
+                showStatusScreen();
+            }
         }
         return true;
     } catch (error) {
@@ -199,12 +208,14 @@ async function continueAsGuest() {
 }
 
 function openLoginFromStatus() {
+    suppressNextAutoStatusScreen = true;
     clearAuthError();
     toggleAuthMode('login');
     showScreen('welcomeScreen');
 }
 
 function openCreateAccountFromGuestBanner() {
+    suppressNextAutoStatusScreen = true;
     clearAuthError();
     toggleAuthMode('register');
     showScreen('welcomeScreen');

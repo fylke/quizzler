@@ -163,6 +163,14 @@ just playwright-install
 just e2e
 ```
 
+Important: run E2E through `just` targets only (`just e2e` or `just e2e-single <pytest-selector>`). Avoid direct `uv run pytest ...` for E2E so repo-specific test wrappers stay consistent.
+
+To run one E2E test with a reproducible seed:
+
+```bash
+just e2e-single "test_e2e/test_wrong_guess_animation.py::test_empty_input_animates_without_alert[chromium]" 12345
+```
+
 ## Guest Mode
 
 You can now play quizzes without creating an account by clicking **Continue as Guest** on the welcome screen.
