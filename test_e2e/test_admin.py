@@ -70,7 +70,7 @@ def test_admin_link_visible_for_admin_user(admin_page: Page):
     """Admin user sees the 'Admin Panel' button on the status screen."""
     admin_link = admin_page.locator("#adminLink")
     expect(admin_link).to_be_visible()
-    expect(admin_link).to_have_text("🔧 Admin Panel")
+    expect(admin_link).to_have_attribute("aria-label", "Admin panel")
 
 
 def test_admin_link_hidden_for_regular_user(regular_page: Page):

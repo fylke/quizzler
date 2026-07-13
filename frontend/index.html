@@ -61,23 +61,50 @@
 
         <div id="statusScreen" class="screen">
             <div class="status-content">
-                <a
-                    href="#"
-                    id="statusLoginLink"
-                    class="status-login-link"
-                    onclick="openLoginFromStatus(); return false;"
-                    aria-label="Log in"
-                    title="Log in"
-                >
-                    <span class="status-login-icon" aria-hidden="true"></span>
-                </a>
+                <div class="status-icon-cluster" aria-label="Main actions">
+                    <a
+                        href="#"
+                        id="statusLoginLink"
+                        class="status-login-link"
+                        onclick="openLoginFromStatus(); return false;"
+                        aria-label="Log in"
+                        title="Log in"
+                    >
+                        <span class="status-login-icon" aria-hidden="true"></span>
+                    </a>
+                    <button
+                        onclick="showStatsScreen()"
+                        class="btn btn-secondary main-round-action-btn"
+                        id="statsBtn"
+                        aria-label="Statistics"
+                        title="Statistics"
+                    >📊</button>
+                    <button
+                        onclick="showAdminScreen()"
+                        class="btn-admin-icon"
+                        id="adminLink"
+                        style="display:none;"
+                        aria-label="Admin panel"
+                        title="Admin panel"
+                    >
+                        <span class="admin-user-icon" aria-hidden="true"></span>
+                        <span class="admin-cog-icon" aria-hidden="true"></span>
+                    </button>
+                    <button
+                        onclick="handleLogout()"
+                        class="btn-logout-icon"
+                        id="logoutBtn"
+                        aria-label="Log out"
+                        title="Log out"
+                    >
+                        <span class="logout-circle-icon" aria-hidden="true"></span>
+                        <span class="logout-arrow-icon" aria-hidden="true"></span>
+                    </button>
+                </div>
                 <h1>🏠 Main Screen</h1>
 
                 <div class="quiz-actions">
-                    <button onclick="runRandomQuiz()" class="btn btn-primary" id="runRandomQuizBtn">Run Random Quiz</button>
-                    <button onclick="showStatsScreen()" class="btn btn-secondary" id="statsBtn">📊</button>
-                    <button onclick="showAdminScreen()" class="btn btn-admin" id="adminLink" style="display:none;">🔧 Admin Panel</button>
-                    <button onclick="handleLogout()" class="btn btn-secondary" id="logoutBtn">Logout</button>
+                    <button onclick="runRandomQuiz()" class="btn btn-primary main-row-btn" id="runRandomQuizBtn">Run Random Quiz</button>
                     <div class="specific-quiz-section">
                         <div class="input-row">
                             <input type="text" id="specificQuizId" placeholder="Run specific quiz">

@@ -650,6 +650,16 @@ body {
     color: #667eea;
     margin-bottom: var(--space-7);
     font-size: 2em;
+    padding-right: 230px;
+}
+
+.status-icon-cluster {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .stats-content {
@@ -663,9 +673,6 @@ body {
 }
 
 .status-login-link {
-    position: absolute;
-    top: 0;
-    right: 0;
     width: 46px;
     height: 46px;
     border-radius: 50%;
@@ -800,6 +807,33 @@ body {
     align-items: flex-start;
 }
 
+.main-action-row,
+.main-row-btn {
+    width: 100%;
+    max-width: 400px;
+}
+
+.main-stats-specific-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.main-round-action-btn {
+    width: 52px;
+    min-width: 52px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+}
+
+.main-stats-specific-row .specific-quiz-section {
+    flex: 1;
+    max-width: none;
+}
+
 .specific-quiz-section {
     width: 100%;
     max-width: 400px;
@@ -815,6 +849,7 @@ body {
 .input-row {
     display: flex;
     gap: 10px;
+    width: 100%;
 }
 
 .input-row input {
@@ -942,9 +977,20 @@ body {
         padding: var(--space-5);
     }
 
-    .status-login-link {
+    .status-login-link,
+    .main-round-action-btn,
+    .btn-admin-icon,
+    .btn-logout-icon {
         width: 42px;
         height: 42px;
+    }
+
+    .status-content h1 {
+        padding-right: 190px;
+    }
+
+    .status-icon-cluster {
+        gap: 8px;
     }
 
     .welcome-content h1 {
@@ -1191,6 +1237,153 @@ body {
 .btn-admin:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+}
+
+.btn-admin-icon {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid #d97706;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-admin-icon:hover,
+.btn-admin-icon:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(217, 119, 6, 0.35);
+    border-color: #b45309;
+}
+
+.btn-admin-icon:focus-visible {
+    outline: 2px solid #b45309;
+    outline-offset: 2px;
+}
+
+.btn-logout-icon {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid #7f8aa6;
+    background: #eef2fb;
+    color: #4d64c9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-logout-icon:hover,
+.btn-logout-icon:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(74, 98, 196, 0.24);
+    border-color: #4d64c9;
+}
+
+.btn-logout-icon:focus-visible {
+    outline: 2px solid #4d64c9;
+    outline-offset: 2px;
+}
+
+.logout-circle-icon {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    transform: translateX(-3px);
+}
+
+.logout-arrow-icon {
+    position: absolute;
+    width: 10px;
+    height: 2px;
+    background: currentColor;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.logout-arrow-icon::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.admin-user-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    display: block;
+    transform: translateX(-4px);
+}
+
+.admin-user-icon::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: #fff;
+}
+
+.admin-user-icon::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 8px;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    border-radius: 8px 8px 5px 5px;
+    background: #fff;
+}
+
+.admin-cog-icon {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    right: 7px;
+    bottom: 7px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
+
+.admin-cog-icon::before,
+.admin-cog-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 14px;
+    background: #fff;
+    transform-origin: center;
+}
+
+.admin-cog-icon::before {
+    transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.admin-cog-icon::after {
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 /* Danger Button */

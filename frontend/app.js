@@ -987,18 +987,7 @@ function retakeQuiz() {
 async function showMainScreen() {
     showScreen('statusScreen');
     updateGuestUpgradeVisibility();
-    updateStatusLoginLinkVisibility();
-    updateLogoutButtonVisibility();
-
-    // Show/hide admin link based on user role
-    const adminLink = document.getElementById('adminLink');
-    if (adminLink) {
-        if (quizState.user && quizState.user.isAdmin && !quizState.isGuest) {
-            adminLink.style.display = '';
-        } else {
-            adminLink.style.display = 'none';
-        }
-    }
+    updateMainCornerIconVisibility();
 
     // Fetch and render quiz type buttons
     await loadQuizTypeButtons();
@@ -1032,24 +1021,31 @@ async function showStatsScreen() {
     }
 }
 
-function updateStatusLoginLinkVisibility() {
+function updateMainCornerIconVisibility() {
     const statusLoginLink = document.getElementById('statusLoginLink');
-    if (!statusLoginLink) {
-        return;
-    }
-
-    const shouldShow = quizState.isGuest || !quizState.user;
-    statusLoginLink.classList.toggle('hidden', !shouldShow);
-}
-
-function updateLogoutButtonVisibility() {
+    const statsBtn = document.getElementById('statsBtn');
+    const adminLink = document.getElementById('adminLink');
     const logoutBtn = document.getElementById('logoutBtn');
-    if (!logoutBtn) {
-        return;
+
+    const isGuestOrAnonymous = quizState.isGuest || !quizState.user;
+    const isAdminUser = Boolean(quizState.user && quizState.user.isAdmin && !quizState.isGuest);
+
+    if (statusLoginLink) {
+        statusLoginLink.classList.toggle('hidden', !isGuestOrAnonymous);
     }
 
-    // Guests should see the login icon instead of a logout control.
-    logoutBtn.style.display = quizState.isGuest ? 'none' : '';
+    if (statsBtn) {
+        statsBtn.style.display = '';
+    }
+
+    if (adminLink) {
+        adminLink.style.display = isAdminUser ? '' : 'none';
+    }
+
+    if (logoutBtn) {
+        // Guests should see login action instead of logout.
+        logoutBtn.style.display = isGuestOrAnonymous ? 'none' : '';
+    }
 }
 
 async function loadQuizTypeButtons() {
