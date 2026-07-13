@@ -1055,34 +1055,18 @@ async function loadQuizTypeButtons() {
         staticRunBtn.style.display = 'none';
     }
 
-    let quizTypeHeading = document.getElementById('availableQuizzesHeading');
     // Find or create the quiz type buttons container
     let quizTypeContainer = document.getElementById('quizTypeButtonsContainer');
     const quizActions = document.querySelector('.quiz-actions');
-    if (!quizTypeHeading) {
-        quizTypeHeading = document.createElement('h2');
-        quizTypeHeading.id = 'availableQuizzesHeading';
-        quizTypeHeading.className = 'available-quizzes-heading';
-        quizTypeHeading.textContent = 'Choose quiz';
-    }
     if (!quizTypeContainer) {
         quizTypeContainer = document.createElement('div');
         quizTypeContainer.id = 'quizTypeButtonsContainer';
         quizTypeContainer.className = 'quiz-type-buttons-container';
-        // Insert heading and quiz type buttons at the top of the action list.
+        // Insert quiz type buttons at the top of the action list.
         if (quizActions && quizActions.firstChild) {
             quizActions.insertBefore(quizTypeContainer, quizActions.firstChild);
-            quizActions.insertBefore(quizTypeHeading, quizTypeContainer);
         } else if (quizActions) {
-            quizActions.appendChild(quizTypeHeading);
             quizActions.appendChild(quizTypeContainer);
-        }
-    }
-    if (quizActions && quizTypeHeading.parentNode !== quizActions) {
-        if (quizTypeContainer.parentNode === quizActions) {
-            quizActions.insertBefore(quizTypeHeading, quizTypeContainer);
-        } else {
-            quizActions.appendChild(quizTypeHeading);
         }
     }
 
