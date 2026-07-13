@@ -105,8 +105,8 @@ just podman-down
 - `just hardening` runs the repository hardening policy checks.
 - `just format` runs `black` and `isort` across the repo.
 - `just playwright-install` installs Playwright browser dependencies for e2e/frontend testing.
-- `just podman-up` starts the Podman stack with the standard compose settings.
-- `just podman-up-local` starts the Podman stack with local compatibility overrides for hosts that do not support CPU/memory cgroup limits.
+- `just podman-up` starts the Podman stack with the repo's Podman compatibility defaults.
+- `just podman-up-local` starts the Podman stack with the same compatibility defaults plus local overrides for hosts that do not support CPU/memory cgroup limits.
 - `just podman-down` stops the Podman stack.
 
 ## Running All Tests
@@ -200,6 +200,10 @@ Guest restrictions:
    ```bash
    just podman-up
    ```
+
+   The Just targets load the repo's Podman compatibility module to force `cgroupfs`, a file-backed events backend, and `slirp4netns` for rootless Podman.
+
+   If rootless Podman reports a missing systemd user bus such as `/run/user/1000/bus`, enable lingering for your user with `sudo loginctl enable-linger 1000`, restart WSL, and try again.
 
    If you get `cpu.max` errors, that's likely because your host doesn't support container CPU/memory cgroup limits. Use this target as workaround:
    ```bash

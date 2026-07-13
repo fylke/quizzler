@@ -1,5 +1,7 @@
 default: test
 
+podman_compose := "CONTAINERS_CONF=$PWD/.podman/rootless-compat.conf podman-compose -p quizzler -f podman-compose.yml"
+
 sync:
     uv sync --group test
 
@@ -7,13 +9,13 @@ hardening:
     uv run python -m scripts.check_hardening
 
 podman-up:
-    podman-compose -p quizzler -f podman-compose.yml up --build -d
+    {{podman_compose}} up --build -d
 
 podman-up-local:
-    QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 podman-compose -p quizzler -f podman-compose.yml up --build -d
+    QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 {{podman_compose}} up --build -d
 
 podman-down:
-    podman-compose -p quizzler -f podman-compose.yml down
+    {{podman_compose}} down
 
 format:
     uv run black .
