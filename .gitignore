@@ -23,6 +23,7 @@ database/
 
 # Seed data (quiz content lives outside the repo)
 countries.json
+data/*.json
 data/countries.json
 data/destinations.json
 
