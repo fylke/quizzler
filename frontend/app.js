@@ -988,6 +988,7 @@ async function showMainScreen() {
     showScreen('statusScreen');
     updateGuestUpgradeVisibility();
     updateStatusLoginLinkVisibility();
+    updateLogoutButtonVisibility();
 
     // Show/hide admin link based on user role
     const adminLink = document.getElementById('adminLink');
@@ -1041,6 +1042,16 @@ function updateStatusLoginLinkVisibility() {
     statusLoginLink.classList.toggle('hidden', !shouldShow);
 }
 
+function updateLogoutButtonVisibility() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) {
+        return;
+    }
+
+    // Guests should see the login icon instead of a logout control.
+    logoutBtn.style.display = quizState.isGuest ? 'none' : '';
+}
+
 async function loadQuizTypeButtons() {
     // Hide the static "Run Random Quiz" button
     const staticRunBtn = document.getElementById('runRandomQuizBtn');
@@ -1056,20 +1067,16 @@ async function loadQuizTypeButtons() {
         quizTypeHeading = document.createElement('h2');
         quizTypeHeading.id = 'availableQuizzesHeading';
         quizTypeHeading.className = 'available-quizzes-heading';
-        quizTypeHeading.textContent = 'Available quizzes';
+        quizTypeHeading.textContent = 'Choose quiz';
     }
     if (!quizTypeContainer) {
         quizTypeContainer = document.createElement('div');
         quizTypeContainer.id = 'quizTypeButtonsContainer';
         quizTypeContainer.className = 'quiz-type-buttons-container';
-        // Insert the heading and button list before the admin link button
-        const adminLinkEl = quizActions ? quizActions.querySelector('#adminLink') : null;
-        if (quizActions && adminLinkEl) {
-            quizActions.insertBefore(quizTypeHeading, adminLinkEl);
-            quizActions.insertBefore(quizTypeContainer, adminLinkEl);
-        } else if (quizActions && staticRunBtn && staticRunBtn.parentNode === quizActions) {
-            quizActions.insertBefore(quizTypeHeading, staticRunBtn.nextSibling);
-            quizActions.insertBefore(quizTypeContainer, staticRunBtn.nextSibling);
+        // Insert heading and quiz type buttons at the top of the action list.
+        if (quizActions && quizActions.firstChild) {
+            quizActions.insertBefore(quizTypeContainer, quizActions.firstChild);
+            quizActions.insertBefore(quizTypeHeading, quizTypeContainer);
         } else if (quizActions) {
             quizActions.appendChild(quizTypeHeading);
             quizActions.appendChild(quizTypeContainer);

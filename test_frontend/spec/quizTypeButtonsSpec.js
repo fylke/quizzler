@@ -92,7 +92,7 @@ describe('Quiz Type Buttons - Property Tests', function () {
                 });
 
                 expect(heading).not.toBeNull();
-                expect(heading.textContent).toBe('Available quizzes');
+                expect(heading.textContent).toBe('Choose quiz');
                 expect(buttons.length).toBe(quizTypes.length);
                 for (var i = 0; i < buttons.length; i++) {
                     expect(buttons[i].textContent).toBe(sortedNames[i]);

@@ -44,6 +44,14 @@ describe('Guest Mode', function () {
             }
             el.textContent = '0';
         });
+
+        var statsScreen = document.getElementById('statsScreen');
+        if (!statsScreen) {
+            statsScreen = document.createElement('div');
+            statsScreen.id = 'statsScreen';
+            statsScreen.className = 'screen hidden';
+            document.body.appendChild(statsScreen);
+        }
     });
 
     afterEach(function () {
@@ -118,5 +126,73 @@ describe('Guest Mode', function () {
         var restored = await restoreGuestSession();
 
         expect(restored).toBe(false);
+    });
+
+    it('showMainScreen hides logout button for guest users', async function () {
+        var statusScreen = document.getElementById('statusScreen');
+        if (!statusScreen) {
+            statusScreen = document.createElement('div');
+            statusScreen.id = 'statusScreen';
+            document.body.appendChild(statusScreen);
+        }
+
+        var logoutBtn = document.getElementById('logoutBtn');
+        if (!logoutBtn) {
+            logoutBtn = document.createElement('button');
+            logoutBtn.id = 'logoutBtn';
+            document.body.appendChild(logoutBtn);
+        }
+
+        var statusLoginLink = document.getElementById('statusLoginLink');
+        if (!statusLoginLink) {
+            statusLoginLink = document.createElement('a');
+            statusLoginLink.id = 'statusLoginLink';
+            statusLoginLink.className = 'hidden';
+            document.body.appendChild(statusLoginLink);
+        }
+
+        quizState.user = { id: 7, isAdmin: false };
+        quizState.isGuest = true;
+
+        spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
+
+        await showMainScreen();
+
+        expect(logoutBtn.style.display).toBe('none');
+        expect(statusLoginLink.classList.contains('hidden')).toBe(false);
+    });
+
+    it('showMainScreen shows logout button for signed-in users', async function () {
+        var statusScreen = document.getElementById('statusScreen');
+        if (!statusScreen) {
+            statusScreen = document.createElement('div');
+            statusScreen.id = 'statusScreen';
+            document.body.appendChild(statusScreen);
+        }
+
+        var logoutBtn = document.getElementById('logoutBtn');
+        if (!logoutBtn) {
+            logoutBtn = document.createElement('button');
+            logoutBtn.id = 'logoutBtn';
+            document.body.appendChild(logoutBtn);
+        }
+
+        var statusLoginLink = document.getElementById('statusLoginLink');
+        if (!statusLoginLink) {
+            statusLoginLink = document.createElement('a');
+            statusLoginLink.id = 'statusLoginLink';
+            statusLoginLink.className = 'hidden';
+            document.body.appendChild(statusLoginLink);
+        }
+
+        quizState.user = { id: 8, isAdmin: false };
+        quizState.isGuest = false;
+
+        spyOn(window, 'loadQuizTypeButtons').and.returnValue(Promise.resolve());
+
+        await showMainScreen();
+
+        expect(logoutBtn.style.display).toBe('');
+        expect(statusLoginLink.classList.contains('hidden')).toBe(true);
     });
 });

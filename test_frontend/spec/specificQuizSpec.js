@@ -16,7 +16,7 @@ describe('Specific Quiz by ID', function () {
             '<div class="quiz-actions">' +
                 '<div class="specific-quiz-section">' +
                     '<div class="input-row">' +
-                        '<input type="text" id="specificQuizId" placeholder="Run quiz ID">' +
+                        '<input type="text" id="specificQuizId" placeholder="Run specific quiz">' +
                         '<button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>' +
                     '</div>' +
                 '</div>' +
@@ -47,7 +47,7 @@ describe('Specific Quiz by ID', function () {
             var input = document.getElementById('specificQuizId');
             expect(input).not.toBeNull();
             expect(input.type).toBe('text');
-            expect(input.placeholder).toBe('Run quiz ID');
+            expect(input.placeholder).toBe('Run specific quiz');
         });
 
         it('does not render a separate label for specific quiz input', function () {
