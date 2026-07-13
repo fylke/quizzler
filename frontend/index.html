@@ -62,23 +62,6 @@
         <div id="statusScreen" class="screen">
             <div class="status-content">
                 <div class="status-icon-cluster" aria-label="Main actions">
-                    <a
-                        href="#"
-                        id="statusLoginLink"
-                        class="status-login-link"
-                        onclick="openLoginFromStatus(); return false;"
-                        aria-label="Log in"
-                        title="Log in"
-                    >
-                        <span class="status-login-icon" aria-hidden="true"></span>
-                    </a>
-                    <button
-                        onclick="showStatsScreen()"
-                        class="btn btn-secondary main-round-action-btn"
-                        id="statsBtn"
-                        aria-label="Statistics"
-                        title="Statistics"
-                    >📊</button>
                     <button
                         onclick="showAdminScreen()"
                         class="btn-admin-icon"
@@ -90,6 +73,25 @@
                         <span class="admin-user-icon" aria-hidden="true"></span>
                         <span class="admin-cog-icon" aria-hidden="true"></span>
                     </button>
+                    <button
+                        onclick="showStatsScreen()"
+                        class="btn-stats-icon"
+                        id="statsBtn"
+                        aria-label="Statistics"
+                        title="Statistics"
+                    >
+                        <span class="stats-bars-icon" aria-hidden="true"></span>
+                    </button>
+                    <a
+                        href="#"
+                        id="statusLoginLink"
+                        class="status-login-link"
+                        onclick="openLoginFromStatus(); return false;"
+                        aria-label="Log in"
+                        title="Log in"
+                    >
+                        <span class="status-login-icon" aria-hidden="true"></span>
+                    </a>
                     <button
                         onclick="handleLogout()"
                         class="btn-logout-icon"

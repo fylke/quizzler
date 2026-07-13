@@ -819,14 +819,59 @@ body {
     gap: 10px;
 }
 
-.main-round-action-btn {
-    width: 52px;
-    min-width: 52px;
-    padding: 0;
+.btn-stats-icon {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid #667eea;
+    background: #f4f7ff;
+    color: #4d64c9;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2em;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-stats-icon:hover,
+.btn-stats-icon:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(74, 98, 196, 0.24);
+    border-color: #4d64c9;
+}
+
+.btn-stats-icon:focus-visible {
+    outline: 2px solid #4d64c9;
+    outline-offset: 2px;
+}
+
+.stats-bars-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.stats-bars-icon::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    bottom: 1px;
+    width: 3px;
+    height: 7px;
+    background: currentColor;
+    box-shadow: 5px -3px 0 0 currentColor, 10px -6px 0 0 currentColor;
+}
+
+.stats-bars-icon::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: currentColor;
 }
 
 .main-stats-specific-row .specific-quiz-section {
@@ -978,7 +1023,7 @@ body {
     }
 
     .status-login-link,
-    .main-round-action-btn,
+    .btn-stats-icon,
     .btn-admin-icon,
     .btn-logout-icon {
         width: 42px;
