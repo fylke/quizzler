@@ -209,7 +209,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
 
     Validates Requirements 5.3, 5.4, 5.5:
     - /api/quiz returns correct response structure
-    - Media files served at /media/countries/{id}/{level}{a|b}.jpg
+    - Media files served at /media/countries/{id}/{level}{a|b}.jpg or _small.webp
     - Quiz results stored with same scoring formula (hint_difficulty × remaining_guesses)
     """
 
@@ -280,7 +280,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(data["remainingGuesses"], 3)
 
     def test_quiz_endpoint_images_follow_media_url_pattern(self):
-        """Requirement 5.5: Images served at /media/countries/{id}/{level}{a|b}.jpg."""
+        """Requirement 5.5: Images served at /media/countries/{id}/{level}{a|b}.jpg or _small.webp."""
         response = self.client.get("/api/quiz")
         self.assertEqual(response.status_code, 200)
 
@@ -292,11 +292,9 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         # Should have exactly 2 images (a and b variants)
         self.assertEqual(len(images), 2)
 
-        # Verify URL pattern
-        expected_a = f"/media/countries/{dest_id}/{hint_level}a.jpg"
-        expected_b = f"/media/countries/{dest_id}/{hint_level}b.jpg"
-        self.assertEqual(images[0], expected_a)
-        self.assertEqual(images[1], expected_b)
+        base = f"/media/countries/{dest_id}/{hint_level}"
+        self.assertIn(images[0], [f"{base}a.jpg", f"{base}a_small.webp"])
+        self.assertIn(images[1], [f"{base}b.jpg", f"{base}b_small.webp"])
 
     def test_specific_quiz_endpoint_returns_expected_structure(self):
         """Requirement 5.3: /api/quiz/<id> also returns the same structure."""
@@ -316,7 +314,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(data["hint"], "Hint level 5 - hardest")
 
     def test_specific_quiz_images_follow_media_url_pattern(self):
-        """Requirement 5.5: Specific quiz images follow /media/countries/{id}/{level}{a|b}.jpg."""
+        """Requirement 5.5: Specific quiz images follow .jpg or _small.webp pattern."""
         response = self.client.get("/api/quiz/42")
         self.assertEqual(response.status_code, 200)
 
@@ -324,8 +322,8 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         images = data["images"]
 
         self.assertEqual(len(images), 2)
-        self.assertEqual(images[0], "/media/countries/42/5a.jpg")
-        self.assertEqual(images[1], "/media/countries/42/5b.jpg")
+        self.assertIn(images[0], ["/media/countries/42/5a.jpg", "/media/countries/42/5a_small.webp"])
+        self.assertIn(images[1], ["/media/countries/42/5b.jpg", "/media/countries/42/5b_small.webp"])
 
     def test_correct_answer_stores_score_with_formula(self):
         """Requirement 5.4: Score = hint_difficulty × remaining_guesses."""

@@ -8,6 +8,26 @@ sync:
 hardening:
     uv run python -m scripts.check_hardening
 
+generate-small-webp root='media/countries' width='960' height='960' quality='72' overwrite='false':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root_value="{{root}}"
+    root_value="${root_value#root=}"
+    width_value="{{width}}"
+    width_value="${width_value#width=}"
+    height_value="{{height}}"
+    height_value="${height_value#height=}"
+    quality_value="{{quality}}"
+    quality_value="${quality_value#quality=}"
+    overwrite_value="{{overwrite}}"
+    overwrite_value="${overwrite_value#overwrite=}"
+
+    cmd=(uv run generate-small-webp --root "$root_value" --max-width "$width_value" --max-height "$height_value" --quality "$quality_value")
+    if [[ "$overwrite_value" == "true" || "$overwrite_value" == "1" ]]; then
+        cmd+=(--overwrite)
+    fi
+    "${cmd[@]}"
+
 podman-up:
     {{podman_compose}} up --build -d
 

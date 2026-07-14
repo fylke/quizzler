@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -221,11 +222,48 @@ class MainAppTestCase(unittest.TestCase):
             ],
         )
 
+    def test_hint_images_prefer_small_webp_when_available(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '5a_small.webp').write_bytes(b'test-image')
+            (destination_media_dir / '5b_small.webp').write_bytes(b'test-image')
+
+            try:
+                response = self.client.get(f'/api/quiz/{question["id"]}')
+                self.assertEqual(response.status_code, 200)
+
+                data = response.get_json()
+                self.assertEqual(
+                    data['images'],
+                    [
+                        f"/media/countries/{question['id']}/5a_small.webp",
+                        f"/media/countries/{question['id']}/5b_small.webp",
+                    ],
+                )
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
     def test_hint_media_returns_403_for_locked_hint_difficulty(self):
         question = self.quiz_data[0]
         self.client.get(f'/api/quiz/{question["id"]}')
 
         response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
+        self.assertEqual(response.status_code, 403)
+
+    def test_hint_media_small_webp_returns_403_for_locked_hint_difficulty(self):
+        question = self.quiz_data[0]
+        self.client.get(f'/api/quiz/{question["id"]}')
+
+        response = self.client.get(f"/media/countries/{question['id']}/4a_small.webp")
         self.assertEqual(response.status_code, 403)
 
     def test_hint_media_returns_200_for_unlocked_hint_difficulty(self):
@@ -244,6 +282,56 @@ class MainAppTestCase(unittest.TestCase):
                 self.client.get('/api/hint')
 
                 response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
+                self.assertEqual(response.status_code, 200)
+                response.close()
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
+    def test_hint_media_small_webp_returns_200_for_unlocked_hint_difficulty(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '4a_small.webp').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get('/api/hint')
+
+                response = self.client.get(f"/media/countries/{question['id']}/4a_small.webp")
+                self.assertEqual(response.status_code, 200)
+                response.close()
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
+    def test_hint_media_auth_uses_session_state_before_quiz_lookup(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '4a.jpg').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get('/api/hint')
+
+                with patch('backend._active_quiz_result_for_player', side_effect=RuntimeError('should not run')):
+                    response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
+
                 self.assertEqual(response.status_code, 200)
                 response.close()
             finally:

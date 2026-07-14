@@ -430,7 +430,6 @@ body {
     object-fit: cover;
     display: block;
     cursor: zoom-in;
-    transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .quiz-image.is-portrait {
@@ -438,11 +437,6 @@ body {
     max-width: 100%;
     object-fit: contain;
     background: #111827;
-}
-
-.quiz-image:hover {
-    transform: scale(1.01);
-    filter: brightness(1.02);
 }
 
 .hint-review {

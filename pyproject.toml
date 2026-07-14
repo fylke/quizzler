@@ -16,10 +16,12 @@ dependencies = [
     "flask-sqlalchemy>=3.1.0,<4.0.0",
     "sqlalchemy>=2.0.0,<3.0.0",
     "psycopg2-binary>=2.9.0,<3.0.0",
+    "pillow>=10.4.0,<12.0.0",
 ]
 
 [project.scripts]
 seed-db = "scripts.seed_db:seed"
+generate-small-webp = "scripts.generate_small_webp:main"
 
 [dependency-groups]
 test = [

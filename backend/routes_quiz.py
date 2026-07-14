@@ -20,6 +20,7 @@ RESULT_IMAGE_MAX_COUNT = 10
 RESULT_IMAGE_NAME_RE = re.compile(r"^0.*\.jpg$", re.IGNORECASE)
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
+MEDIA_ACCESS_SESSION_KEY = "media_access_state"
 
 
 def _media_root() -> Path:
@@ -75,11 +76,19 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
 
 
 def _hint_images_for_destination(destination_id: int, hint_difficulty: int) -> list[str]:
-    """Return the two quiz image URLs for a destination and hint difficulty."""
-    return [
-        f"/media/countries/{destination_id}/{hint_difficulty}a.jpg",
-        f"/media/countries/{destination_id}/{hint_difficulty}b.jpg",
-    ]
+    """Return the two quiz image URLs, preferring optimized _small.webp assets."""
+    destination_dir = _media_root() / "countries" / str(destination_id)
+    images: list[str] = []
+
+    for suffix in ("a", "b"):
+        optimized_name = f"{hint_difficulty}{suffix}_small.webp"
+        optimized_path = destination_dir / optimized_name
+        if optimized_path.is_file():
+            images.append(f"/media/countries/{destination_id}/{optimized_name}")
+        else:
+            images.append(f"/media/countries/{destination_id}/{hint_difficulty}{suffix}.jpg")
+
+    return images
 
 
 def _active_result_for_player(player):
@@ -122,6 +131,35 @@ def _set_score_lock(destination_id: int, hint_difficulty: int, remaining_guesses
 
 def _clear_score_lock():
     session.pop(SCORE_LOCK_SESSION_KEY, None)
+
+
+def _get_media_access_state() -> dict | None:
+    state = session.get(MEDIA_ACCESS_SESSION_KEY)
+    if not isinstance(state, dict):
+        return None
+
+    required_keys = {"destination_id", "hint_difficulty"}
+    if not required_keys.issubset(state.keys()):
+        return None
+
+    try:
+        return {
+            "destination_id": int(state["destination_id"]),
+            "hint_difficulty": int(state["hint_difficulty"]),
+        }
+    except (TypeError, ValueError):
+        return None
+
+
+def _set_media_access_state(destination_id: int, hint_difficulty: int):
+    session[MEDIA_ACCESS_SESSION_KEY] = {
+        "destination_id": int(destination_id),
+        "hint_difficulty": int(hint_difficulty),
+    }
+
+
+def _clear_media_access_state():
+    session.pop(MEDIA_ACCESS_SESSION_KEY, None)
 
 
 def _restore_locked_score_if_needed(quiz_result) -> int | None:
@@ -171,6 +209,7 @@ def _end_active_quizzes_for_player(player):
         db.session.commit()
 
     _clear_score_lock()
+    _clear_media_access_state()
 
 
 def _new_result_for_player(player, destination_id):
@@ -207,6 +246,7 @@ def _start_quiz_for_player(player, destination):
     quiz_result.ongoing = True
     db.session.add(quiz_result)
     db.session.commit()
+    _set_media_access_state(destination.id, hint_difficulty)
 
     return {
         "id": destination.id,
@@ -257,6 +297,7 @@ def get_active_quiz():
 
     difficulty = quiz_result.hint_difficulty
     hint_text = getattr(destination, f"hint{difficulty}", "")
+    _set_media_access_state(destination.id, difficulty)
     return jsonify(
         {
             "id": destination.id,
@@ -288,6 +329,7 @@ def get_hint():
 
     quiz_result.hint_difficulty = new_difficulty
     db.session.commit()
+    _set_media_access_state(question.id, new_difficulty)
 
     hint_text = getattr(question, f"hint{new_difficulty}", "")
     return jsonify(
@@ -325,6 +367,7 @@ def check_answer():
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
+        _clear_media_access_state()
         response_payload = {
             "correct": True,
             "answer": question.name,
@@ -346,6 +389,7 @@ def check_answer():
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
+        _clear_media_access_state()
         response_payload = {
             "correct": False,
             "answer": question.name,
@@ -363,6 +407,7 @@ def check_answer():
     # Users progress to the next hint only via the skip-hint flow.
 
     db.session.commit()
+    _set_media_access_state(question.id, quiz_result.hint_difficulty)
 
     hint_text = getattr(question, f"hint{quiz_result.hint_difficulty}", "")
     return jsonify(

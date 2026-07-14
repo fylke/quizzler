@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import sqlalchemy.exc
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -118,9 +118,10 @@ def _disable_limiter_in_testing():
 logger = logging.getLogger(__name__)
 
 _HINT_IMAGE_PATH_RE = re.compile(
-    r"^countries/(?P<destination_id>\d+)/(?P<hint_difficulty>[1-5])[ab]\.jpg$",
+    r"^countries/(?P<destination_id>\d+)/(?P<hint_difficulty>[1-5])[ab](?:\.jpg|_small\.webp)$",
     re.IGNORECASE,
 )
+MEDIA_ACCESS_SESSION_KEY = "media_access_state"
 
 
 def _active_quiz_result_for_player(player):
@@ -134,6 +135,30 @@ def _active_quiz_result_for_player(player):
     return None
 
 
+def _media_access_state_from_session() -> dict | None:
+    state = session.get(MEDIA_ACCESS_SESSION_KEY)
+    if not isinstance(state, dict):
+        return None
+
+    required_keys = {"destination_id", "hint_difficulty"}
+    if not required_keys.issubset(state.keys()):
+        return None
+
+    try:
+        destination_id = int(state["destination_id"])
+        hint_difficulty = int(state["hint_difficulty"])
+    except (TypeError, ValueError):
+        return None
+
+    if hint_difficulty < 1:
+        return None
+
+    return {
+        "destination_id": destination_id,
+        "hint_difficulty": hint_difficulty,
+    }
+
+
 def _can_access_media_path(filename: str) -> bool:
     """Authorize direct media URL access for hint images based on server-side state."""
     match = _HINT_IMAGE_PATH_RE.fullmatch(filename)
@@ -144,12 +169,19 @@ def _can_access_media_path(filename: str) -> bool:
     if player is None:
         return False
 
+    requested_destination_id = int(match.group("destination_id"))
+    requested_hint_difficulty = int(match.group("hint_difficulty"))
+
+    session_state = _media_access_state_from_session()
+    if session_state is not None:
+        if session_state["destination_id"] != requested_destination_id:
+            return False
+        # Unlocked hints are the current live hint and all previously revealed harder hints.
+        return requested_hint_difficulty >= session_state["hint_difficulty"]
+
     quiz_result = _active_quiz_result_for_player(player)
     if quiz_result is None:
         return False
-
-    requested_destination_id = int(match.group("destination_id"))
-    requested_hint_difficulty = int(match.group("hint_difficulty"))
 
     if requested_destination_id != quiz_result.destination_id:
         return False
