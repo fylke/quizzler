@@ -696,34 +696,11 @@ body {
 }
 
 .status-login-icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     display: block;
-    position: relative;
-}
-
-.status-login-icon::before {
-    content: '';
-    position: absolute;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #4d64c9;
-}
-
-.status-login-icon::after {
-    content: '';
-    position: absolute;
-    width: 13px;
-    height: 8px;
-    background: #4d64c9;
-    border-radius: 8px 8px 6px 6px;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
+    background: url('/static/assets/icon-login.svg') no-repeat center;
+    background-size: contain;
 }
 
 .guest-mode-banner {
@@ -840,32 +817,12 @@ body {
     outline-offset: 2px;
 }
 
-.stats-bars-icon {
-    position: relative;
-    width: 16px;
-    height: 16px;
+.stats-icon {
+    width: 18px;
+    height: 18px;
     display: block;
-}
-
-.stats-bars-icon::before {
-    content: '';
-    position: absolute;
-    left: 1px;
-    bottom: 1px;
-    width: 3px;
-    height: 7px;
-    background: currentColor;
-    box-shadow: 5px -3px 0 0 currentColor, 10px -6px 0 0 currentColor;
-}
-
-.stats-bars-icon::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-    background: currentColor;
+    background: url('/static/assets/icon-stats.svg') no-repeat center;
+    background-size: contain;
 }
 
 .main-stats-specific-row .specific-quiz-section {
@@ -1332,97 +1289,20 @@ body {
     outline-offset: 2px;
 }
 
-.logout-circle-icon {
-    position: relative;
-    width: 14px;
-    height: 14px;
-    border: 2px solid currentColor;
-    border-radius: 50%;
-    transform: translateX(-3px);
-}
-
-.logout-arrow-icon {
-    position: absolute;
-    width: 10px;
-    height: 2px;
-    background: currentColor;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.logout-arrow-icon::after {
-    content: '';
-    position: absolute;
-    right: -1px;
-    top: 50%;
-    width: 6px;
-    height: 6px;
-    border-top: 2px solid currentColor;
-    border-right: 2px solid currentColor;
-    transform: translateY(-50%) rotate(45deg);
-}
-
-.admin-user-icon {
-    position: relative;
-    width: 16px;
-    height: 16px;
+.logout-icon {
+    width: 18px;
+    height: 18px;
     display: block;
-    transform: translateX(-4px);
+    background: url('/static/assets/icon-logout.svg') no-repeat center;
+    background-size: contain;
 }
 
-.admin-user-icon::before {
-    content: '';
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 50%;
-    background: #fff;
-}
-
-.admin-user-icon::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 8px;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-    border-radius: 8px 8px 5px 5px;
-    background: #fff;
-}
-
-.admin-cog-icon {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    right: 7px;
-    bottom: 7px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-}
-
-.admin-cog-icon::before,
-.admin-cog-icon::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 14px;
-    background: #fff;
-    transform-origin: center;
-}
-
-.admin-cog-icon::before {
-    transform: translate(-50%, -50%) rotate(0deg);
-}
-
-.admin-cog-icon::after {
-    transform: translate(-50%, -50%) rotate(45deg);
+.admin-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
+    background: url('/static/assets/icon-admin.svg') no-repeat center;
+    background-size: contain;
 }
 
 /* Danger Button */
