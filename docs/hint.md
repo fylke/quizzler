@@ -29,10 +29,17 @@ sequenceDiagram
         Database->>Backend: Country(hint1..hint5)
         Backend->>Database: UPDATE quiz_result SET hint_difficulty = hint_difficulty - 1
         Database->>Backend: OK
+        Backend->>Backend: Store {destination_id, hint_difficulty} in signed session for media auth
         Backend->>Frontend: (200, {hint: "The city is known for its iconic opera house.",<br/>hintDifficulty: 2, remainingGuesses: 2,<br/>images: ["/media/countries/12/2a.jpg", "/media/countries/12/2b.jpg"]})
         Frontend->>User: Display hint and remaining guesses
     end
 ```
+
+## Performance Note
+
+- Hint image authorization now uses a session-cached media access state (`destination_id`, `hint_difficulty`) that is updated on quiz start, hint changes, and active-quiz restore.
+- This avoids repeated active-quiz database lookups for each `/media/...` hint image request during normal hint navigation.
+- If the session cache is absent, the server falls back to the database-backed authorization check.
 
 ## Hint Review Behavior
 

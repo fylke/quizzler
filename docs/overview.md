@@ -65,3 +65,4 @@ stateDiagram-v2
 ## Related Docs
 
 - Hint flow details, including hint review image switching behavior: [hint.md](hint.md)
+- Media image naming and authorization behavior (including session-cache fast path): [media_images.md](media_images.md)
