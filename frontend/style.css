@@ -669,9 +669,9 @@ body {
 .status-login-link {
     width: 46px;
     height: 46px;
-    border-radius: 50%;
-    border: 2px solid #667eea;
-    background: #f4f7ff;
+    border: none;
+    background: transparent;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -682,8 +682,7 @@ body {
 .status-login-link:hover,
 .status-login-link:focus-visible {
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(74, 98, 196, 0.24);
-    border-color: #4d64c9;
+    box-shadow: 0 4px 10px rgba(74, 98, 196, 0.18);
 }
 
 .status-login-link:focus-visible {
@@ -696,11 +695,11 @@ body {
 }
 
 .status-login-icon {
-    width: 20px;
-    height: 20px;
+    width: 100%;
+    height: 100%;
     display: block;
     background: url('/static/assets/icon-login.svg') no-repeat center;
-    background-size: contain;
+    background-size: 100% 100%;
 }
 
 .guest-mode-banner {
@@ -794,9 +793,9 @@ body {
     position: relative;
     width: 46px;
     height: 46px;
-    border-radius: 50%;
-    border: 2px solid #667eea;
-    background: #f4f7ff;
+    border: none;
+    background: transparent;
+    padding: 0;
     color: #4d64c9;
     display: inline-flex;
     align-items: center;
@@ -808,8 +807,7 @@ body {
 .btn-stats-icon:hover,
 .btn-stats-icon:focus-visible {
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(74, 98, 196, 0.24);
-    border-color: #4d64c9;
+    box-shadow: 0 4px 10px rgba(74, 98, 196, 0.18);
 }
 
 .btn-stats-icon:focus-visible {
@@ -818,11 +816,11 @@ body {
 }
 
 .stats-icon {
-    width: 18px;
-    height: 18px;
+    width: 100%;
+    height: 100%;
     display: block;
     background: url('/static/assets/icon-stats.svg') no-repeat center;
-    background-size: contain;
+    background-size: 100% 100%;
 }
 
 .main-stats-specific-row .specific-quiz-section {
@@ -1239,9 +1237,9 @@ body {
     position: relative;
     width: 46px;
     height: 46px;
-    border-radius: 50%;
-    border: 2px solid #d97706;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border: none;
+    background: transparent;
+    padding: 0;
     color: #fff;
     display: inline-flex;
     align-items: center;
@@ -1253,8 +1251,7 @@ body {
 .btn-admin-icon:hover,
 .btn-admin-icon:focus-visible {
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(217, 119, 6, 0.35);
-    border-color: #b45309;
+    box-shadow: 0 4px 10px rgba(217, 119, 6, 0.24);
 }
 
 .btn-admin-icon:focus-visible {
@@ -1266,9 +1263,9 @@ body {
     position: relative;
     width: 46px;
     height: 46px;
-    border-radius: 50%;
-    border: 2px solid #7f8aa6;
-    background: #eef2fb;
+    border: none;
+    background: transparent;
+    padding: 0;
     color: #4d64c9;
     display: inline-flex;
     align-items: center;
@@ -1280,8 +1277,7 @@ body {
 .btn-logout-icon:hover,
 .btn-logout-icon:focus-visible {
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(74, 98, 196, 0.24);
-    border-color: #4d64c9;
+    box-shadow: 0 4px 10px rgba(74, 98, 196, 0.18);
 }
 
 .btn-logout-icon:focus-visible {
@@ -1290,19 +1286,19 @@ body {
 }
 
 .logout-icon {
-    width: 18px;
-    height: 18px;
+    width: 100%;
+    height: 100%;
     display: block;
     background: url('/static/assets/icon-logout.svg') no-repeat center;
-    background-size: contain;
+    background-size: 100% 100%;
 }
 
 .admin-icon {
-    width: 18px;
-    height: 18px;
+    width: 100%;
+    height: 100%;
     display: block;
     background: url('/static/assets/icon-admin.svg') no-repeat center;
-    background-size: contain;
+    background-size: 100% 100%;
 }
 
 /* Danger Button */
