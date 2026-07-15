@@ -1,32 +1,41 @@
-"""Generate optimized _small.webp hint images for existing media files.
+"""Generate optimized _small.webp images for existing media files.
 
-By default, scans media/countries/** for hint image files named like:
-  <difficulty><variant>.<ext>
-where difficulty is 1-5 and variant is a or b.
+By default, scans media/countries/** for source image files that Pillow can read.
+Existing generated files named *_small.webp are ignored.
 
 Examples converted:
-  5a.jpg -> 5a_small.webp
-  2b.png -> 2b_small.webp
+    5a.jpg -> 5a_small.webp
+    panorama.png -> panorama_small.webp
+    poster.webp -> poster_small.webp
 """
 
 from __future__ import annotations
 
 import argparse
-import re
 from pathlib import Path
 
 from PIL import Image
 
 
-HINT_IMAGE_RE = re.compile(r"^(?P<base>[1-5][ab])\.(?:jpg|jpeg|png|webp)$", re.IGNORECASE)
+SUPPORTED_SOURCE_SUFFIXES = frozenset(Image.registered_extensions())
+
+
+def _is_supported_source_image(path: Path) -> bool:
+    return (
+        path.is_file()
+        and path.suffix.lower() in SUPPORTED_SOURCE_SUFFIXES
+        and not (path.suffix.lower() == ".webp" and path.stem.lower().endswith("_small"))
+    )
+
+
+def _target_path(source_path: Path) -> Path:
+    return source_path.with_name(f"{source_path.stem}_small.webp")
 
 
 def _iter_hint_source_images(root: Path) -> list[Path]:
     images: list[Path] = []
     for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if HINT_IMAGE_RE.fullmatch(path.name) is None:
+        if not _is_supported_source_image(path):
             continue
         images.append(path)
     return sorted(images)
@@ -42,11 +51,10 @@ def _target_size(width: int, height: int, max_width: int, max_height: int) -> tu
 
 
 def _convert_image(source_path: Path, *, max_width: int, max_height: int, quality: int) -> Path:
-    match = HINT_IMAGE_RE.fullmatch(source_path.name)
-    if match is None:
+    if not _is_supported_source_image(source_path):
         raise ValueError(f"Unsupported hint image filename: {source_path.name}")
 
-    target_path = source_path.with_name(f"{match.group('base')}_small.webp")
+    target_path = _target_path(source_path)
 
     with Image.open(source_path) as image:
         image = image.convert("RGB")
@@ -70,10 +78,7 @@ def generate_small_webp(
     converted = 0
     skipped = 0
     for source_path in _iter_hint_source_images(root):
-        match = HINT_IMAGE_RE.fullmatch(source_path.name)
-        if match is None:
-            continue
-        target_path = source_path.with_name(f"{match.group('base')}_small.webp")
+        target_path = _target_path(source_path)
         if target_path.exists() and not overwrite:
             skipped += 1
             continue
@@ -93,8 +98,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--root",
-        default="media/countries",
-        help="Root directory to scan for destination folders (default: media/countries).",
+        required=True,
+        help="Root directory to scan for source images.",
     )
     parser.add_argument(
         "--max-width",

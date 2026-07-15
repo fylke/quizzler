@@ -3,12 +3,42 @@ default: test
 podman_compose := "CONTAINERS_CONF=$PWD/.podman/rootless-compat.conf podman-compose -p quizzler -f podman-compose.yml"
 
 sync:
-    uv sync --group test
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" sync --group test
+    else
+        echo "'uv' is required to provision the project environment. Install uv and rerun 'just sync'." >&2
+        exit 127
+    fi
 
 hardening:
-    uv run python -m scripts.check_hardening
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
 
-generate-small-webp root='media/countries' width='960' height='960' quality='72' overwrite='false':
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run python -m scripts.check_hardening
+    elif [[ -x .venv/bin/python ]]; then
+        .venv/bin/python -m scripts.check_hardening
+    else
+        echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
+
+generate-small-webp root='' width='960' height='960' quality='72' overwrite='false':
     #!/usr/bin/env bash
     set -euo pipefail
     root_value="{{root}}"
@@ -22,7 +52,27 @@ generate-small-webp root='media/countries' width='960' height='960' quality='72'
     overwrite_value="{{overwrite}}"
     overwrite_value="${overwrite_value#overwrite=}"
 
-    cmd=(uv run generate-small-webp --root "$root_value" --max-width "$width_value" --max-height "$height_value" --quality "$quality_value")
+    if [[ -z "$root_value" ]]; then
+        echo "Usage: just generate-small-webp root=<media-path> [width=<px>] [height=<px>] [quality=<1-100>] [overwrite=true]" >&2
+        exit 2
+    fi
+
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        cmd=("$uv_bin" run generate-small-webp --root "$root_value" --max-width "$width_value" --max-height "$height_value" --quality "$quality_value")
+    elif [[ -x .venv/bin/python ]]; then
+        cmd=(.venv/bin/python -m scripts.generate_small_webp --root "$root_value" --max-width "$width_value" --max-height "$height_value" --quality "$quality_value")
+    else
+        echo "Neither 'uv' nor .venv/bin/python is available. Run 'uv sync' first." >&2
+        exit 127
+    fi
+
     if [[ "$overwrite_value" == "true" || "$overwrite_value" == "1" ]]; then
         cmd+=(--overwrite)
     fi
@@ -38,11 +88,44 @@ podman-down:
     {{podman_compose}} down
 
 format:
-    uv run black .
-    uv run isort .
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run black .
+        "$uv_bin" run isort .
+    elif [[ -x .venv/bin/black && -x .venv/bin/isort ]]; then
+        .venv/bin/black .
+        .venv/bin/isort .
+    else
+        echo "Neither .venv tools nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
 
 playwright-install:
-    uv run --group test playwright install
+    #!/usr/bin/env bash
+    set -euo pipefail
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run --group test playwright install
+    elif [[ -x .venv/bin/playwright ]]; then
+        .venv/bin/playwright install
+    else
+        echo "Neither .venv/bin/playwright nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
 
 backend seed='':
     #!/usr/bin/env bash
@@ -53,7 +136,21 @@ backend seed='':
         seed_value="$(date +%s)"
     fi
     echo "Running backend tests with random seed: $seed_value"
-    uv run --group test python -m pytest test_backend --randomly-seed="$seed_value"
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run --group test python -m pytest test_backend --randomly-seed="$seed_value"
+    elif [[ -x .venv/bin/python ]]; then
+        .venv/bin/python -m pytest test_backend --randomly-seed="$seed_value"
+    else
+        echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
 
 frontend seed='':
     #!/usr/bin/env bash
@@ -66,7 +163,21 @@ frontend seed='':
     echo "Running frontend specs with random seed: $seed_value"
     export JASMINE_RANDOM=true
     export JASMINE_SEED="$seed_value"
-    uv run --group test python - <<'PY'
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run --group test python - <<'PY'
+    elif [[ -x .venv/bin/python ]]; then
+        .venv/bin/python - <<'PY'
+    else
+        echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
     from pathlib import Path
     import sys
 
@@ -125,7 +236,21 @@ e2e seed='':
         seed_value="$(date +%s)"
     fi
     echo "Running e2e tests with random seed: $seed_value"
-    uv run --group test python -m pytest test_e2e/ --randomly-seed="$seed_value"
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run --group test python -m pytest test_e2e/ --randomly-seed="$seed_value"
+    elif [[ -x .venv/bin/python ]]; then
+        .venv/bin/python -m pytest test_e2e/ --randomly-seed="$seed_value"
+    else
+        echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
 
 e2e-single selector seed='':
     #!/usr/bin/env bash
@@ -143,7 +268,21 @@ e2e-single selector seed='':
         exit 2
     fi
     echo "Running e2e selector '$selector_value' with random seed: $seed_value"
-    uv run --group test python -m pytest "$selector_value" --randomly-seed="$seed_value"
+    uv_bin=""
+    if command -v uv >/dev/null 2>&1; then
+        uv_bin="$(command -v uv)"
+    elif [[ -x /snap/bin/uv ]]; then
+        uv_bin="/snap/bin/uv"
+    fi
+
+    if [[ -n "$uv_bin" ]]; then
+        "$uv_bin" run --group test python -m pytest "$selector_value" --randomly-seed="$seed_value"
+    elif [[ -x .venv/bin/python ]]; then
+        .venv/bin/python -m pytest "$selector_value" --randomly-seed="$seed_value"
+    else
+        echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
+        exit 127
+    fi
 
 test:
     #!/usr/bin/env bash

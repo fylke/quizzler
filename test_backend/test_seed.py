@@ -6,6 +6,7 @@ Validates:
 """
 
 import os
+import tempfile
 import unittest
 from unittest.mock import patch
 from sqlalchemy import text
@@ -164,6 +165,60 @@ class TestSeedEmptyDatabase(unittest.TestCase):
                 seed(destinations=TEST_DESTINATIONS)
 
         self.assertEqual(ctx.exception.code, 1)
+
+    def test_load_destinations_reads_all_json_files_from_seed_directory(self):
+        """Default directory-based loading includes all JSON question files."""
+        from scripts.seed_db import _load_destinations
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "a.json"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    '[{"name":"Alpha","hint1":"1","hint2":"2","hint3":"3","hint4":"4","hint5":"5","correct_answers":["alpha"]}]'
+                )
+            with open(os.path.join(tmpdir, "b.json"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    '[{"name":"Beta","hint1":"1","hint2":"2","hint3":"3","hint4":"4","hint5":"5","correct_answers":["beta"]}]'
+                )
+
+            destinations = _load_destinations(tmpdir)
+
+        self.assertIsNotNone(destinations)
+        self.assertEqual([dest["name"] for dest in destinations], ["Alpha", "Beta"])
+
+    def test_seed_force_adds_missing_destinations_even_when_ids_overlap(self):
+        """Forced additive seed loads later files even when their source IDs overlap."""
+        from scripts.seed_db import seed
+
+        existing_destination = {
+            "id": 1,
+            "name": "Country One",
+            "hint1": "a",
+            "hint2": "b",
+            "hint3": "c",
+            "hint4": "d",
+            "hint5": "e",
+            "correct_answers": ["country one"],
+        }
+        overlapping_destination = {
+            "id": 1,
+            "name": "City One",
+            "hint1": "f",
+            "hint2": "g",
+            "hint3": "h",
+            "hint4": "i",
+            "hint5": "j",
+            "correct_answers": ["city one"],
+        }
+
+        seed(destinations=[existing_destination])
+
+        with patch.object(sys, "argv", ["seed_db.py", "--force"]):
+            seed(destinations=[existing_destination, overlapping_destination])
+
+        with app.app_context():
+            names = [dest.name for dest in Destination.query.order_by(Destination.id).all()]
+            self.assertEqual(names, ["Country One", "City One"])
+            self.assertEqual(Destination.query.count(), 2)
 
 
 if __name__ == "__main__":

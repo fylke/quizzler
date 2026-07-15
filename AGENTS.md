@@ -152,3 +152,4 @@ test_frontend/    # Frontend Jasmine specs
 - When designing solutions, the policy should be to "fail fast" - if input data is not on the expected form, no attempt should be made to fix it in the app, instead more care should be take at system boundry to make sure input is on the correct format before sending it on.
 - Deprecation warnings should be taken seriously and be fixed.
 - When adding tests; avoid testing specific strings, unless they represent state.
+- In `just` recipes and other automation, prefer the project environment over global tools. Use `uv run ...` when `uv` is available, since it resolves and runs inside the project environment; fall back to direct `.venv/bin/...` executables only when `uv` is unavailable. Keep `uv` as the provisioning path for `just sync`.
