@@ -670,6 +670,7 @@ body {
     width: 46px;
     height: 46px;
     border: none;
+    border-radius: 50%;
     background: transparent;
     padding: 0;
     display: inline-flex;
@@ -794,6 +795,7 @@ body {
     width: 46px;
     height: 46px;
     border: none;
+    border-radius: 50%;
     background: transparent;
     padding: 0;
     color: #4d64c9;
@@ -1238,6 +1240,7 @@ body {
     width: 46px;
     height: 46px;
     border: none;
+    border-radius: 50%;
     background: transparent;
     padding: 0;
     color: #fff;
@@ -1264,6 +1267,7 @@ body {
     width: 46px;
     height: 46px;
     border: none;
+    border-radius: 50%;
     background: transparent;
     padding: 0;
     color: #4d64c9;
