@@ -121,6 +121,10 @@ _HINT_IMAGE_PATH_RE = re.compile(
     r"^countries/(?P<destination_id>\d+)/(?P<hint_difficulty>[1-5])[ab](?:\.jpg|_small\.webp)$",
     re.IGNORECASE,
 )
+_ZERO_PREFIX_MEDIA_PATH_RE = re.compile(
+    r"^countries/(?P<destination_id>\d+)/(?P<filename>0[^/]+)$",
+    re.IGNORECASE,
+)
 MEDIA_ACCESS_SESSION_KEY = "media_access_state"
 
 
@@ -163,7 +167,24 @@ def _can_access_media_path(filename: str) -> bool:
     """Authorize direct media URL access for hint images based on server-side state."""
     match = _HINT_IMAGE_PATH_RE.fullmatch(filename)
     if match is None:
-        return True
+        zero_prefixed_match = _ZERO_PREFIX_MEDIA_PATH_RE.fullmatch(filename)
+        if zero_prefixed_match is None:
+            return True
+
+        player = get_current_player()
+        if player is None:
+            return False
+
+        requested_destination_id = int(zero_prefixed_match.group("destination_id"))
+        quiz_result = _active_quiz_result_for_player(player)
+        if quiz_result is None:
+            return True
+
+        if requested_destination_id != quiz_result.destination_id:
+            return True
+
+        # During an active hint flow, keep 0-prefixed result-gallery assets restricted.
+        return False
 
     player = get_current_player()
     if player is None:

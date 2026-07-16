@@ -15,8 +15,7 @@ from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 quiz_bp = Blueprint("quiz", __name__)
 
 
-RESULT_IMAGE_PREFIX = "0"
-RESULT_IMAGE_NAME_RE = re.compile(r"^0.*\.jpg$", re.IGNORECASE)
+RESULT_IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
 MEDIA_ACCESS_SESSION_KEY = "media_access_state"
@@ -39,8 +38,7 @@ def _media_root() -> Path:
 def _result_images_for_destination(destination_id: int) -> list[str]:
     """Return all result image URLs for a destination.
 
-    Result images are discovered from media/countries/<id>/ files that start
-    with "0" (for example: 01.jpg, 0a.png).
+    Result images are discovered from media/countries/<id>/ image files.
     """
     destination_dir = _media_root() / "countries" / str(destination_id)
     if not destination_dir.is_dir():
@@ -55,9 +53,7 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
     for file_path in sorted(destination_dir.iterdir(), key=lambda p: p.name):
         if not file_path.is_file():
             continue
-        if not file_path.name.startswith(RESULT_IMAGE_PREFIX):
-            continue
-        if not RESULT_IMAGE_NAME_RE.match(file_path.name):
+        if file_path.suffix.lower() not in RESULT_IMAGE_EXTENSIONS:
             continue
 
         images.append(f"/media/countries/{destination_id}/{file_path.name}")
@@ -364,7 +360,8 @@ def check_answer():
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
-        _clear_media_access_state()
+        # Keep result-gallery images readable after completion.
+        _set_media_access_state(question.id, 1)
         response_payload = {
             "correct": True,
             "answer": question.name,
@@ -386,7 +383,8 @@ def check_answer():
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
-        _clear_media_access_state()
+        # Keep result-gallery images readable after completion.
+        _set_media_access_state(question.id, 1)
         response_payload = {
             "correct": False,
             "answer": question.name,

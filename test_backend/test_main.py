@@ -152,7 +152,7 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(data['points'], 15)  # Hint difficulty (5) * Remaining guesses (3)
         self.assertEqual(data['answer'], question['destination'])
 
-    def test_check_answer_returns_all_result_images_with_zero_prefix(self):
+    def test_check_answer_returns_all_image_files_in_destination_directory(self):
         question = self.quiz_data[0]
 
         with tempfile.TemporaryDirectory() as temp_media:
@@ -162,11 +162,15 @@ class MainAppTestCase(unittest.TestCase):
             destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
             destination_media_dir.mkdir(parents=True, exist_ok=True)
 
-            # Create 12 valid "0*.jpg" images and one non-matching file.
+            # Create multiple image formats plus one non-image file.
             for index in range(1, 13):
                 (destination_media_dir / f'0{index:02d}.jpg').write_bytes(b'test-image')
-            (destination_media_dir / '0a.png').write_bytes(b'ignored-non-jpg-image')
-            (destination_media_dir / '1a.jpg').write_bytes(b'ignored-hint-image')
+            (destination_media_dir / '0a.png').write_bytes(b'png-image')
+            (destination_media_dir / '1a.jpg').write_bytes(b'hint-slot-image')
+            (destination_media_dir / 'landscape.jpeg').write_bytes(b'jpeg-image')
+            (destination_media_dir / 'city.webp').write_bytes(b'webp-image')
+            (destination_media_dir / 'flag.gif').write_bytes(b'gif-image')
+            (destination_media_dir / 'README.txt').write_bytes(b'not-an-image')
 
             try:
                 self.client.get(f'/api/quiz/{question["id"]}')
@@ -179,9 +183,45 @@ class MainAppTestCase(unittest.TestCase):
                 data = response.get_json()
                 self.assertTrue(data['correct'])
                 self.assertIn('resultImages', data)
-                self.assertEqual(len(data['resultImages']), 12)
-                self.assertTrue(all(path.startswith(f"/media/countries/{question['id']}/0") for path in data['resultImages']))
-                self.assertTrue(all(path.lower().endswith('.jpg') for path in data['resultImages']))
+                expected = {
+                    f"/media/countries/{question['id']}/0a.png",
+                    f"/media/countries/{question['id']}/1a.jpg",
+                    f"/media/countries/{question['id']}/landscape.jpeg",
+                    f"/media/countries/{question['id']}/city.webp",
+                    f"/media/countries/{question['id']}/flag.gif",
+                }
+                for index in range(1, 13):
+                    expected.add(f"/media/countries/{question['id']}/0{index:02d}.jpg")
+
+                self.assertEqual(set(data['resultImages']), expected)
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
+    def test_result_hint_media_remains_accessible_after_quiz_completion(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '1a.jpg').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+
+                response = self.client.post('/api/check-answer', json={
+                    'answer': question['correct_answers'][0]
+                })
+                self.assertEqual(response.status_code, 200)
+
+                media_response = self.client.get(f"/media/countries/{question['id']}/1a.jpg")
+                self.assertEqual(media_response.status_code, 200)
+                media_response.close()
             finally:
                 if original_media_dir is None:
                     os.environ.pop('MEDIA_DIR', None)
@@ -265,6 +305,55 @@ class MainAppTestCase(unittest.TestCase):
 
         response = self.client.get(f"/media/countries/{question['id']}/4a_small.webp")
         self.assertEqual(response.status_code, 403)
+
+    def test_result_gallery_media_returns_403_during_active_quiz(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '001.jpg').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+
+                response = self.client.get(f"/media/countries/{question['id']}/001.jpg")
+                self.assertEqual(response.status_code, 403)
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
+    def test_result_gallery_media_returns_200_after_quiz_completion(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+            (destination_media_dir / '001.jpg').write_bytes(b'test-image')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+                response = self.client.post('/api/check-answer', json={
+                    'answer': question['correct_answers'][0]
+                })
+                self.assertEqual(response.status_code, 200)
+
+                media_response = self.client.get(f"/media/countries/{question['id']}/001.jpg")
+                self.assertEqual(media_response.status_code, 200)
+                media_response.close()
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
 
     def test_hint_media_returns_200_for_unlocked_hint_difficulty(self):
         question = self.quiz_data[0]

@@ -24,12 +24,14 @@ os.environ["QUIZ_DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
 _MEDIA_ROOT = tempfile.mkdtemp(prefix="quizzler-media-")
 os.environ["MEDIA_DIR"] = _MEDIA_ROOT
 
-# Seed 0-prefixed result images for destination id=1 (caps at 10 in API).
+# Seed result images for destination id=1.
 _dest_media = Path(_MEDIA_ROOT) / "countries" / "1"
 _dest_media.mkdir(parents=True, exist_ok=True)
 for i in range(1, 13):
     (_dest_media / f"0{i:02d}.jpg").write_bytes(b"test-image")
-(_dest_media / "1a.jpg").write_bytes(b"ignored-hint-image")
+(_dest_media / "1a.jpg").write_bytes(b"hint-image-also-shown-in-results")
+(_dest_media / "1b.jpg").write_bytes(b"hint-image-also-shown-in-results")
+(_dest_media / "README.txt").write_bytes(b"not-an-image")
 
 from backend import app  # noqa: E402
 from backend.models import db, Destination  # noqa: E402

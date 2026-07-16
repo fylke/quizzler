@@ -100,8 +100,8 @@ def test_next_hint_button(page: Page, base_url: str):
     expect(page.locator("#quizScreen")).to_be_visible()
 
 
-def test_results_screen_shows_up_to_ten_zero_prefixed_images(page: Page, base_url: str):
-    """Completed quiz shows at most 10 additional result images from 0* files."""
+def test_results_screen_shows_all_images_in_destination_directory(page: Page, base_url: str):
+    """Completed quiz shows discovered result images plus unlocked hint images."""
     _register_and_start(page, base_url)
 
     page.fill("#answerInput", "Paris")
@@ -113,7 +113,40 @@ def test_results_screen_shows_up_to_ten_zero_prefixed_images(page: Page, base_ur
 
     expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#resultImages")).to_be_visible(timeout=5000)
-    expect(page.locator("#resultImages .result-image")).to_have_count(10)
+    expect(page.locator("#resultImages .result-image")).to_have_count(16)
+
+    image_statuses = page.evaluate(
+        """async () => {
+            const images = Array.from(document.querySelectorAll('#resultImages .result-image'));
+            const checks = [];
+            for (const image of images) {
+                const sourceUrl = image.currentSrc || image.src;
+                if (!sourceUrl) {
+                    continue;
+                }
+                const response = await fetch(sourceUrl, { credentials: 'same-origin' });
+                checks.push({ url: sourceUrl, status: response.status });
+            }
+            return checks;
+        }"""
+    )
+    restricted = [item for item in image_statuses if item["status"] == 403]
+    assert restricted == [], f"Result images were access-restricted: {restricted}"
+
+
+def test_hint_screen_restricts_zero_prefixed_result_images(page: Page, base_url: str):
+    """While quiz is active on hint screen, 0-prefixed result images are access restricted."""
+    _register_and_start(page, base_url)
+
+    status = page.evaluate(
+        """async () => {
+            const response = await fetch('/media/countries/1/001.jpg', {
+                credentials: 'same-origin',
+            });
+            return response.status;
+        }"""
+    )
+    assert status == 403
 
 
 def test_guest_refresh_restores_active_quiz(page: Page, base_url: str):
