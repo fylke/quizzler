@@ -1,0 +1,53 @@
+    <div id="forgotPasswordModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordModalHeading">
+        <div class="modal-card">
+            <h2 id="forgotPasswordModalHeading">Reset your password</h2>
+            <div class="modal-form-group">
+                <label for="resetEmail">Email address</label>
+                <input type="email" id="resetEmail" placeholder="Enter your email" maxlength="100">
+                <span class="inline-error" id="resetEmailError" role="alert"></span>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="forgotPasswordSubmitBtn">Submit</button>
+                <button class="btn btn-secondary" id="forgotPasswordCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rulesModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
+        <div class="modal-card rules-modal-card">
+            <h2 id="rulesModalTitle"></h2>
+            <div id="rulesModalContent" class="rules-modal-content"></div>
+            <div class="modal-buttons">
+                <button id="rulesModalCloseBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="hintComplaintModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="hintComplaintModalHeading">
+        <div class="modal-card">
+            <h2 id="hintComplaintModalHeading">Hint complaint</h2>
+            <p class="hint-complaint-context">Quiz ID: <strong id="hintComplaintQuizId"></strong> | Hint level: <strong id="hintComplaintHintLevel"></strong></p>
+            <div class="modal-form-group">
+                <label for="hintComplaintEmail">Your email</label>
+                <input type="email" id="hintComplaintEmail" maxlength="128" placeholder="name@example.com">
+            </div>
+            <div class="modal-form-group">
+                <label for="hintComplaintMessage">What is wrong with this hint?</label>
+                <textarea id="hintComplaintMessage" maxlength="2000" rows="5" placeholder="Describe the issue clearly."></textarea>
+                <span class="inline-error" id="hintComplaintError" role="alert"></span>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="hintComplaintSendBtn">Send</button>
+                <button class="btn btn-secondary" id="hintComplaintCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal-overlay image-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-label="Enlarged image">
+        <div class="modal-card image-modal-card">
+            <button type="button" id="imageModalPrevBtn" class="image-modal-nav image-modal-nav-prev" aria-label="Show previous hint image">&#8249;</button>
+            <button type="button" id="imageModalNextBtn" class="image-modal-nav image-modal-nav-next" aria-label="Show next hint image">&#8250;</button>
+            <button type="button" id="imageModalCloseBtn" class="image-modal-close" aria-label="Close enlarged image">×</button>
+            <img id="imageModalImage" src="" alt="" class="image-modal-image">
+        </div>
+    </div>

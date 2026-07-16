@@ -1,0 +1,54 @@
+        <div id="quizScreen" class="screen hidden">
+            <div class="quiz-header">
+                <div class="progress-info">
+                    <span id="currentHint">Hardest difficulty (15p)</span>
+                    <span id="remainingGuesses" class="remaining-guesses">Remaining guesses: 3</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="quiz-content">
+                <div class="hint-section">
+                    <h2 id="hint"></h2>
+                </div>
+
+                <div class="images-section">
+                    <div class="image-container">
+                        <img id="image1" src="" alt="Destination image 1" class="quiz-image">
+                    </div>
+                    <div class="image-container">
+                        <img id="image2" src="" alt="Destination image 2" class="quiz-image">
+                    </div>
+                </div>
+                <div class="hint-meta">
+                    <span id="hintProgress"></span>
+                    <span id="hintPoints"></span>
+                </div>
+
+                <div class="hint-review hidden" id="hintReviewSection" aria-live="polite">
+                    <span class="hint-review-label">Review previous hints</span>
+                    <div id="hintHistoryButtons" class="hint-history-buttons"></div>
+                </div>
+                <p class="hint-complaint-link-wrap">
+                    <a href="#" id="hintComplaintLink">Complain about this hint</a>
+                </p>
+
+                <div class="answer-section">
+                    <input
+                        type="text"
+                        id="answerInput"
+                        placeholder="Enter the destination"
+                        autocomplete="off"
+                    >
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="submitAnswerBtn">Submit Answer</button>
+                        <div class="next-hint-wrap">
+                            <span id="nextHintCostPreview" class="next-hint-cost-preview" aria-hidden="true"></span>
+                            <button class="btn btn-secondary" id="nextHintBtn">Next Hint</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>

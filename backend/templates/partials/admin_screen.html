@@ -1,0 +1,68 @@
+        <div id="adminScreen" class="screen hidden">
+            <div class="admin-header">
+                <h1>🔧 Admin: Quiz Management</h1>
+                <button class="btn btn-secondary" id="backToMainFromAdminBtn">← Back to Main</button>
+            </div>
+            <p id="adminDestCount"></p>
+            <div class="admin-actions">
+                <button class="btn btn-primary" id="addDestinationBtn">Add New Destination</button>
+            </div>
+            <div id="adminError" class="admin-error" style="display:none;"></div>
+            <div id="adminSuccess" class="admin-success" style="display:none;"></div>
+            <p id="adminEmptyState" class="admin-empty-state" style="display:none;">The quiz database is empty. Add a destination to get started.</p>
+            <div id="adminDestList"></div>
+
+            <div id="adminForm" class="admin-form-section" style="display:none;">
+                <h3 id="adminFormTitle">Add New Destination</h3>
+                <div class="admin-form-group">
+                    <label for="adminDestName">Name</label>
+                    <input type="text" id="adminDestName" maxlength="128" placeholder="Destination name">
+                </div>
+                <div class="admin-form-group">
+                    <label for="adminHint1">Hint 1</label>
+                    <textarea id="adminHint1" maxlength="256" placeholder="Hardest hint (shown first)"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="adminHint2">Hint 2</label>
+                    <textarea id="adminHint2" maxlength="256" placeholder="Second hint"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="adminHint3">Hint 3</label>
+                    <textarea id="adminHint3" maxlength="256" placeholder="Third hint"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="adminHint4">Hint 4</label>
+                    <textarea id="adminHint4" maxlength="256" placeholder="Fourth hint"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="adminHint5">Hint 5</label>
+                    <textarea id="adminHint5" maxlength="256" placeholder="Easiest hint (shown last)"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label>Image URLs (2–10 required)</label>
+                    <div id="adminImagesContainer"></div>
+                    <button type="button" class="btn btn-secondary btn-small" id="addImageFieldBtn">Add Image URL</button>
+                </div>
+                <div class="admin-form-group">
+                    <label>Correct Answers (1–20 required)</label>
+                    <div id="adminAnswersContainer"></div>
+                    <button type="button" class="btn btn-secondary btn-small" id="addAnswerFieldBtn">Add Answer</button>
+                </div>
+                <div class="admin-form-buttons">
+                    <button class="btn btn-primary" id="saveDestinationBtn">Save</button>
+                    <button class="btn btn-secondary" id="cancelDestinationBtn">Cancel</button>
+                </div>
+            </div>
+
+            <div id="adminDeleteDialog" class="admin-dialog-overlay" style="display:none;">
+                <div class="admin-dialog">
+                    <h3>Confirm Deletion</h3>
+                    <p>Are you sure you want to delete <strong id="adminDeleteName"></strong>?</p>
+                    <p>This action cannot be undone.</p>
+                    <div class="admin-dialog-buttons">
+                        <button id="adminDeleteConfirmBtn" class="btn btn-danger">Delete</button>
+                        <button class="btn btn-secondary" id="adminDeleteCancelBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>

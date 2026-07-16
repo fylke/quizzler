@@ -149,6 +149,17 @@ class MainAppTestCase(unittest.TestCase):
         self.assertIn('id="statsScreen"', page)
         self.assertIn('id="guestRestrictionsStatus"', page)
         self.assertIn('id="backToMainFromStatsBtn"', page)
+        self.assertIn('id="quizScreen"', page)
+        self.assertIn('id="nextHintBtn"', page)
+        self.assertIn('id="resultsScreen"', page)
+        self.assertIn('id="backToMainFromResultsBtn"', page)
+        self.assertIn('id="adminScreen"', page)
+        self.assertIn('id="addDestinationBtn"', page)
+        self.assertIn('id="adminDeleteDialog"', page)
+        self.assertIn('id="forgotPasswordModal"', page)
+        self.assertIn('id="rulesModal"', page)
+        self.assertIn('id="hintComplaintModal"', page)
+        self.assertIn('id="imageModal"', page)
 
     def test_check_answer_returns_correct_for_valid_answer(self):
         question = self.quiz_data[0]
