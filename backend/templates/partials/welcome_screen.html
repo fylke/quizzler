@@ -1,0 +1,45 @@
+        <div id="welcomeScreen" class="screen hidden">
+            <div class="welcome-content">
+                <h1 id="authHeading">Quizzler</h1>
+                <p class="brand-subheading">The customizable quiz engine</p>
+                <p id="authSubtext">Log in to continue.</p>
+
+                <div class="input-group auth-group">
+                    <input
+                        type="text"
+                        id="name"
+                        placeholder="Skip at your peril!"
+                        maxlength="20"
+                        class="hidden"
+                    >
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Enter your email"
+                        maxlength="100"
+                        pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                        title="Enter a valid email address (e.g. user@example.com)"
+                    >
+                    <span class="validation-hint" id="emailHint">Please enter a valid email address</span>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        maxlength="50"
+                    >
+                    <div id="passwordStrengthContainer" class="password-strength-container hidden">
+                        <div class="password-strength-bar">
+                            <div id="passwordStrengthFill" class="password-strength-fill"></div>
+                        </div>
+                        <span id="passwordStrengthLabel" class="password-strength-label"></span>
+                    </div>
+                    <button class="btn btn-primary" id="authButton">Log In</button>
+                    <button class="btn btn-secondary" id="guestButton">Continue as Guest</button>
+                    <p class="auth-error" id="authError" style="display: none;"></p>
+                </div>
+
+                <p id="switchToRegister" class="auth-toggle-link">Don't have an account? <a href="#" id="switchToRegisterLink">Register now.</a></p>
+                <p id="switchToLogin" class="auth-toggle-link hidden">Already have an account? <a href="#" id="switchToLoginLink">Log in.</a></p>
+                <p class="auth-toggle-link"><a href="#" id="forgotPasswordLink">Forgot password?</a></p>
+            </div>
+        </div>

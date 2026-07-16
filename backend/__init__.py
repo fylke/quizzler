@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import sqlalchemy.exc
-from flask import Flask, jsonify, request, send_from_directory, session
+from flask import Flask, jsonify, render_template, request, send_from_directory, session
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -394,7 +394,7 @@ def reset_password_page():
 @app.route("/")
 def index():
     """Serve the main page."""
-    return send_from_directory(STATIC_DIR, "index.html")
+    return render_template("index.html")
 
 
 @app.route("/media/<path:filename>")

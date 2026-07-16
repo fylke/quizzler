@@ -2,14 +2,86 @@
 
 let editingDestId = null;
 
+function getAdminApp() {
+    return window.QuizzlerApp;
+}
+
+function bindAdminClick(elementId, handler) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+
+    element.addEventListener('click', handler);
+}
+
+function setupAdminEventBindings() {
+    bindAdminClick('backToMainFromAdminBtn', () => {
+        hideAdminScreen();
+    });
+    bindAdminClick('addDestinationBtn', () => {
+        showDestinationForm();
+    });
+    bindAdminClick('addImageFieldBtn', () => {
+        addImageField('');
+    });
+    bindAdminClick('addAnswerFieldBtn', () => {
+        addAnswerField('');
+    });
+    bindAdminClick('saveDestinationBtn', () => {
+        saveDestination();
+    });
+    bindAdminClick('cancelDestinationBtn', () => {
+        hideAdminForm();
+    });
+    bindAdminClick('adminDeleteCancelBtn', () => {
+        hideDeleteDialog();
+    });
+
+    document.getElementById('adminDestList')?.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) {
+            return;
+        }
+
+        const destinationId = Number(button.dataset.destinationId);
+        if (!Number.isFinite(destinationId)) {
+            return;
+        }
+
+        if (button.dataset.action === 'edit-destination') {
+            showDestinationForm(destinationId);
+            return;
+        }
+
+        if (button.dataset.action === 'delete-destination') {
+            deleteDestination(destinationId, button.dataset.destinationName || '');
+        }
+    });
+
+    document.getElementById('adminImagesContainer')?.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action="remove-image-field"]');
+        if (button) {
+            removeImageField(button);
+        }
+    });
+
+    document.getElementById('adminAnswersContainer')?.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action="remove-answer-field"]');
+        if (button) {
+            removeAnswerField(button);
+        }
+    });
+}
+
 function showAdminScreen() {
-    showScreen('adminScreen');
+    getAdminApp().ui.showScreen('adminScreen');
     hideAdminForm();
     loadDestinations();
 }
 
 function hideAdminScreen() {
-    showStatusScreen();
+    getAdminApp().ui.showStatusScreen();
 }
 
 function showAdminError(message) {
@@ -30,9 +102,10 @@ async function loadDestinations() {
     const listEl = document.getElementById('adminDestList');
     const countEl = document.getElementById('adminDestCount');
     const emptyEl = document.getElementById('adminEmptyState');
+    const apiBase = getAdminApp().api.baseUrl;
 
     try {
-        const response = await fetch(`${API_BASE}/api/admin/destinations`);
+        const response = await fetch(`${apiBase}/api/admin/destinations`);
         if (!response.ok) {
             const err = await response.json();
             showAdminError(err.error || 'Failed to load destinations');
@@ -54,8 +127,8 @@ async function loadDestinations() {
                 <span class="admin-dest-id">#${dest.id}</span>
                 <span class="admin-dest-name">${escapeHtml(dest.name)}</span>
                 <div class="admin-dest-actions">
-                    <button onclick="showDestinationForm(${dest.id})" class="btn btn-secondary btn-small">Edit</button>
-                    <button onclick="deleteDestination(${dest.id}, '${escapeHtml(dest.name).replace(/'/g, "\\'")}')" class="btn btn-danger btn-small">Delete</button>
+                    <button type="button" data-action="edit-destination" data-destination-id="${dest.id}" class="btn btn-secondary btn-small">Edit</button>
+                    <button type="button" data-action="delete-destination" data-destination-id="${dest.id}" data-destination-name="${escapeAttr(dest.name)}" class="btn btn-danger btn-small">Delete</button>
                 </div>
             </div>
         `).join('');
@@ -75,6 +148,7 @@ async function showDestinationForm(id) {
     editingDestId = id || null;
     const formTitle = document.getElementById('adminFormTitle');
     const formEl = document.getElementById('adminForm');
+    const apiBase = getAdminApp().api.baseUrl;
 
     // Clear form fields
     document.getElementById('adminDestName').value = '';
@@ -87,7 +161,7 @@ async function showDestinationForm(id) {
     if (editingDestId) {
         formTitle.textContent = 'Edit Destination';
         try {
-            const response = await fetch(`${API_BASE}/api/admin/destinations/${editingDestId}`);
+            const response = await fetch(`${apiBase}/api/admin/destinations/${editingDestId}`);
             if (!response.ok) {
                 const err = await response.json();
                 showAdminError(err.error || 'Failed to load destination');
@@ -134,6 +208,9 @@ function hideAdminForm() {
 }
 
 async function saveDestination() {
+    const app = getAdminApp();
+    const apiBase = app.api.baseUrl;
+    const rules = app.state.validationRules;
     const name = document.getElementById('adminDestName').value.trim();
     const hints = [];
     for (let i = 1; i <= 5; i++) {
@@ -149,49 +226,49 @@ async function saveDestination() {
         showAdminError('Name is required');
         return;
     }
-    if (name.length > validationRules.destination.nameMaxLength) {
-        showAdminError(`Name must be ${validationRules.destination.nameMaxLength} characters or less`);
+    if (name.length > rules.destination.nameMaxLength) {
+        showAdminError(`Name must be ${rules.destination.nameMaxLength} characters or less`);
         return;
     }
-    for (let i = 0; i < validationRules.destination.hintCount; i++) {
+    for (let i = 0; i < rules.destination.hintCount; i++) {
         if (!hints[i]) {
             showAdminError(`Hint ${i + 1} is required`);
             return;
         }
-        if (hints[i].length > validationRules.destination.hintMaxLength) {
-            showAdminError(`Hint ${i + 1} must be ${validationRules.destination.hintMaxLength} characters or less`);
+        if (hints[i].length > rules.destination.hintMaxLength) {
+            showAdminError(`Hint ${i + 1} must be ${rules.destination.hintMaxLength} characters or less`);
             return;
         }
     }
-    if (images.length < validationRules.destination.imagesMinCount) {
-        showAdminError(`At least ${validationRules.destination.imagesMinCount} image URLs are required`);
+    if (images.length < rules.destination.imagesMinCount) {
+        showAdminError(`At least ${rules.destination.imagesMinCount} image URLs are required`);
         return;
     }
-    if (images.length > validationRules.destination.imagesMaxCount) {
-        showAdminError(`No more than ${validationRules.destination.imagesMaxCount} image URLs are allowed`);
+    if (images.length > rules.destination.imagesMaxCount) {
+        showAdminError(`No more than ${rules.destination.imagesMaxCount} image URLs are allowed`);
         return;
     }
-    if (correct_answers.length < validationRules.destination.answersMinCount || correct_answers.length > validationRules.destination.answersMaxCount) {
-        showAdminError(`Between ${validationRules.destination.answersMinCount} and ${validationRules.destination.answersMaxCount} correct answers are required`);
+    if (correct_answers.length < rules.destination.answersMinCount || correct_answers.length > rules.destination.answersMaxCount) {
+        showAdminError(`Between ${rules.destination.answersMinCount} and ${rules.destination.answersMaxCount} correct answers are required`);
         return;
     }
 
     const payload = { name, hints, images, correct_answers };
     const headers = { 'Content-Type': 'application/json' };
-    if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
+    if (app.state.csrfToken) {
+        headers['X-CSRF-Token'] = app.state.csrfToken;
     }
 
     try {
         let response;
         if (editingDestId) {
-            response = await fetch(`${API_BASE}/api/admin/destinations/${editingDestId}`, {
+            response = await fetch(`${apiBase}/api/admin/destinations/${editingDestId}`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(payload)
             });
         } else {
-            response = await fetch(`${API_BASE}/api/admin/destinations`, {
+            response = await fetch(`${apiBase}/api/admin/destinations`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(payload)
@@ -218,6 +295,8 @@ async function saveDestination() {
 }
 
 function deleteDestination(id, name) {
+    const app = getAdminApp();
+    const apiBase = app.api.baseUrl;
     const dialog = document.getElementById('adminDeleteDialog');
     document.getElementById('adminDeleteName').textContent = name;
     dialog.style.display = 'flex';
@@ -228,11 +307,11 @@ function deleteDestination(id, name) {
     confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
     newBtn.addEventListener('click', async () => {
         const headers = {};
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
+        if (app.state.csrfToken) {
+            headers['X-CSRF-Token'] = app.state.csrfToken;
         }
         try {
-            const response = await fetch(`${API_BASE}/api/admin/destinations/${id}`, {
+            const response = await fetch(`${apiBase}/api/admin/destinations/${id}`, {
                 method: 'DELETE',
                 headers
             });
@@ -261,7 +340,7 @@ function addImageField(value) {
     row.className = 'admin-dynamic-field-row';
     row.innerHTML = `
         <input type="url" value="${escapeAttr(value || '')}" placeholder="https://example.com/image.jpg">
-        <button type="button" onclick="removeImageField(this)" class="btn btn-danger btn-small">✕</button>
+        <button type="button" data-action="remove-image-field" class="btn btn-danger btn-small">✕</button>
     `;
     container.appendChild(row);
 }
@@ -276,7 +355,7 @@ function addAnswerField(value) {
     row.className = 'admin-dynamic-field-row';
     row.innerHTML = `
         <input type="text" value="${escapeAttr(value || '')}" maxlength="128" placeholder="Correct answer">
-        <button type="button" onclick="removeAnswerField(this)" class="btn btn-danger btn-small">✕</button>
+        <button type="button" data-action="remove-answer-field" class="btn btn-danger btn-small">✕</button>
     `;
     container.appendChild(row);
 }
@@ -288,3 +367,7 @@ function removeAnswerField(btn) {
 function escapeAttr(str) {
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupAdminEventBindings();
+});

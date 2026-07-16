@@ -1,5 +1,23 @@
 // ==================== Generic Focus Trap ====================
 
+function getModalApp() {
+    return window.QuizzlerApp;
+}
+
+function bindModalClick(elementId, handler, options = {}) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+
+    element.addEventListener('click', (event) => {
+        if (options.preventDefault) {
+            event.preventDefault();
+        }
+        handler(event);
+    });
+}
+
 /**
  * Set up a focus trap and Escape-to-close handler for a modal element.
  *
@@ -117,12 +135,12 @@ async function openRulesModal(quizType) {
 
     // Fetch rules content
     try {
-        const response = await fetch(`${API_BASE}/api/rules/${encodeURIComponent(quizType)}`);
+        const response = await fetch(`${getModalApp().api.baseUrl}/api/rules/${encodeURIComponent(quizType)}`);
         if (!response.ok) {
             // Hide modal and notify user
             modal.style.display = 'none';
             const errData = await response.json().catch(() => ({}));
-            showNotification(errData.error || 'Could not load rules.');
+            getModalApp().ui.showNotification(errData.error || 'Could not load rules.');
             if (_rulesModalTrigger) _rulesModalTrigger.focus();
             return;
         }
@@ -132,7 +150,7 @@ async function openRulesModal(quizType) {
     } catch (error) {
         console.error('Error fetching rules:', error);
         modal.style.display = 'none';
-        showNotification('Could not load rules.');
+        getModalApp().ui.showNotification('Could not load rules.');
         if (_rulesModalTrigger) _rulesModalTrigger.focus();
         return;
     }
@@ -159,11 +177,12 @@ let _hintComplaintTrigger = null;
 const _HINT_COMPLAINT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function openHintComplaintModal() {
+    const quizState = getModalApp().state.quizState;
     const quizId = quizState.currentQuizId;
     const hintDifficulty = quizState.viewedHintDifficulty || quizState.liveHintDifficulty;
 
     if (!Number.isFinite(quizId) || !Number.isFinite(hintDifficulty)) {
-        showNotification('No active hint is available to report.', 'info');
+        getModalApp().ui.showNotification('No active hint is available to report.', 'info');
         return;
     }
 
@@ -231,7 +250,7 @@ async function handleHintComplaintSubmit() {
 
     sendBtn.disabled = true;
     try {
-        const response = await fetch(`${API_BASE}/api/hint-complaint`, {
+        const response = await fetch(`${getModalApp().api.baseUrl}/api/hint-complaint`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -249,7 +268,7 @@ async function handleHintComplaintSubmit() {
         }
 
         closeHintComplaintModal();
-        showNotification('Hint complaint sent to admins.', 'info');
+        getModalApp().ui.showNotification('Hint complaint sent to admins.', 'info');
     } catch (error) {
         console.error('Hint complaint error:', error);
         errorEl.textContent = 'Failed to send complaint.';
@@ -319,7 +338,7 @@ async function handleForgotPasswordSubmit() {
 
     // Submit to backend
     try {
-        const response = await fetch(`${API_BASE}/api/forgot-password`, {
+        const response = await fetch(`${getModalApp().api.baseUrl}/api/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -353,9 +372,12 @@ function _showForgotPasswordConfirmation() {
     confirmation.className = 'modal-confirmation';
     confirmation.innerHTML = `
         <p>If that email is registered, a reset link has been sent.</p>
-        <button onclick="closeForgotPasswordModal()" class="btn btn-primary">Close</button>
+        <button type="button" id="forgotPasswordConfirmationCloseBtn" class="btn btn-primary">Close</button>
     `;
     modal.querySelector('.modal-card').appendChild(confirmation);
+    document.getElementById('forgotPasswordConfirmationCloseBtn')?.addEventListener('click', () => {
+        closeForgotPasswordModal();
+    });
 }
 
 // ==================== Initialize Focus Traps ====================
@@ -378,6 +400,22 @@ setupFocusTrap('imageModal', closeImageModal, [
 
 // Wire up the rules modal close button
 document.addEventListener('DOMContentLoaded', function () {
+    bindModalClick('hintComplaintLink', () => {
+        openHintComplaintModal();
+    }, { preventDefault: true });
+    bindModalClick('forgotPasswordSubmitBtn', () => {
+        handleForgotPasswordSubmit();
+    });
+    bindModalClick('forgotPasswordCancelBtn', () => {
+        closeForgotPasswordModal();
+    });
+    bindModalClick('hintComplaintSendBtn', () => {
+        handleHintComplaintSubmit();
+    });
+    bindModalClick('hintComplaintCancelBtn', () => {
+        closeHintComplaintModal();
+    });
+
     const closeBtn = document.getElementById('rulesModalCloseBtn');
     if (closeBtn) {
         closeBtn.addEventListener('click', closeRulesModal);

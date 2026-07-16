@@ -36,7 +36,6 @@
                         id="password" 
                         placeholder="Enter your password" 
                         maxlength="50"
-                        oninput="updatePasswordStrength()"
                     >
                     <div id="passwordStrengthContainer" class="password-strength-container hidden">
                         <div class="password-strength-bar">
@@ -44,14 +43,14 @@
                         </div>
                         <span id="passwordStrengthLabel" class="password-strength-label"></span>
                     </div>
-                    <button onclick="handleAuth()" class="btn btn-primary" id="authButton">Log In</button>
-                    <button onclick="continueAsGuest()" class="btn btn-secondary" id="guestButton">Continue as Guest</button>
+                    <button class="btn btn-primary" id="authButton">Log In</button>
+                    <button class="btn btn-secondary" id="guestButton">Continue as Guest</button>
                     <p class="auth-error" id="authError" style="display: none;"></p>
                 </div>
 
-                <p id="switchToRegister" class="auth-toggle-link">Don't have an account? <a href="#" onclick="toggleAuthMode('register'); return false;">Register now.</a></p>
-                <p id="switchToLogin" class="auth-toggle-link hidden">Already have an account? <a href="#" onclick="toggleAuthMode('login'); return false;">Log in.</a></p>
-                <p class="auth-toggle-link"><a href="#" id="forgotPasswordLink" onclick="openForgotPasswordModal(); return false;">Forgot password?</a></p>
+                <p id="switchToRegister" class="auth-toggle-link">Don't have an account? <a href="#" id="switchToRegisterLink">Register now.</a></p>
+                <p id="switchToLogin" class="auth-toggle-link hidden">Already have an account? <a href="#" id="switchToLoginLink">Log in.</a></p>
+                <p class="auth-toggle-link"><a href="#" id="forgotPasswordLink">Forgot password?</a></p>
             </div>
         </div>
 
@@ -59,7 +58,6 @@
             <div class="status-content">
                 <div class="status-icon-cluster" aria-label="Main actions">
                     <button
-                        onclick="showAdminScreen()"
                         class="btn-admin-icon"
                         id="adminLink"
                         style="display:none;"
@@ -69,7 +67,6 @@
                         <span class="admin-icon" aria-hidden="true"></span>
                     </button>
                     <button
-                        onclick="showStatsScreen()"
                         class="btn-stats-icon"
                         id="statsBtn"
                         aria-label="Statistics"
@@ -81,14 +78,12 @@
                         href="#"
                         id="statusLoginLink"
                         class="status-login-link"
-                        onclick="openLoginFromStatus(); return false;"
                         aria-label="Log in"
                         title="Log in"
                     >
                         <span class="status-login-icon" aria-hidden="true"></span>
                     </a>
                     <button
-                        onclick="handleLogout()"
                         class="btn-logout-icon"
                         id="logoutBtn"
                         aria-label="Log out"
@@ -100,11 +95,11 @@
                 <h1>🌍 GeoQuizzler</h1>
 
                 <div class="quiz-actions">
-                    <button onclick="runRandomQuiz()" class="btn btn-primary main-row-btn" id="runRandomQuizBtn">Run Random Quiz</button>
+                    <button class="btn btn-primary main-row-btn" id="runRandomQuizBtn">Run Random Quiz</button>
                     <div class="specific-quiz-section">
                         <div class="input-row">
                             <input type="text" id="specificQuizId" placeholder="Run specific quiz">
-                            <button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
+                            <button class="btn btn-primary" id="runSpecificQuizBtn">Go</button>
                         </div>
                     </div>
                 </div>
@@ -114,7 +109,7 @@
         <div id="statsScreen" class="screen hidden">
             <div class="stats-content">
                 <h1>📊 Your Stats</h1>
-                <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can <a href="#" onclick="openCreateAccountFromGuestBanner(); return false;">create an account</a> at any time to retain your progress.</p>
+                <p id="guestRestrictionsStatus" class="guest-mode-banner hidden">You are in guest mode, clearing your cookies will delete all your results. You can <a href="#" id="guestCreateAccountLink">create an account</a> at any time to retain your progress.</p>
                 <div class="stats-section">
                     <div class="stat-card">
                         <span class="stat-label">Cumulative Score</span>
@@ -130,7 +125,7 @@
                     </div>
                 </div>
                 <div class="stats-actions">
-                    <button onclick="backToStatus()" class="btn btn-secondary" id="backToMainFromStatsBtn">Back to Main</button>
+                    <button class="btn btn-secondary" id="backToMainFromStatsBtn">Back to Main</button>
                 </div>
             </div>
         </div>
@@ -169,7 +164,7 @@
                     <div id="hintHistoryButtons" class="hint-history-buttons"></div>
                 </div>
                 <p class="hint-complaint-link-wrap">
-                    <a href="#" id="hintComplaintLink" onclick="openHintComplaintModal(); return false;">Complain about this hint</a>
+                    <a href="#" id="hintComplaintLink">Complain about this hint</a>
                 </p>
 
                 <div class="answer-section">
@@ -180,10 +175,10 @@
                         autocomplete="off"
                     >
                     <div class="button-group">
-                        <button onclick="submitAnswer()" class="btn btn-primary">Submit Answer</button>
+                        <button class="btn btn-primary" id="submitAnswerBtn">Submit Answer</button>
                         <div class="next-hint-wrap">
                             <span id="nextHintCostPreview" class="next-hint-cost-preview" aria-hidden="true"></span>
-                            <button onclick="nextHint()" class="btn btn-secondary">Next Hint</button>
+                            <button class="btn btn-secondary" id="nextHintBtn">Next Hint</button>
                         </div>
                     </div>
                 </div>
@@ -196,7 +191,7 @@
                 <div id="resultsDetails" class="results-details"></div>
                 <h3 id="resultsImagesHeading" class="hidden"></h3>
                 <div id="resultsImages" class="images-section hidden" aria-label="Additional destination images"></div>
-                <button onclick="backToStatus()" class="btn btn-primary">Back to Main</button>
+                <button class="btn btn-primary" id="backToMainFromResultsBtn">Back to Main</button>
             </div>
         </div>
 
@@ -204,11 +199,11 @@
         <div id="adminScreen" class="screen hidden">
             <div class="admin-header">
                 <h1>🔧 Admin: Quiz Management</h1>
-                <button onclick="hideAdminScreen()" class="btn btn-secondary">← Back to Main</button>
+                <button class="btn btn-secondary" id="backToMainFromAdminBtn">← Back to Main</button>
             </div>
             <p id="adminDestCount"></p>
             <div class="admin-actions">
-                <button onclick="showDestinationForm()" class="btn btn-primary">Add New Destination</button>
+                <button class="btn btn-primary" id="addDestinationBtn">Add New Destination</button>
             </div>
             <div id="adminError" class="admin-error" style="display:none;"></div>
             <div id="adminSuccess" class="admin-success" style="display:none;"></div>
@@ -245,16 +240,16 @@
                 <div class="admin-form-group">
                     <label>Image URLs (2–10 required)</label>
                     <div id="adminImagesContainer"></div>
-                    <button type="button" onclick="addImageField()" class="btn btn-secondary btn-small">Add Image URL</button>
+                    <button type="button" class="btn btn-secondary btn-small" id="addImageFieldBtn">Add Image URL</button>
                 </div>
                 <div class="admin-form-group">
                     <label>Correct Answers (1–20 required)</label>
                     <div id="adminAnswersContainer"></div>
-                    <button type="button" onclick="addAnswerField()" class="btn btn-secondary btn-small">Add Answer</button>
+                    <button type="button" class="btn btn-secondary btn-small" id="addAnswerFieldBtn">Add Answer</button>
                 </div>
                 <div class="admin-form-buttons">
-                    <button onclick="saveDestination()" class="btn btn-primary">Save</button>
-                    <button onclick="hideAdminForm()" class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary" id="saveDestinationBtn">Save</button>
+                    <button class="btn btn-secondary" id="cancelDestinationBtn">Cancel</button>
                 </div>
             </div>
 
@@ -266,7 +261,7 @@
                     <p>This action cannot be undone.</p>
                     <div class="admin-dialog-buttons">
                         <button id="adminDeleteConfirmBtn" class="btn btn-danger">Delete</button>
-                        <button onclick="hideDeleteDialog()" class="btn btn-secondary">Cancel</button>
+                        <button class="btn btn-secondary" id="adminDeleteCancelBtn">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -283,8 +278,8 @@
                 <span class="inline-error" id="resetEmailError" role="alert"></span>
             </div>
             <div class="modal-buttons">
-                <button onclick="handleForgotPasswordSubmit()" class="btn btn-primary" id="forgotPasswordSubmitBtn">Submit</button>
-                <button onclick="closeForgotPasswordModal()" class="btn btn-secondary" id="forgotPasswordCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="forgotPasswordSubmitBtn">Submit</button>
+                <button class="btn btn-secondary" id="forgotPasswordCancelBtn">Cancel</button>
             </div>
         </div>
     </div>
@@ -315,8 +310,8 @@
                 <span class="inline-error" id="hintComplaintError" role="alert"></span>
             </div>
             <div class="modal-buttons">
-                <button onclick="handleHintComplaintSubmit()" class="btn btn-primary" id="hintComplaintSendBtn">Send</button>
-                <button onclick="closeHintComplaintModal()" class="btn btn-secondary" id="hintComplaintCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="hintComplaintSendBtn">Send</button>
+                <button class="btn btn-secondary" id="hintComplaintCancelBtn">Cancel</button>
             </div>
         </div>
     </div>
@@ -332,6 +327,9 @@
     </div>
 
     <script src="/static/app.js"></script>
+    <script src="/static/auth_main.js"></script>
+    <script src="/static/quiz_flow.js"></script>
+    <script src="/static/screens.js"></script>
     <script src="/static/markdown.js"></script>
     <script src="/static/modal.js"></script>
     <script src="/static/admin.js"></script>

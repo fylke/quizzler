@@ -137,6 +137,19 @@ class MainAppTestCase(unittest.TestCase):
         images = data.get('images')
         self.assertGreaterEqual(len(images), 2)
 
+    def test_home_page_renders_extracted_screen_partials(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        page = response.get_data(as_text=True)
+        self.assertIn('id="welcomeScreen"', page)
+        self.assertIn('id="authButton"', page)
+        self.assertIn('id="statusScreen"', page)
+        self.assertIn('id="runSpecificQuizBtn"', page)
+        self.assertIn('id="statsScreen"', page)
+        self.assertIn('id="guestRestrictionsStatus"', page)
+        self.assertIn('id="backToMainFromStatsBtn"', page)
+
     def test_check_answer_returns_correct_for_valid_answer(self):
         question = self.quiz_data[0]
         # Start a quiz first so server-side state exists
