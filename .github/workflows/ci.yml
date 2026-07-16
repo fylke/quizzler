@@ -124,6 +124,13 @@ jobs:
       - name: Ensure database directory exists
         run: mkdir -p database
 
+      - name: Run home markup parity guard tests
+        env:
+          QUIZ_DATABASE_URL: sqlite:///./database/ci_quiz_data.db
+        run: >
+          uv run --group test python -m pytest test_backend/test_main.py -k
+          "extracted_screen_partials or static_fixture_contains_critical_home_ui_ids or share_script_bootstrap_order or keep_screen_and_modal_order"
+
       - name: Run tests
         env:
           QUIZ_DATABASE_URL: sqlite:///./database/ci_quiz_data.db

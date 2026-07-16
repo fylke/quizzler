@@ -73,3 +73,11 @@ stateDiagram-v2
 - Frontend Jasmine specs still use the static fixture in `frontend/index.html`.
 - During this migration phase, treat backend-rendered home markup and static fixture markup as paired sources and keep them aligned.
 - Parity checks in `test_backend/test_main.py` enforce key IDs, script load order, and screen/modal ordering.
+
+## Migration Milestone
+
+Date: 2026-07-16
+
+- Home-page backend template composition now uses screen and modal partials under `backend/templates/partials/`.
+- Backend tests include parity guardrails against `frontend/index.html` for critical IDs, script order, and screen/modal order.
+- E2E quiz flow assertions were updated to current `resultsScreen` behavior after the screen-controller refactor.

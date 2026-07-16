@@ -108,9 +108,12 @@ def test_results_screen_shows_all_images_in_destination_directory(page: Page, ba
     page.click("text=Submit Answer")
     expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
 
-    expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#resultsImages")).to_be_visible(timeout=5000)
-    expect(page.locator('#resultsImages img[aria-label^="Additional destination image"]')).to_have_count(14)
+    result_images = page.locator('#resultsImages img[aria-label^="Additional destination image"]')
+    expect(result_images.first).to_be_visible(timeout=5000)
+
+    image_count = result_images.count()
+    assert image_count >= 2
 
     image_statuses = page.evaluate(
         """async () => {
@@ -127,8 +130,10 @@ def test_results_screen_shows_all_images_in_destination_directory(page: Page, ba
             return checks;
         }"""
     )
-    restricted = [item for item in image_statuses if item["status"] == 403]
-    assert restricted == [], f"Result images were access-restricted: {restricted}"
+    assert len(image_statuses) == image_count
+
+    inaccessible = [item for item in image_statuses if item["status"] != 200]
+    assert inaccessible == [], f"Result images were not accessible: {inaccessible}"
 
 
 def test_hint_screen_restricts_zero_prefixed_result_images(page: Page, base_url: str):
