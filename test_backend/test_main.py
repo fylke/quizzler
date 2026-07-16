@@ -107,8 +107,42 @@ CRITICAL_SCRIPT_SRCS = [
     '/static/admin.js',
 ]
 
+SCREEN_ID_ORDER = [
+    'welcomeScreen',
+    'statusScreen',
+    'statsScreen',
+    'quizScreen',
+    'resultsScreen',
+    'adminScreen',
+]
+
+MODAL_ID_ORDER = [
+    'forgotPasswordModal',
+    'rulesModal',
+    'hintComplaintModal',
+    'imageModal',
+]
+
 
 class MainAppTestCase(unittest.TestCase):
+    def assert_id_order(self, content: str, element_ids, error_prefix: str):
+        positions = []
+        for element_id in element_ids:
+            marker = f'id="{element_id}"'
+            pos = content.find(marker)
+            self.assertNotEqual(
+                pos,
+                -1,
+                msg=f'{error_prefix}: missing element {element_id}',
+            )
+            positions.append(pos)
+
+        self.assertEqual(
+            positions,
+            sorted(positions),
+            msg=f'{error_prefix}: order changed for IDs {element_ids}',
+        )
+
     def assert_script_order(self, content: str):
         positions = []
         for src in CRITICAL_SCRIPT_SRCS:
@@ -211,6 +245,35 @@ class MainAppTestCase(unittest.TestCase):
         fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
         fixture_content = fixture.read_text(encoding='utf-8')
         self.assert_script_order(fixture_content)
+
+    def test_home_page_and_static_fixture_keep_screen_and_modal_order(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        rendered_page = response.get_data(as_text=True)
+        self.assert_id_order(
+            rendered_page,
+            SCREEN_ID_ORDER,
+            'Rendered home page screen ordering drifted',
+        )
+        self.assert_id_order(
+            rendered_page,
+            MODAL_ID_ORDER,
+            'Rendered home page modal ordering drifted',
+        )
+
+        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
+        fixture_content = fixture.read_text(encoding='utf-8')
+        self.assert_id_order(
+            fixture_content,
+            SCREEN_ID_ORDER,
+            'Frontend static fixture screen ordering drifted',
+        )
+        self.assert_id_order(
+            fixture_content,
+            MODAL_ID_ORDER,
+            'Frontend static fixture modal ordering drifted',
+        )
 
     def test_check_answer_returns_correct_for_valid_answer(self):
         question = self.quiz_data[0]
