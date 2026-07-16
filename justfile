@@ -170,14 +170,17 @@ frontend seed='':
         uv_bin="/snap/bin/uv"
     fi
 
+    py_runner=""
     if [[ -n "$uv_bin" ]]; then
-        "$uv_bin" run --group test python - <<'PY'
+        py_runner="$uv_bin run --group test python"
     elif [[ -x .venv/bin/python ]]; then
-        .venv/bin/python - <<'PY'
+        py_runner=".venv/bin/python"
     else
         echo "Neither .venv/bin/python nor 'uv' is available. Run 'just sync' first." >&2
         exit 127
     fi
+
+    eval "$py_runner" - <<'PY'
     from pathlib import Path
     import sys
 
