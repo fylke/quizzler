@@ -26,7 +26,6 @@ describe('Image Enlargement', function () {
                 '<h3 id="resultsImagesHeading" class="hidden"></h3>' +
                 '<div id="resultsImages" class="images-section hidden"></div>' +
             '</div>' +
-            '<div id="resultImages" class="result-images hidden"></div>' +
             '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Enlarged image">' +
                 '<div class="modal-card image-modal-card">' +
                     '<button id="imageModalPrevBtn" type="button" class="image-modal-nav image-modal-nav-prev" aria-label="Show previous hint image">&#8249;</button>' +
@@ -66,21 +65,27 @@ describe('Image Enlargement', function () {
     });
 
     it('opens a result image in a modal when clicked', function () {
-        renderResultImages(['https://example.com/result-1_small.webp']);
+        renderImageGallery(
+            document.getElementById('resultsImages'),
+            ['https://example.com/result-1_small.webp']
+        );
 
-        document.querySelector('#resultImages .result-image').click();
+        document.querySelector('#resultsImages .result-image').click();
 
         expect(document.getElementById('imageModal').style.display).toBe('flex');
         expect(document.getElementById('imageModalImage').src).toContain('result-1.jpg');
     });
 
     it('navigates between result images in the modal with arrow buttons', function () {
-        renderResultImages([
-            'https://example.com/result-1_small.webp',
-            'https://example.com/result-2_small.webp'
-        ]);
+        renderImageGallery(
+            document.getElementById('resultsImages'),
+            [
+                'https://example.com/result-1_small.webp',
+                'https://example.com/result-2_small.webp'
+            ]
+        );
 
-        document.querySelector('#resultImages .result-image').click();
+        document.querySelector('#resultsImages .result-image').click();
 
         expect(document.getElementById('imageModalPrevBtn').classList.contains('hidden')).toBeFalse();
         expect(document.getElementById('imageModalNextBtn').classList.contains('hidden')).toBeFalse();
@@ -98,9 +103,9 @@ describe('Image Enlargement', function () {
             urls.push('https://example.com/result-' + i + '.jpg');
         }
 
-        renderResultImages(urls);
+        renderImageGallery(document.getElementById('resultsImages'), urls);
 
-        expect(document.querySelectorAll('#resultImages .result-image').length).toBe(12);
+        expect(document.querySelectorAll('#resultsImages .result-image').length).toBe(12);
     });
 
     it('renders result images on the results screen shown after quiz completion', function () {

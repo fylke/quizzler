@@ -792,11 +792,6 @@ function renderImageGallery(container, imageUrls, variant = 'result') {
     });
 }
 
-function renderResultImages(imageUrls) {
-    const container = document.getElementById('resultImages');
-    renderImageGallery(container, imageUrls);
-}
-
 function getAllUnlockedHintImagesForResults() {
     const hintImages = [];
     const seen = new Set();
@@ -821,82 +816,6 @@ function getAllUnlockedHintImagesForResults() {
     });
 
     return hintImages;
-}
-
-function readImageListFromDataset(datasetValue) {
-    try {
-        const parsed = JSON.parse(datasetValue || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (_error) {
-        return [];
-    }
-}
-
-function toResultThumbnailUrl(url) {
-    if (typeof url !== 'string' || !url) {
-        return null;
-    }
-
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) {
-        return null;
-    }
-
-    if (trimmedUrl.toLowerCase().endsWith('_small.webp')) {
-        return trimmedUrl;
-    }
-
-    const withSmallWebp = trimmedUrl.replace(
-        /\.(?:jpe?g|png|gif|webp)(\?.*)?$/i,
-        '_small.webp$1'
-    );
-
-    if (!withSmallWebp.toLowerCase().endsWith('.webp') && !/\.webp\?/i.test(withSmallWebp)) {
-        return null;
-    }
-
-    return withSmallWebp;
-}
-
-function normalizeResultThumbnailImages(imageUrls) {
-    if (!Array.isArray(imageUrls)) {
-        return [];
-    }
-
-    const normalized = [];
-    const seen = new Set();
-
-    imageUrls.forEach(url => {
-        const thumbnailUrl = toResultThumbnailUrl(url);
-        if (!thumbnailUrl || seen.has(thumbnailUrl)) {
-            return;
-        }
-        seen.add(thumbnailUrl);
-        normalized.push(thumbnailUrl);
-    });
-
-    return normalized;
-}
-
-function mergeUniqueImages(primaryImages, secondaryImages) {
-    const merged = [];
-    const seen = new Set();
-
-    [primaryImages, secondaryImages].forEach(source => {
-        if (!Array.isArray(source)) {
-            return;
-        }
-
-        source.forEach(url => {
-            if (typeof url !== 'string' || !url || seen.has(url)) {
-                return;
-            }
-            seen.add(url);
-            merged.push(url);
-        });
-    });
-
-    return merged;
 }
 
 async function submitAnswer() {
