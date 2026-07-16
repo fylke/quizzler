@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from scripts.generate_small_webp import generate_small_webp
+from scripts.generate_small_webp import generate_small_webp, parse_args
 
 
 class TestGenerateSmallWebp(unittest.TestCase):
@@ -66,6 +66,61 @@ class TestGenerateSmallWebp(unittest.TestCase):
 
             with Image.open(target_path) as image:
                 self.assertEqual(image.size, (16, 16))
+
+    def test_parse_args_supports_named_flags_in_any_order(self):
+        args = parse_args(
+            [
+                "--quality",
+                "80",
+                "--root",
+                "media/countries",
+                "--max-height",
+                "420",
+                "--max-width",
+                "360",
+                "--overwrite",
+            ]
+        )
+
+        self.assertEqual(args.root, "media/countries")
+        self.assertEqual(args.max_width, 360)
+        self.assertEqual(args.max_height, 420)
+        self.assertEqual(args.quality, 80)
+        self.assertTrue(args.overwrite)
+
+    def test_parse_args_supports_key_value_args_in_any_order(self):
+        args = parse_args(
+            [
+                "quality=81",
+                "height=421",
+                "root=media/countries",
+                "width=361",
+                "overwrite=true",
+            ]
+        )
+
+        self.assertEqual(args.root, "media/countries")
+        self.assertEqual(args.max_width, 361)
+        self.assertEqual(args.max_height, 421)
+        self.assertEqual(args.quality, 81)
+        self.assertTrue(args.overwrite)
+
+    def test_parse_args_supports_positional_root_anywhere(self):
+        args = parse_args(
+            [
+                "--quality",
+                "77",
+                "media/countries",
+                "--max-width",
+                "320",
+            ]
+        )
+
+        self.assertEqual(args.root, "media/countries")
+        self.assertEqual(args.max_width, 320)
+        self.assertEqual(args.max_height, 960)
+        self.assertEqual(args.quality, 77)
+        self.assertFalse(args.overwrite)
 
 
 if __name__ == "__main__":

@@ -12,12 +12,92 @@ Examples converted:
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from PIL import Image
 
 
 SUPPORTED_SOURCE_SUFFIXES = frozenset(Image.registered_extensions())
+
+
+_CLI_VALUE_ALIASES = {
+    "root": "--root",
+    "max-width": "--max-width",
+    "width": "--max-width",
+    "max-height": "--max-height",
+    "height": "--max-height",
+    "quality": "--quality",
+}
+
+
+def _normalize_cli_args(argv: list[str]) -> list[str]:
+    """Normalize CLI args so key=value and positional root are accepted.
+
+    Supported aliases:
+    - root=/path
+    - width=960 or max-width=960
+    - height=960 or max-height=960
+    - quality=72
+    - overwrite=true|false
+    """
+
+    normalized: list[str] = []
+    positional_root_consumed = False
+    truthy = {"1", "true", "yes", "on"}
+    falsy = {"0", "false", "no", "off"}
+
+    flags_with_values = {"--root", "--max-width", "--max-height", "--quality"}
+    i = 0
+    while i < len(argv):
+        token = argv[i]
+        if token.startswith("-"):
+            if "=" in token:
+                normalized.append(token)
+                i += 1
+                continue
+
+            normalized.append(token)
+            if token in flags_with_values and i + 1 < len(argv):
+                normalized.append(argv[i + 1])
+                i += 2
+                continue
+            i += 1
+            continue
+
+        if "=" in token:
+            key, value = token.split("=", 1)
+            normalized_key = key.strip().lower().replace("_", "-")
+            if normalized_key == "overwrite":
+                parsed = value.strip().lower()
+                if parsed in truthy:
+                    normalized.append("--overwrite")
+                    i += 1
+                    continue
+                if parsed in falsy:
+                    i += 1
+                    continue
+                raise SystemExit("overwrite must be one of: true, false, 1, 0")
+
+            mapped_flag = _CLI_VALUE_ALIASES.get(normalized_key)
+            if mapped_flag is not None:
+                if value == "":
+                    raise SystemExit(f"Missing value for '{key}'")
+                normalized.extend([mapped_flag, value])
+                i += 1
+                continue
+
+        # Treat the first bare token as root to allow positional root anywhere.
+        if not positional_root_consumed:
+            normalized.extend(["--root", token])
+            positional_root_consumed = True
+            i += 1
+            continue
+
+        normalized.append(token)
+        i += 1
+
+    return normalized
 
 
 def _is_supported_source_image(path: Path) -> bool:
@@ -92,7 +172,7 @@ def generate_small_webp(
     return converted, skipped
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate _small.webp hint images under a media root.",
     )
@@ -124,7 +204,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Overwrite existing _small.webp files.",
     )
-    return parser.parse_args()
+    raw_argv = sys.argv[1:] if argv is None else argv
+    return parser.parse_args(_normalize_cli_args(raw_argv))
 
 
 def main() -> int:
