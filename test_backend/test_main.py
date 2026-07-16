@@ -76,8 +76,57 @@ SAMPLE_DATA = [
     }
 ]
 
+CRITICAL_HOME_UI_IDS = [
+    'welcomeScreen',
+    'authButton',
+    'statusScreen',
+    'runSpecificQuizBtn',
+    'statsScreen',
+    'guestRestrictionsStatus',
+    'backToMainFromStatsBtn',
+    'quizScreen',
+    'nextHintBtn',
+    'resultsScreen',
+    'backToMainFromResultsBtn',
+    'adminScreen',
+    'addDestinationBtn',
+    'adminDeleteDialog',
+    'forgotPasswordModal',
+    'rulesModal',
+    'hintComplaintModal',
+    'imageModal',
+]
+
+CRITICAL_SCRIPT_SRCS = [
+    '/static/app.js',
+    '/static/auth_main.js',
+    '/static/quiz_flow.js',
+    '/static/screens.js',
+    '/static/markdown.js',
+    '/static/modal.js',
+    '/static/admin.js',
+]
+
 
 class MainAppTestCase(unittest.TestCase):
+    def assert_script_order(self, content: str):
+        positions = []
+        for src in CRITICAL_SCRIPT_SRCS:
+            marker = f'src="{src}"'
+            pos = content.find(marker)
+            self.assertNotEqual(
+                pos,
+                -1,
+                msg=f'Missing script marker: {marker}',
+            )
+            positions.append(pos)
+
+        self.assertEqual(
+            positions,
+            sorted(positions),
+            msg='Frontend script order changed; keep bootstrap load order stable.',
+        )
+
     def setUp(self):
         app.testing = True
         self.client = app.test_client()
@@ -142,24 +191,26 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
         page = response.get_data(as_text=True)
-        self.assertIn('id="welcomeScreen"', page)
-        self.assertIn('id="authButton"', page)
-        self.assertIn('id="statusScreen"', page)
-        self.assertIn('id="runSpecificQuizBtn"', page)
-        self.assertIn('id="statsScreen"', page)
-        self.assertIn('id="guestRestrictionsStatus"', page)
-        self.assertIn('id="backToMainFromStatsBtn"', page)
-        self.assertIn('id="quizScreen"', page)
-        self.assertIn('id="nextHintBtn"', page)
-        self.assertIn('id="resultsScreen"', page)
-        self.assertIn('id="backToMainFromResultsBtn"', page)
-        self.assertIn('id="adminScreen"', page)
-        self.assertIn('id="addDestinationBtn"', page)
-        self.assertIn('id="adminDeleteDialog"', page)
-        self.assertIn('id="forgotPasswordModal"', page)
-        self.assertIn('id="rulesModal"', page)
-        self.assertIn('id="hintComplaintModal"', page)
-        self.assertIn('id="imageModal"', page)
+        for element_id in CRITICAL_HOME_UI_IDS:
+            self.assertIn(f'id="{element_id}"', page)
+
+    def test_frontend_static_fixture_contains_critical_home_ui_ids(self):
+        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
+        content = fixture.read_text(encoding='utf-8')
+
+        for element_id in CRITICAL_HOME_UI_IDS:
+            self.assertIn(f'id="{element_id}"', content)
+
+    def test_home_page_and_static_fixture_share_script_bootstrap_order(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+
+        rendered_page = response.get_data(as_text=True)
+        self.assert_script_order(rendered_page)
+
+        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
+        fixture_content = fixture.read_text(encoding='utf-8')
+        self.assert_script_order(fixture_content)
 
     def test_check_answer_returns_correct_for_valid_answer(self):
         question = self.quiz_data[0]
