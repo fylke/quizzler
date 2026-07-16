@@ -16,7 +16,6 @@ quiz_bp = Blueprint("quiz", __name__)
 
 
 RESULT_IMAGE_PREFIX = "0"
-RESULT_IMAGE_MAX_COUNT = 10
 RESULT_IMAGE_NAME_RE = re.compile(r"^0.*\.jpg$", re.IGNORECASE)
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
@@ -38,7 +37,7 @@ def _media_root() -> Path:
 
 
 def _result_images_for_destination(destination_id: int) -> list[str]:
-    """Return up to 10 result image URLs for a destination.
+    """Return all result image URLs for a destination.
 
     Result images are discovered from media/countries/<id>/ files that start
     with "0" (for example: 01.jpg, 0a.png).
@@ -62,8 +61,6 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
             continue
 
         images.append(f"/media/countries/{destination_id}/{file_path.name}")
-        if len(images) >= RESULT_IMAGE_MAX_COUNT:
-            break
 
     current_app.logger.debug(
         "Discovered %s result images for destination %s in %s",

@@ -26,6 +26,10 @@ describe('Image Enlargement', function () {
                 '<h3 id="feedbackResultImagesHeading" class="hidden"></h3>' +
                 '<div id="feedbackResultImages" class="images-section hidden"></div>' +
             '</div>' +
+            '<div id="resultsScreen" class="screen hidden">' +
+                '<span id="finalScore"></span>' +
+                '<p id="resultsMessage"></p>' +
+            '</div>' +
             '<div id="resultImages" class="result-images hidden"></div>' +
             '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Enlarged image">' +
                 '<div class="modal-card image-modal-card">' +
@@ -92,6 +96,17 @@ describe('Image Enlargement', function () {
         expect(document.getElementById('imageModalImage').src).toContain('result-1.jpg');
     });
 
+    it('renders all result images without capping gallery size', function () {
+        var urls = [];
+        for (var i = 1; i <= 12; i += 1) {
+            urls.push('https://example.com/result-' + i + '.jpg');
+        }
+
+        renderResultImages(urls);
+
+        expect(document.querySelectorAll('#resultImages .result-image').length).toBe(12);
+    });
+
     it('renders result images on the feedback screen shown after quiz completion', function () {
         showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
 
@@ -103,6 +118,30 @@ describe('Image Enlargement', function () {
             .toBe('Here are some extra pictures from Bhutan');
         expect(document.getElementById('feedbackResultImagesHeading').classList.contains('hidden')).toBeFalse();
         expect(document.querySelector('#feedbackDetails .points-earned').textContent).toBe('15 Points!');
+    });
+
+    it('includes all unlocked hint images in the end-result gallery', function () {
+        quizState.unlockedHintDifficulties = [5, 4, 3];
+        quizState.hintImagesByDifficulty = {
+            5: ['https://example.com/h5a.jpg', 'https://example.com/h5b.jpg'],
+            4: ['https://example.com/h4a.jpg', 'https://example.com/h4b.jpg'],
+            3: ['https://example.com/h3a.jpg', 'https://example.com/h3b.jpg']
+        };
+
+        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
+        endQuiz();
+
+        var images = document.querySelectorAll('#resultImages .result-image');
+        expect(images.length).toBe(7);
+        expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
+            'https://example.com/result-1.jpg',
+            'https://example.com/h5a.jpg',
+            'https://example.com/h5b.jpg',
+            'https://example.com/h4a.jpg',
+            'https://example.com/h4b.jpg',
+            'https://example.com/h3a.jpg',
+            'https://example.com/h3b.jpg'
+        ]);
     });
 
     it('marks hint images as portrait when natural dimensions are portrait', function () {

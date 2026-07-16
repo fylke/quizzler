@@ -152,7 +152,7 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(data['points'], 15)  # Hint difficulty (5) * Remaining guesses (3)
         self.assertEqual(data['answer'], question['destination'])
 
-    def test_check_answer_returns_up_to_ten_result_images_with_zero_prefix(self):
+    def test_check_answer_returns_all_result_images_with_zero_prefix(self):
         question = self.quiz_data[0]
 
         with tempfile.TemporaryDirectory() as temp_media:
@@ -162,7 +162,7 @@ class MainAppTestCase(unittest.TestCase):
             destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
             destination_media_dir.mkdir(parents=True, exist_ok=True)
 
-            # Create 12 valid "0*.jpg" images and one non-matching file; API must cap at 10.
+            # Create 12 valid "0*.jpg" images and one non-matching file.
             for index in range(1, 13):
                 (destination_media_dir / f'0{index:02d}.jpg').write_bytes(b'test-image')
             (destination_media_dir / '0a.png').write_bytes(b'ignored-non-jpg-image')
@@ -179,7 +179,7 @@ class MainAppTestCase(unittest.TestCase):
                 data = response.get_json()
                 self.assertTrue(data['correct'])
                 self.assertIn('resultImages', data)
-                self.assertEqual(len(data['resultImages']), 10)
+                self.assertEqual(len(data['resultImages']), 12)
                 self.assertTrue(all(path.startswith(f"/media/countries/{question['id']}/0") for path in data['resultImages']))
                 self.assertTrue(all(path.lower().endswith('.jpg') for path in data['resultImages']))
             finally:

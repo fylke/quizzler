@@ -681,8 +681,8 @@ function addHintToHistory(hintText, hintDifficulty, hintImages) {
         quizState.unlockedHintDifficulties.sort((a, b) => b - a);
     }
     quizState.hintHistory[hintDifficulty] = hintText;
-    if (Array.isArray(hintImages) && hintImages.length >= 2) {
-        quizState.hintImagesByDifficulty[hintDifficulty] = hintImages.slice(0, 2);
+    if (Array.isArray(hintImages) && hintImages.length > 0) {
+        quizState.hintImagesByDifficulty[hintDifficulty] = hintImages.slice();
     }
 }
 
@@ -757,7 +757,7 @@ function renderHintFromState() {
 
 function renderImageGallery(container, imageUrls, variant = 'result') {
     if (!container) return;
-    const images = Array.isArray(imageUrls) ? imageUrls.slice(0, 10) : [];
+    const images = Array.isArray(imageUrls) ? imageUrls : [];
     const lightboxGroup = container.id
         ? `gallery-${container.id}`
         : `gallery-${variant}`;
@@ -795,6 +795,53 @@ function renderImageGallery(container, imageUrls, variant = 'result') {
 function renderResultImages(imageUrls) {
     const container = document.getElementById('resultImages');
     renderImageGallery(container, imageUrls);
+}
+
+function getAllUnlockedHintImagesForResults() {
+    const hintImages = [];
+    const seen = new Set();
+
+    const difficulties = Array.isArray(quizState.unlockedHintDifficulties)
+        ? quizState.unlockedHintDifficulties
+        : [];
+
+    difficulties.forEach(difficulty => {
+        const images = quizState.hintImagesByDifficulty[difficulty];
+        if (!Array.isArray(images)) {
+            return;
+        }
+
+        images.forEach(url => {
+            if (typeof url !== 'string' || !url || seen.has(url)) {
+                return;
+            }
+            seen.add(url);
+            hintImages.push(url);
+        });
+    });
+
+    return hintImages;
+}
+
+function mergeUniqueImages(primaryImages, secondaryImages) {
+    const merged = [];
+    const seen = new Set();
+
+    [primaryImages, secondaryImages].forEach(source => {
+        if (!Array.isArray(source)) {
+            return;
+        }
+
+        source.forEach(url => {
+            if (typeof url !== 'string' || !url || seen.has(url)) {
+                return;
+            }
+            seen.add(url);
+            merged.push(url);
+        });
+    });
+
+    return merged;
 }
 
 async function submitAnswer() {
@@ -952,6 +999,8 @@ function endQuiz() {
     } catch (_error) {
         resultImages = [];
     }
+    const hintImages = getAllUnlockedHintImagesForResults();
+    const allGalleryImages = mergeUniqueImages(resultImages, hintImages);
 
     const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;
     document.getElementById('finalScore').textContent = displayScore;
@@ -974,7 +1023,7 @@ function endQuiz() {
     }
 
     document.getElementById('resultsMessage').textContent = message;
-    renderResultImages(resultImages);
+    renderResultImages(allGalleryImages);
 }
 
 function retakeQuiz() {
