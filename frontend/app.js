@@ -823,6 +823,15 @@ function getAllUnlockedHintImagesForResults() {
     return hintImages;
 }
 
+function readImageListFromDataset(datasetValue) {
+    try {
+        const parsed = JSON.parse(datasetValue || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (_error) {
+        return [];
+    }
+}
+
 function mergeUniqueImages(primaryImages, secondaryImages) {
     const merged = [];
     const seen = new Set();
@@ -964,8 +973,10 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = [], optio
 
     // Store points in a data attribute for the results screen
     const feedbackScreenEl = document.getElementById('feedbackScreen');
+    const hintImagesForResults = getAllUnlockedHintImagesForResults();
     feedbackScreenEl.dataset.lastScore = points;
     feedbackScreenEl.dataset.resultImages = JSON.stringify(resultImages);
+    feedbackScreenEl.dataset.hintImagesForResults = JSON.stringify(hintImagesForResults);
     feedbackScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
     if (Number.isFinite(options.preservedScore)) {
         feedbackScreenEl.dataset.preservedScore = String(options.preservedScore);
@@ -993,13 +1004,11 @@ function endQuiz() {
     const score = parseInt(document.getElementById('feedbackScreen').dataset.lastScore || '0', 10);
     const scorePreserved = feedbackScreen.dataset.scorePreserved === 'true';
     const preservedScore = parseInt(feedbackScreen.dataset.preservedScore || '', 10);
-    let resultImages = [];
-    try {
-        resultImages = JSON.parse(feedbackScreen.dataset.resultImages || '[]');
-    } catch (_error) {
-        resultImages = [];
-    }
-    const hintImages = getAllUnlockedHintImagesForResults();
+    const resultImages = readImageListFromDataset(feedbackScreen.dataset.resultImages);
+    const storedHintImages = readImageListFromDataset(feedbackScreen.dataset.hintImagesForResults);
+    const hintImages = storedHintImages.length > 0
+        ? storedHintImages
+        : getAllUnlockedHintImagesForResults();
     const allGalleryImages = mergeUniqueImages(resultImages, hintImages);
 
     const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;

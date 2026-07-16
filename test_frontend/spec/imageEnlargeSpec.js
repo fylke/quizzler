@@ -144,6 +144,32 @@ describe('Image Enlargement', function () {
         ]);
     });
 
+    it('keeps hint images in end-result gallery even if live hint state is cleared', function () {
+        quizState.unlockedHintDifficulties = [5, 4];
+        quizState.hintImagesByDifficulty = {
+            5: ['https://example.com/h5a.jpg', 'https://example.com/h5b.jpg'],
+            4: ['https://example.com/h4a.jpg', 'https://example.com/h4b.jpg']
+        };
+
+        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
+
+        // Simulate state being reset before navigating to the end results screen.
+        quizState.unlockedHintDifficulties = [];
+        quizState.hintImagesByDifficulty = {};
+
+        endQuiz();
+
+        var images = document.querySelectorAll('#resultImages .result-image');
+        expect(images.length).toBe(5);
+        expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
+            'https://example.com/result-1.jpg',
+            'https://example.com/h5a.jpg',
+            'https://example.com/h5b.jpg',
+            'https://example.com/h4a.jpg',
+            'https://example.com/h4b.jpg'
+        ]);
+    });
+
     it('marks hint images as portrait when natural dimensions are portrait', function () {
         wireZoomableImage(
             document.getElementById('image1'),
