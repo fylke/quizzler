@@ -59,3 +59,18 @@ just playwright-install
 
 - Backend and end-to-end suites use pytest-randomly.
 - Frontend specs are run via Playwright against test_frontend/SpecRunner.html.
+
+## Home Markup Parity Guardrails
+
+The app currently keeps two home-page markup sources during migration:
+
+- Backend-rendered template at `/` (composed from `backend/templates/partials/*.html`)
+- Static frontend fixture in `frontend/index.html` (used by frontend specs)
+
+To prevent silent drift between those sources, backend tests include parity checks in `test_backend/test_main.py` that validate:
+
+- Critical UI IDs exist in both rendered home markup and static fixture markup.
+- Script bootstrap order stays aligned (`/static/app.js` through `/static/admin.js`).
+- Top-level screen and modal section ordering remains consistent.
+
+When changing home-page markup or script tags, update both files and keep these parity tests green.

@@ -63,8 +63,8 @@ def test_submit_correct_answer(page: Page, base_url: str):
     page.fill("#answerInput", "Paris")
     page.click("text=Submit Answer")
 
-    # Should show feedback (correct answer)
-    expect(page.locator("#feedbackScreen")).to_be_visible(timeout=5000)
+    # Successful answers now render directly in the results screen.
+    expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
 
 
 def test_submit_wrong_answer(page: Page, base_url: str):
@@ -78,8 +78,8 @@ def test_submit_wrong_answer(page: Page, base_url: str):
     # Wait a moment for the response
     page.wait_for_timeout(1000)
 
-    # Either feedback screen or still on quiz screen with updated state
-    is_feedback = page.locator("#feedbackScreen").is_visible()
+    # Either results screen or still on quiz screen with updated state
+    is_feedback = page.locator("#resultsScreen").is_visible()
     is_quiz = page.locator("#quizScreen").is_visible()
     assert is_feedback or is_quiz
 
@@ -106,18 +106,15 @@ def test_results_screen_shows_all_images_in_destination_directory(page: Page, ba
 
     page.fill("#answerInput", "Paris")
     page.click("text=Submit Answer")
-    expect(page.locator("#feedbackScreen")).to_be_visible(timeout=5000)
-
-    # Feedback view currently has no direct transition button to results.
-    page.evaluate("endQuiz()")
+    expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
 
     expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
-    expect(page.locator("#resultImages")).to_be_visible(timeout=5000)
-    expect(page.locator("#resultImages .result-image")).to_have_count(16)
+    expect(page.locator("#resultsImages")).to_be_visible(timeout=5000)
+    expect(page.locator('#resultsImages img[aria-label^="Additional destination image"]')).to_have_count(14)
 
     image_statuses = page.evaluate(
         """async () => {
-            const images = Array.from(document.querySelectorAll('#resultImages .result-image'));
+            const images = Array.from(document.querySelectorAll('#resultsImages img[aria-label^="Additional destination image"]'));
             const checks = [];
             for (const image of images) {
                 const sourceUrl = image.currentSrc || image.src;
@@ -166,9 +163,9 @@ def test_guest_register_migrates_completed_score(page: Page, base_url: str):
 
     page.fill("#answerInput", "Paris")
     page.click("text=Submit Answer")
-    expect(page.locator("#feedbackScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
 
-    page.locator("#feedbackScreen button", has_text="Back to Main").click()
+    page.click("#backToMainFromResultsBtn")
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
 
     page.click("#statsBtn")
