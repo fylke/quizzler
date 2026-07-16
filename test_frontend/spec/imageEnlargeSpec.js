@@ -70,7 +70,7 @@ describe('Image Enlargement', function () {
     });
 
     it('opens a result image in a modal when clicked', function () {
-        renderResultImages(['https://example.com/result-1.jpg']);
+        renderResultImages(['https://example.com/result-1_small.webp']);
 
         document.querySelector('#resultImages .result-image').click();
 
@@ -80,8 +80,8 @@ describe('Image Enlargement', function () {
 
     it('navigates between result images in the modal with arrow buttons', function () {
         renderResultImages([
-            'https://example.com/result-1.jpg',
-            'https://example.com/result-2.jpg'
+            'https://example.com/result-1_small.webp',
+            'https://example.com/result-2_small.webp'
         ]);
 
         document.querySelector('#resultImages .result-image').click();
@@ -134,13 +134,13 @@ describe('Image Enlargement', function () {
         var images = document.querySelectorAll('#resultImages .result-image');
         expect(images.length).toBe(7);
         expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
-            'https://example.com/result-1.jpg',
-            'https://example.com/h5a.jpg',
-            'https://example.com/h5b.jpg',
-            'https://example.com/h4a.jpg',
-            'https://example.com/h4b.jpg',
-            'https://example.com/h3a.jpg',
-            'https://example.com/h3b.jpg'
+            'https://example.com/result-1_small.webp',
+            'https://example.com/h5a_small.webp',
+            'https://example.com/h5b_small.webp',
+            'https://example.com/h4a_small.webp',
+            'https://example.com/h4b_small.webp',
+            'https://example.com/h3a_small.webp',
+            'https://example.com/h3b_small.webp'
         ]);
     });
 
@@ -162,11 +162,11 @@ describe('Image Enlargement', function () {
         var images = document.querySelectorAll('#resultImages .result-image');
         expect(images.length).toBe(5);
         expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
-            'https://example.com/result-1.jpg',
-            'https://example.com/h5a.jpg',
-            'https://example.com/h5b.jpg',
-            'https://example.com/h4a.jpg',
-            'https://example.com/h4b.jpg'
+            'https://example.com/result-1_small.webp',
+            'https://example.com/h5a_small.webp',
+            'https://example.com/h5b_small.webp',
+            'https://example.com/h4a_small.webp',
+            'https://example.com/h4b_small.webp'
         ]);
     });
 

@@ -446,6 +446,14 @@ function _applyImageModalOrientationClass(modal, imageEl) {
     cardEl.classList.add('is-landscape');
 }
 
+function _toLightboxImageUrl(url) {
+    if (typeof url !== 'string' || !url) {
+        return url;
+    }
+
+    return url.replace(/_small\.webp(\?.*)?$/i, '.jpg$1');
+}
+
 function _setImageModalContent(entry) {
     const modal = document.getElementById('imageModal');
     const imageEl = document.getElementById('imageModalImage');
@@ -454,7 +462,7 @@ function _setImageModalContent(entry) {
         return;
     }
 
-    imageEl.src = entry.url;
+    imageEl.src = _toLightboxImageUrl(entry.url);
     imageEl.alt = entry.alt;
     imageEl.onload = function () {
         _applyImageModalOrientationClass(modal, imageEl);

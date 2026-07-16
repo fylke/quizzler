@@ -832,6 +832,52 @@ function readImageListFromDataset(datasetValue) {
     }
 }
 
+function toResultThumbnailUrl(url) {
+    if (typeof url !== 'string' || !url) {
+        return null;
+    }
+
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+        return null;
+    }
+
+    if (trimmedUrl.toLowerCase().endsWith('_small.webp')) {
+        return trimmedUrl;
+    }
+
+    const withSmallWebp = trimmedUrl.replace(
+        /\.(?:jpe?g|png|gif|webp)(\?.*)?$/i,
+        '_small.webp$1'
+    );
+
+    if (!withSmallWebp.toLowerCase().endsWith('.webp') && !/\.webp\?/i.test(withSmallWebp)) {
+        return null;
+    }
+
+    return withSmallWebp;
+}
+
+function normalizeResultThumbnailImages(imageUrls) {
+    if (!Array.isArray(imageUrls)) {
+        return [];
+    }
+
+    const normalized = [];
+    const seen = new Set();
+
+    imageUrls.forEach(url => {
+        const thumbnailUrl = toResultThumbnailUrl(url);
+        if (!thumbnailUrl || seen.has(thumbnailUrl)) {
+            return;
+        }
+        seen.add(thumbnailUrl);
+        normalized.push(thumbnailUrl);
+    });
+
+    return normalized;
+}
+
 function mergeUniqueImages(primaryImages, secondaryImages) {
     const merged = [];
     const seen = new Set();
@@ -977,6 +1023,7 @@ function showFeedback(isCorrect, points, correctAnswer, resultImages = [], optio
     feedbackScreenEl.dataset.lastScore = points;
     feedbackScreenEl.dataset.resultImages = JSON.stringify(resultImages);
     feedbackScreenEl.dataset.hintImagesForResults = JSON.stringify(hintImagesForResults);
+    feedbackScreenEl.dataset.resultCountry = String(correctAnswer || '');
     feedbackScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
     if (Number.isFinite(options.preservedScore)) {
         feedbackScreenEl.dataset.preservedScore = String(options.preservedScore);
@@ -1004,28 +1051,21 @@ function endQuiz() {
     const score = parseInt(document.getElementById('feedbackScreen').dataset.lastScore || '0', 10);
     const scorePreserved = feedbackScreen.dataset.scorePreserved === 'true';
     const preservedScore = parseInt(feedbackScreen.dataset.preservedScore || '', 10);
+    const resultCountry = feedbackScreen.dataset.resultCountry || 'this destination';
     const resultImages = readImageListFromDataset(feedbackScreen.dataset.resultImages);
     const storedHintImages = readImageListFromDataset(feedbackScreen.dataset.hintImagesForResults);
     const hintImages = storedHintImages.length > 0
         ? storedHintImages
         : getAllUnlockedHintImagesForResults();
-    const allGalleryImages = mergeUniqueImages(resultImages, hintImages);
+    const allGalleryImages = mergeUniqueImages(
+        normalizeResultThumbnailImages(resultImages),
+        normalizeResultThumbnailImages(hintImages)
+    );
 
     const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;
     document.getElementById('finalScore').textContent = displayScore;
 
-    let message = '';
-    if (score >= 15) {
-        message = '🌟 Outstanding! You are a true travel expert!';
-    } else if (score >= 12) {
-        message = '🎉 Excellent! You know your destinations well!';
-    } else if (score >= 9) {
-        message = '👏 Good job! Keep exploring the world!';
-    } else if (score >= 6) {
-        message = '📚 Not bad! Time to travel more!';
-    } else {
-        message = '🗺️ Keep learning about travel destinations!';
-    }
+    let message = `Here are all the pictures from ${resultCountry}, as well as some bonus pictures`;
 
     if (scorePreserved && Number.isFinite(preservedScore)) {
         message += ` Replay result recorded, but your original score (${preservedScore}) is kept for stats.`;
