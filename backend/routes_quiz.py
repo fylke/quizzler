@@ -49,14 +49,31 @@ def _result_images_for_destination(destination_id: int) -> list[str]:
         )
         return []
 
-    images: list[str] = []
-    for file_path in sorted(destination_dir.iterdir(), key=lambda p: p.name):
-        if not file_path.is_file():
-            continue
-        if file_path.suffix.lower() not in RESULT_IMAGE_EXTENSIONS:
+    image_files = [
+        file_path
+        for file_path in sorted(destination_dir.iterdir(), key=lambda p: p.name)
+        if file_path.is_file() and file_path.suffix.lower() in RESULT_IMAGE_EXTENSIONS
+    ]
+
+    selected_by_stem: dict[str, Path] = {}
+    for file_path in image_files:
+        stem = file_path.stem
+        base_stem = stem[: -len("_small")] if stem.endswith("_small") else stem
+        existing = selected_by_stem.get(base_stem)
+
+        if existing is None:
+            selected_by_stem[base_stem] = file_path
             continue
 
-        images.append(f"/media/countries/{destination_id}/{file_path.name}")
+        # Match hint image behavior: if an optimized _small.webp variant exists,
+        # prefer it over the base file for the same logical image.
+        if file_path.stem.endswith("_small") and not existing.stem.endswith("_small"):
+            selected_by_stem[base_stem] = file_path
+
+    images = [
+        f"/media/countries/{destination_id}/{selected_by_stem[stem].name}"
+        for stem in sorted(selected_by_stem)
+    ]
 
     current_app.logger.debug(
         "Discovered %s result images for destination %s in %s",

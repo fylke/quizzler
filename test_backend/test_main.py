@@ -200,6 +200,44 @@ class MainAppTestCase(unittest.TestCase):
                 else:
                     os.environ['MEDIA_DIR'] = original_media_dir
 
+    def test_check_answer_ignores_small_variant_when_base_image_exists(self):
+        question = self.quiz_data[0]
+
+        with tempfile.TemporaryDirectory() as temp_media:
+            original_media_dir = os.environ.get('MEDIA_DIR')
+            os.environ['MEDIA_DIR'] = temp_media
+
+            destination_media_dir = Path(temp_media) / 'countries' / str(question['id'])
+            destination_media_dir.mkdir(parents=True, exist_ok=True)
+
+            (destination_media_dir / '001.jpg').write_bytes(b'base-image')
+            (destination_media_dir / '001_small.webp').write_bytes(b'optimized-duplicate')
+            (destination_media_dir / '002_small.webp').write_bytes(b'optimized-only')
+
+            try:
+                self.client.get(f'/api/quiz/{question["id"]}')
+
+                response = self.client.post('/api/check-answer', json={
+                    'answer': question['correct_answers'][0]
+                })
+                self.assertEqual(response.status_code, 200)
+
+                data = response.get_json()
+                self.assertTrue(data['correct'])
+                self.assertIn('resultImages', data)
+                self.assertEqual(
+                    data['resultImages'],
+                    [
+                        f"/media/countries/{question['id']}/001_small.webp",
+                        f"/media/countries/{question['id']}/002_small.webp",
+                    ]
+                )
+            finally:
+                if original_media_dir is None:
+                    os.environ.pop('MEDIA_DIR', None)
+                else:
+                    os.environ['MEDIA_DIR'] = original_media_dir
+
     def test_result_hint_media_remains_accessible_after_quiz_completion(self):
         question = self.quiz_data[0]
 

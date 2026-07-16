@@ -108,6 +108,22 @@ describe('Image Enlargement', function () {
         expect(document.querySelectorAll('#resultsImages .result-image').length).toBe(12);
     });
 
+    it('ignores duplicate result image URLs in the gallery', function () {
+        renderImageGallery(
+            document.getElementById('resultsImages'),
+            [
+                'https://example.com/result-1.jpg',
+                'https://example.com/result-1.jpg',
+                'https://example.com/result-2.jpg'
+            ]
+        );
+
+        var images = document.querySelectorAll('#resultsImages .result-image');
+        expect(images.length).toBe(2);
+        expect(images[0].src).toContain('result-1.jpg');
+        expect(images[1].src).toContain('result-2.jpg');
+    });
+
     it('renders result images on the results screen shown after quiz completion', function () {
         showResults(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
 

@@ -757,7 +757,11 @@ function renderHintFromState() {
 
 function renderImageGallery(container, imageUrls, variant = 'result') {
     if (!container) return;
-    const images = Array.isArray(imageUrls) ? imageUrls : [];
+    const images = Array.isArray(imageUrls)
+        ? imageUrls.filter((url, index, all) => (
+            typeof url === 'string' && url && all.indexOf(url) === index
+        ))
+        : [];
     const lightboxGroup = container.id
         ? `gallery-${container.id}`
         : `gallery-${variant}`;
