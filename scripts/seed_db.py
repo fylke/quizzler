@@ -13,7 +13,6 @@ See data/countries.example.json for the expected format.
 import json
 import sys
 import os
-from pathlib import Path
 
 # Ensure the project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,7 +25,7 @@ from backend import app
 from backend.models import db, Destination, User
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_SEED_PATH = os.path.join(PROJECT_ROOT, "data")
+DEFAULT_SEED_FILE = os.path.join(PROJECT_ROOT, "data", "countries.json")
 LEGACY_SEED_FILE = os.path.join(PROJECT_ROOT, "data", "destinations.json")
 
 
@@ -91,30 +90,21 @@ def _load_destinations(path=None):
     """Load destination data from a JSON file.
 
     Args:
-        path: Path to a JSON file or directory of JSON files. Defaults to data/.
+        path: Path to the JSON file. Defaults to data/countries.json.
 
     Returns:
         List of destination dicts, or None if file not found.
     """
-    seed_path = path or os.environ.get("SEED_DATA_PATH") or DEFAULT_SEED_PATH
-    if not os.path.exists(seed_path) and seed_path == DEFAULT_SEED_PATH and os.path.isfile(LEGACY_SEED_FILE):
+    seed_path = path or os.environ.get("SEED_DATA_PATH") or DEFAULT_SEED_FILE
+    if not os.path.isfile(seed_path) and seed_path == DEFAULT_SEED_FILE and os.path.isfile(LEGACY_SEED_FILE):
         print(
-            f"WARNING: {DEFAULT_SEED_PATH} not found, falling back to {LEGACY_SEED_FILE}",
+            f"WARNING: {DEFAULT_SEED_FILE} not found, falling back to {LEGACY_SEED_FILE}",
             file=sys.stderr,
         )
         seed_path = LEGACY_SEED_FILE
-
-    seed_path_obj = Path(seed_path)
-    if seed_path_obj.is_dir():
-        destinations = []
-        for json_path in sorted(seed_path_obj.glob("*.json")):
-            with json_path.open("r", encoding="utf-8") as f:
-                destinations.extend(json.load(f))
-        return destinations or None
-
-    if not seed_path_obj.is_file():
+    if not os.path.isfile(seed_path):
         return None
-    with seed_path_obj.open("r", encoding="utf-8") as f:
+    with open(seed_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -123,7 +113,7 @@ def seed(destinations=None):
 
     Args:
         destinations: Optional list of destination dicts. If None, loads from
-                      data/ (or SEED_DATA_PATH env var).
+                      data/countries.json (or SEED_DATA_PATH env var).
     """
     with app.app_context():
         try:
@@ -164,31 +154,28 @@ def seed(destinations=None):
             if not destinations:
                 print(
                     "ERROR: No seed data found. Place destination data in "
-                    "data/ or set SEED_DATA_PATH.",
+                    "data/countries.json or set SEED_DATA_PATH.",
                     file=sys.stderr,
                 )
                 sys.exit(1)
 
             added = 0
-            existing_ids = {row[0] for row in db.session.query(Destination.id).all()}
-            existing_names = {row[0] for row in db.session.query(Destination.name).all()}
             for dest_data in destinations:
                 destination_id = dest_data.get("id")
-                destination_name = dest_data["name"]
 
-                if destination_name in existing_names:
-                    print(f"  Skipping '{destination_name}' (already exists)")
+                if destination_id is not None:
+                    # Allow explicit IDs in seed JSON so media/<id>/ paths are stable.
+                    if Destination.query.filter_by(id=destination_id).first():
+                        print(f"  Skipping id={destination_id} '{dest_data['name']}' (id already exists)")
+                        continue
+
+                # Skip if a destination with the same name already exists
+                if Destination.query.filter_by(name=dest_data["name"]).first():
+                    print(f"  Skipping '{dest_data['name']}' (already exists)")
                     continue
 
-                if destination_id is not None and int(destination_id) in existing_ids:
-                    print(
-                        f"  Reassigning id for '{destination_name}' "
-                        f"(requested id={destination_id} already exists)"
-                    )
-                    destination_id = None
-
                 create_kwargs = {
-                    "name": destination_name,
+                    "name": dest_data["name"],
                     "hint1": dest_data["hint1"],
                     "hint1_source": dest_data.get("hint1_source"),
                     "hint2": dest_data["hint2"],
@@ -203,11 +190,9 @@ def seed(destinations=None):
                 }
                 if destination_id is not None:
                     create_kwargs["id"] = int(destination_id)
-                    existing_ids.add(int(destination_id))
 
                 dest = Destination(**create_kwargs)
                 db.session.add(dest)
-                existing_names.add(destination_name)
                 added += 1
 
             db.session.commit()
