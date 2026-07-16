@@ -926,7 +926,7 @@ async function submitAnswer() {
         }
 
         if (result.correct) {
-            showFeedback(true, result.points, result.answer, result.resultImages || [], {
+            showResults(true, result.points, result.answer, result.resultImages || [], {
                 scorePreserved: Boolean(result.scorePreserved),
                 preservedScore: Number.isFinite(Number(result.preservedScore))
                     ? Number(result.preservedScore)
@@ -948,7 +948,7 @@ async function submitAnswer() {
             submitting = false;
         } else {
             // Out of guesses
-            showFeedback(false, 0, result.answer, result.resultImages || [], {
+            showResults(false, 0, result.answer, result.resultImages || [], {
                 scorePreserved: Boolean(result.scorePreserved),
                 preservedScore: Number.isFinite(Number(result.preservedScore))
                     ? Number(result.preservedScore)
@@ -995,89 +995,54 @@ async function fetchHint() {
     }
 }
 
-function showFeedback(isCorrect, points, correctAnswer, resultImages = [], options = {}) {
-    showScreen('feedbackScreen');
+function showResults(isCorrect, points, correctAnswer, resultImages = [], options = {}) {
+    showScreen('resultsScreen');
 
-    const feedbackStatus = document.getElementById('feedbackStatus');
-    const feedbackDetails = document.getElementById('feedbackDetails');
+    const resultsStatus = document.getElementById('resultsStatus');
+    const resultsDetails = document.getElementById('resultsDetails');
 
     if (isCorrect) {
-        feedbackStatus.textContent = '✓ Correct!';
-        feedbackStatus.className = 'feedback-status correct';
-        feedbackDetails.innerHTML = `
+        resultsStatus.textContent = '✓ Correct!';
+        resultsStatus.className = 'results-status correct';
+        resultsDetails.innerHTML = `
             <p>The destination was: <span class="correct-answer">${correctAnswer}</span></p>
             <p class="points-earned">${points} Points!</p>
         `;
     } else {
-        feedbackStatus.textContent = '✗ Incorrect';
-        feedbackStatus.className = 'feedback-status incorrect';
-        feedbackDetails.innerHTML = `
+        resultsStatus.textContent = '✗ Incorrect';
+        resultsStatus.className = 'results-status incorrect';
+        resultsDetails.innerHTML = `
             <p>The destination was: <span class="correct-answer">${correctAnswer}</span></p>
             <p class="points-earned">0 Points</p>
         `;
     }
 
     // Store points in a data attribute for the results screen
-    const feedbackScreenEl = document.getElementById('feedbackScreen');
+    const resultsScreenEl = document.getElementById('resultsScreen');
     const hintImagesForResults = getAllUnlockedHintImagesForResults();
-    feedbackScreenEl.dataset.lastScore = points;
-    feedbackScreenEl.dataset.resultImages = JSON.stringify(resultImages);
-    feedbackScreenEl.dataset.hintImagesForResults = JSON.stringify(hintImagesForResults);
-    feedbackScreenEl.dataset.resultCountry = String(correctAnswer || '');
-    feedbackScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
+    resultsScreenEl.dataset.lastScore = points;
+    resultsScreenEl.dataset.resultImages = JSON.stringify(resultImages);
+    resultsScreenEl.dataset.hintImagesForResults = JSON.stringify(hintImagesForResults);
+    resultsScreenEl.dataset.resultCountry = String(correctAnswer || '');
+    resultsScreenEl.dataset.scorePreserved = options.scorePreserved ? 'true' : 'false';
     if (Number.isFinite(options.preservedScore)) {
-        feedbackScreenEl.dataset.preservedScore = String(options.preservedScore);
+        resultsScreenEl.dataset.preservedScore = String(options.preservedScore);
     } else {
-        delete feedbackScreenEl.dataset.preservedScore;
+        delete resultsScreenEl.dataset.preservedScore;
     }
 
-    const feedbackImagesHeading = document.getElementById('feedbackResultImagesHeading');
-    const feedbackImagesContainer = document.getElementById('feedbackResultImages');
-    if (feedbackImagesHeading) {
+    const resultsImagesHeading = document.getElementById('resultsImagesHeading');
+    const resultsImagesContainer = document.getElementById('resultsImages');
+    if (resultsImagesHeading) {
         if (Array.isArray(resultImages) && resultImages.length > 0) {
-            feedbackImagesHeading.textContent = `Here are some extra pictures from ${correctAnswer}`;
-            feedbackImagesHeading.classList.remove('hidden');
+            resultsImagesHeading.textContent = `Here are all the pictures from ${correctAnswer}, as well as some bonus pictures`;
+            resultsImagesHeading.classList.remove('hidden');
         } else {
-            feedbackImagesHeading.textContent = '';
-            feedbackImagesHeading.classList.add('hidden');
+            resultsImagesHeading.textContent = '';
+            resultsImagesHeading.classList.add('hidden');
         }
     }
-    renderImageGallery(feedbackImagesContainer, resultImages, 'hint');
-}
-
-function endQuiz() {
-    showScreen('resultsScreen');
-    const feedbackScreen = document.getElementById('feedbackScreen');
-    const score = parseInt(document.getElementById('feedbackScreen').dataset.lastScore || '0', 10);
-    const scorePreserved = feedbackScreen.dataset.scorePreserved === 'true';
-    const preservedScore = parseInt(feedbackScreen.dataset.preservedScore || '', 10);
-    const resultCountry = feedbackScreen.dataset.resultCountry || 'this destination';
-    const resultImages = readImageListFromDataset(feedbackScreen.dataset.resultImages);
-    const storedHintImages = readImageListFromDataset(feedbackScreen.dataset.hintImagesForResults);
-    const hintImages = storedHintImages.length > 0
-        ? storedHintImages
-        : getAllUnlockedHintImagesForResults();
-    const allGalleryImages = mergeUniqueImages(
-        normalizeResultThumbnailImages(resultImages),
-        normalizeResultThumbnailImages(hintImages)
-    );
-
-    const displayScore = scorePreserved && Number.isFinite(preservedScore) ? preservedScore : score;
-    document.getElementById('finalScore').textContent = displayScore;
-
-    let message = `Here are all the pictures from ${resultCountry}, as well as some bonus pictures`;
-
-    if (scorePreserved && Number.isFinite(preservedScore)) {
-        message += ` Replay result recorded, but your original score (${preservedScore}) is kept for stats.`;
-    }
-
-    document.getElementById('resultsMessage').textContent = message;
-    renderResultImages(allGalleryImages);
-}
-
-function retakeQuiz() {
-    showScreen('quizScreen');
-    loadQuestion();
+    renderImageGallery(resultsImagesContainer, resultImages, 'hint');
 }
 
 // ==================== Main + Stats Screens ====================

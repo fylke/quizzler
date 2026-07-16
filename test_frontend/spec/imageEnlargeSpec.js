@@ -20,15 +20,11 @@ describe('Image Enlargement', function () {
                 '<img id="image1" />' +
                 '<img id="image2" />' +
             '</div>' +
-            '<div id="feedbackScreen" class="screen hidden">' +
-                '<div id="feedbackStatus"></div>' +
-                '<div id="feedbackDetails"></div>' +
-                '<h3 id="feedbackResultImagesHeading" class="hidden"></h3>' +
-                '<div id="feedbackResultImages" class="images-section hidden"></div>' +
-            '</div>' +
             '<div id="resultsScreen" class="screen hidden">' +
-                '<span id="finalScore"></span>' +
-                '<p id="resultsMessage"></p>' +
+                '<div id="resultsStatus"></div>' +
+                '<div id="resultsDetails"></div>' +
+                '<h3 id="resultsImagesHeading" class="hidden"></h3>' +
+                '<div id="resultsImages" class="images-section hidden"></div>' +
             '</div>' +
             '<div id="resultImages" class="result-images hidden"></div>' +
             '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Enlarged image">' +
@@ -107,67 +103,17 @@ describe('Image Enlargement', function () {
         expect(document.querySelectorAll('#resultImages .result-image').length).toBe(12);
     });
 
-    it('renders result images on the feedback screen shown after quiz completion', function () {
-        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
+    it('renders result images on the results screen shown after quiz completion', function () {
+        showResults(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
 
-        var images = document.querySelectorAll('#feedbackResultImages .quiz-image');
+        var images = document.querySelectorAll('#resultsImages .quiz-image');
         expect(images.length).toBe(1);
         expect(images[0].src).toContain('result-1.jpg');
-        expect(document.getElementById('feedbackResultImages').classList.contains('hidden')).toBeFalse();
-        expect(document.getElementById('feedbackResultImagesHeading').textContent)
-            .toBe('Here are some extra pictures from Bhutan');
-        expect(document.getElementById('feedbackResultImagesHeading').classList.contains('hidden')).toBeFalse();
-        expect(document.querySelector('#feedbackDetails .points-earned').textContent).toBe('15 Points!');
-    });
-
-    it('includes all unlocked hint images in the end-result gallery', function () {
-        quizState.unlockedHintDifficulties = [5, 4, 3];
-        quizState.hintImagesByDifficulty = {
-            5: ['https://example.com/h5a.jpg', 'https://example.com/h5b.jpg'],
-            4: ['https://example.com/h4a.jpg', 'https://example.com/h4b.jpg'],
-            3: ['https://example.com/h3a.jpg', 'https://example.com/h3b.jpg']
-        };
-
-        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
-        endQuiz();
-
-        var images = document.querySelectorAll('#resultImages .result-image');
-        expect(images.length).toBe(7);
-        expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
-            'https://example.com/result-1_small.webp',
-            'https://example.com/h5a_small.webp',
-            'https://example.com/h5b_small.webp',
-            'https://example.com/h4a_small.webp',
-            'https://example.com/h4b_small.webp',
-            'https://example.com/h3a_small.webp',
-            'https://example.com/h3b_small.webp'
-        ]);
-    });
-
-    it('keeps hint images in end-result gallery even if live hint state is cleared', function () {
-        quizState.unlockedHintDifficulties = [5, 4];
-        quizState.hintImagesByDifficulty = {
-            5: ['https://example.com/h5a.jpg', 'https://example.com/h5b.jpg'],
-            4: ['https://example.com/h4a.jpg', 'https://example.com/h4b.jpg']
-        };
-
-        showFeedback(true, 15, 'Bhutan', ['https://example.com/result-1.jpg']);
-
-        // Simulate state being reset before navigating to the end results screen.
-        quizState.unlockedHintDifficulties = [];
-        quizState.hintImagesByDifficulty = {};
-
-        endQuiz();
-
-        var images = document.querySelectorAll('#resultImages .result-image');
-        expect(images.length).toBe(5);
-        expect(Array.from(images).map(function (img) { return img.src; })).toEqual([
-            'https://example.com/result-1_small.webp',
-            'https://example.com/h5a_small.webp',
-            'https://example.com/h5b_small.webp',
-            'https://example.com/h4a_small.webp',
-            'https://example.com/h4b_small.webp'
-        ]);
+        expect(document.getElementById('resultsImages').classList.contains('hidden')).toBeFalse();
+        expect(document.getElementById('resultsImagesHeading').textContent)
+            .toBe('Here are all the pictures from Bhutan, as well as some bonus pictures');
+        expect(document.getElementById('resultsImagesHeading').classList.contains('hidden')).toBeFalse();
+        expect(document.querySelector('#resultsDetails .points-earned').textContent).toBe('15 Points!');
     });
 
     it('marks hint images as portrait when natural dimensions are portrait', function () {

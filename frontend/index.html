@@ -194,32 +194,13 @@
             </div>
         </div>
 
-        <div id="feedbackScreen" class="screen hidden">
-            <div class="feedback-content">
-                <div id="feedbackStatus" class="feedback-status"></div>
-                <div id="feedbackDetails" class="feedback-details"></div>
-                <h3 id="feedbackResultImagesHeading" class="hidden"></h3>
-                <div id="feedbackResultImages" class="images-section hidden" aria-label="Additional destination images"></div>
-                <button onclick="backToStatus()" class="btn btn-primary">Back to Main</button>
-            </div>
-        </div>
-
-        <!-- Results Screen -->
         <div id="resultsScreen" class="screen hidden">
             <div class="results-content">
-                <h1>Quiz Complete! 🎉</h1>
-                <div class="final-score">
-                    <p>Your Score</p>
-                    <p id="finalScore" class="score-number">0</p>
-                </div>
-                <div class="results-details">
-                    <p id="resultsMessage"></p>
-                </div>
-                <div id="resultImages" class="result-images hidden" aria-label="Additional destination images"></div>
-                <div class="button-group">
-                    <button onclick="retakeQuiz()" class="btn btn-primary">Retake Quiz</button>
-                    <button onclick="backToStatus()" class="btn btn-secondary">Back to Main</button>
-                </div>
+                <div id="resultsStatus" class="results-status"></div>
+                <div id="resultsDetails" class="results-details"></div>
+                <h3 id="resultsImagesHeading" class="hidden"></h3>
+                <div id="resultsImages" class="images-section hidden" aria-label="Additional destination images"></div>
+                <button onclick="backToStatus()" class="btn btn-primary">Back to Main</button>
             </div>
         </div>
 

@@ -582,30 +582,30 @@ body {
     background: #d0d0d0;
 }
 
-/* Feedback Screen */
-.feedback-content {
+/* Results Screen */
+.results-content {
     text-align: center;
 }
 
-.feedback-status {
+.results-status {
     font-size: 4em;
     margin-bottom: var(--space-5);
 }
 
-.feedback-status.correct {
+.results-status.correct {
     color: #4caf50;
 }
 
-.feedback-status.incorrect {
+.results-status.incorrect {
     color: #f44336;
 }
 
-.feedback-details {
+.results-details {
     margin-bottom: var(--space-7);
     font-size: 1.2em;
 }
 
-.feedback-details p {
+.results-details p {
     margin: var(--space-3) 0;
 }
 
@@ -621,17 +621,12 @@ body {
     margin: var(--space-4) 0;
 }
 
-#feedbackResultImagesHeading {
+#resultsImagesHeading {
     margin: var(--space-6) 0 var(--space-4);
 }
 
-#feedbackResultImages {
+#resultsImages {
     margin-bottom: var(--space-6);
-}
-
-/* Results Screen */
-.results-content {
-    text-align: center;
 }
 
 /* Status Screen */
