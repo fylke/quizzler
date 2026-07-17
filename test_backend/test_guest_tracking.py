@@ -101,7 +101,6 @@ class GuestTrackingTestCase(unittest.TestCase):
         response = self.client.post(
             "/api/register",
             json={
-                "name": "Migrated User",
                 "email": "migrated@example.com",
                 "password": "password123",
             },

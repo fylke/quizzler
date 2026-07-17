@@ -54,15 +54,13 @@ def _clear_guest_cookie(response):
 @auth_bp.route("/api/register", methods=["POST"])
 def register():
     data = request.json or {}
-    name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = (data.get("password") or "").strip()
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
-    if not name:
-        name = random.choice(_FUNNY_NAMES)
+    name = random.choice(_FUNNY_NAMES)
 
     if not _EMAIL_RE.match(email):
         return jsonify({"error": "Invalid email format"}), 400

@@ -167,7 +167,6 @@ async function restoreActiveQuiz() {
 
 function toggleAuthMode(mode) {
     authMode = mode;
-    const nameField = document.getElementById('name');
     const authButton = document.getElementById('authButton');
     const switchToRegister = document.getElementById('switchToRegister');
     const switchToLogin = document.getElementById('switchToLogin');
@@ -175,7 +174,6 @@ function toggleAuthMode(mode) {
     const authSubtext = document.getElementById('authSubtext');
 
     if (mode === 'register') {
-        nameField.classList.remove('hidden');
         authButton.textContent = 'Create Account';
         switchToRegister.classList.add('hidden');
         switchToLogin.classList.remove('hidden');
@@ -183,7 +181,6 @@ function toggleAuthMode(mode) {
         authSubtext.textContent = 'Register and start the quiz.';
         updatePasswordStrength();
     } else {
-        nameField.classList.add('hidden');
         authButton.textContent = 'Log In';
         switchToRegister.classList.remove('hidden');
         switchToLogin.classList.add('hidden');
@@ -233,7 +230,6 @@ function updatePasswordStrength() {
 async function handleAuth() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
-    const name = document.getElementById('name').value.trim();
 
     document.getElementById('email').classList.add('touched');
 
@@ -256,9 +252,6 @@ async function handleAuth() {
     clearAuthError();
 
     const payload = { email, password };
-    if (authMode === 'register') {
-        payload.name = name;
-    }
 
     try {
         const response = await fetch(`${API_BASE}/api/${authMode}`, {

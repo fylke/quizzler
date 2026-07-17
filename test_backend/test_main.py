@@ -643,13 +643,11 @@ class MainAppTestCase(unittest.TestCase):
 
     def test_register_endpoint_creates_user_and_sets_session(self):
         response = self.client.post('/api/register', json={
-            'name': 'New User',
             'email': 'newuser@example.com',
             'password': 'newpassword'
         })
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertEqual(data['name'], 'New User')
         self.assertEqual(data['email'], 'newuser@example.com')
 
     def test_register_rejects_invalid_email_format(self):
@@ -663,7 +661,6 @@ class MainAppTestCase(unittest.TestCase):
         ]
         for email in invalid_emails:
             response = self.client.post('/api/register', json={
-                'name': 'Test',
                 'email': email,
                 'password': 'validpass123'
             })
@@ -677,7 +674,6 @@ class MainAppTestCase(unittest.TestCase):
         ]
         for i, email in enumerate(valid_emails):
             response = self.client.post('/api/register', json={
-                'name': f'User {i}',
                 'email': email,
                 'password': 'validpass123'
             })
@@ -690,14 +686,12 @@ class MainAppTestCase(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertEqual(data['name'], 'Test User')
         self.assertEqual(data['email'], 'test@example.com')
 
     def test_login_after_registration(self):
         """Register a new user, clear the session, then log in with those credentials."""
         # Register
         reg_resp = self.client.post('/api/register', json={
-            'name': 'Fresh User',
             'email': 'fresh@example.com',
             'password': 'freshpass123'
         })
@@ -723,7 +717,6 @@ class MainAppTestCase(unittest.TestCase):
         })
         self.assertEqual(login_resp.status_code, 200)
         login_data = login_resp.get_json()
-        self.assertEqual(login_data['name'], 'Fresh User')
         self.assertEqual(login_data['email'], 'fresh@example.com')
 
     def test_quiz_endpoint_requires_authentication(self):
@@ -754,7 +747,6 @@ class MainAppTestCase(unittest.TestCase):
         try:
             client = app.test_client()
             client.post('/api/register', json={
-                'name': 'SecureTest',
                 'email': 'secure@test.com',
                 'password': 'securepass123'
             })

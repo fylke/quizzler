@@ -2,7 +2,7 @@
 // **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead of Text Link', function () {
 
-    var nameField, authSubtext, switchToRegister, switchToLogin, authButton, authHeading;
+    var authSubtext, switchToRegister, switchToLogin, authButton, authHeading;
     var passwordStrengthContainer, fixtureContainer;
 
     beforeEach(function () {
@@ -15,7 +15,6 @@ describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead 
                     '<h1 id="authHeading">Quizzler</h1>' +
                     '<p id="authSubtext">Log in to continue.</p>' +
                     '<div class="input-group auth-group">' +
-                        '<input type="text" id="name" placeholder="Skip at your peril!" maxlength="20" class="hidden">' +
                         '<input type="email" id="email" placeholder="Enter your email" maxlength="100">' +
                         '<span class="validation-hint" id="emailHint">Please enter a valid email address</span>' +
                         '<input type="password" id="password" placeholder="Enter your password" maxlength="50">' +
@@ -32,7 +31,6 @@ describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead 
             '</div>';
         document.body.appendChild(fixtureContainer);
 
-        nameField = document.getElementById('name');
         authSubtext = document.getElementById('authSubtext');
         switchToRegister = document.getElementById('switchToRegister');
         switchToLogin = document.getElementById('switchToLogin');
@@ -124,7 +122,7 @@ describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead 
         );
     });
 
-    it('for any sequence of mode toggles ending in login, name input placeholder is "Skip at your peril!"', function () {
+    it('for any sequence of mode toggles ending in login, there is no name input field', function () {
         fc.assert(
             fc.property(
                 fc.array(fc.constantFrom('login', 'register'), { minLength: 0, maxLength: 10 }),
@@ -138,7 +136,7 @@ describe('Welcome Screen Bug Condition - Login Mode Shows Styled Button Instead 
                     }
 
                     var nameInput = document.getElementById('name');
-                    expect(nameInput.placeholder).toBe('Skip at your peril!');
+                    expect(nameInput).toBe(null);
                 }
             ),
             { numRuns: 50 }

@@ -203,7 +203,6 @@ def user_response(user):
     csrf_token = generate_csrf_token()
     return {
         "id": user.id,
-        "name": user.name,
         "email": user.email,
         "isAdmin": user.is_admin,
         "csrfToken": csrf_token,

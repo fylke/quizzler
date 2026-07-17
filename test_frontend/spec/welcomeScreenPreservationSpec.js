@@ -2,7 +2,7 @@
 // **Validates: Requirements 3.1, 3.2, 3.5, 3.6**
 describe('Welcome Screen Preservation - Authentication Flow and Registration Mode Unchanged', function () {
 
-    var nameField, authSubtext, switchToRegister, switchToLogin, authButton, authHeading;
+    var authSubtext, switchToRegister, switchToLogin, authButton, authHeading;
     var passwordStrengthContainer, fixtureContainer, emailInput, passwordInput, authError;
     var initialHeadingText;
 
@@ -16,7 +16,6 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
                     '<h1 id="authHeading">Quizzler</h1>' +
                     '<p id="authSubtext">Log in or create an account to continue.</p>' +
                     '<div class="input-group auth-group">' +
-                        '<input type="text" id="name" placeholder="Enter your name" maxlength="20" class="hidden">' +
                         '<input type="email" id="email" placeholder="Enter your email" maxlength="100">' +
                         '<span class="validation-hint" id="emailHint">Please enter a valid email address</span>' +
                         '<input type="password" id="password" placeholder="Enter your password" maxlength="50">' +
@@ -35,7 +34,6 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
             '</div>';
         document.body.appendChild(fixtureContainer);
 
-        nameField = document.getElementById('name');
         authSubtext = document.getElementById('authSubtext');
         switchToRegister = document.getElementById('switchToRegister');
         switchToLogin = document.getElementById('switchToLogin');
@@ -60,7 +58,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
     // the register mode UI state is correct
     describe('Property: Register mode UI state after any toggle sequence', function () {
 
-        it('for any sequence of toggleAuthMode calls ending in register, name field is visible, button says "Create Account", and the heading remains stable', function () {
+        it('for any sequence of toggleAuthMode calls ending in register, button says "Create Account", and the heading remains stable', function () {
             fc.assert(
                 fc.property(
                     fc.array(fc.constantFrom('login', 'register'), { minLength: 0, maxLength: 10 }),
@@ -74,13 +72,12 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
                         }
 
                         // Assertions for register mode
-                        var nf = document.getElementById('name');
                         var ab = document.getElementById('authButton');
                         var ah = document.getElementById('authHeading');
                         var as = document.getElementById('authSubtext');
 
-                        // Name field does NOT have class hidden
-                        expect(nf.classList.contains('hidden')).toBe(false);
+                        // Name field should not exist
+                        expect(document.getElementById('name')).toBe(null);
                         // authButton text is "Create Account"
                         expect(ab.textContent).toBe('Create Account');
                         // authHeading remains the same regardless of auth mode
@@ -98,7 +95,7 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
     // the login mode UI state is correct
     describe('Property: Login mode UI state after any toggle sequence', function () {
 
-        it('for any sequence of toggleAuthMode calls ending in login, name field is hidden, button says "Log In", the heading remains stable, and passwordStrengthContainer is hidden', function () {
+        it('for any sequence of toggleAuthMode calls ending in login, button says "Log In", the heading remains stable, and passwordStrengthContainer is hidden', function () {
             fc.assert(
                 fc.property(
                     fc.array(fc.constantFrom('login', 'register'), { minLength: 0, maxLength: 10 }),
@@ -112,13 +109,12 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
                         }
 
                         // Assertions for login mode
-                        var nf = document.getElementById('name');
                         var ab = document.getElementById('authButton');
                         var ah = document.getElementById('authHeading');
                         var psc = document.getElementById('passwordStrengthContainer');
 
-                        // Name field has class hidden
-                        expect(nf.classList.contains('hidden')).toBe(true);
+                        // Name field should not exist
+                        expect(document.getElementById('name')).toBe(null);
                         // authButton text is "Log In"
                         expect(ab.textContent).toBe('Log In');
                         // authHeading remains the same regardless of auth mode
@@ -163,7 +159,6 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
             toggleAuthMode('register');
             emailInput.value = 'test@example.com';
             passwordInput.value = 'short';
-            nameField.value = 'TestUser';
 
             // Add touched class to email to pass validity check
             emailInput.classList.add('touched');
@@ -199,19 +194,12 @@ describe('Welcome Screen Preservation - Authentication Flow and Registration Mod
             expect(emailInput.value).toBe('user@test.com');
             expect(passwordInput.value).toBe('mypassword123');
 
-            // Enter a name in register mode
-            nameField.value = 'John';
-
             // Toggle back to login
             toggleAuthMode('login');
 
             // Email and password should still be preserved
             expect(emailInput.value).toBe('user@test.com');
             expect(passwordInput.value).toBe('mypassword123');
-
-            // Toggle back to register - name should still be there
-            toggleAuthMode('register');
-            expect(nameField.value).toBe('John');
         });
     });
 });

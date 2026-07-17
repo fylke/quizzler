@@ -72,7 +72,6 @@ class AdminAuthTestCase(unittest.TestCase):
     def test_register_response_includes_is_admin_false(self):
         """Registration response should include isAdmin: false for new users."""
         response = self.client.post('/api/register', json={
-            'name': 'Brand New',
             'email': 'brandnew@example.com',
             'password': 'password123'
         })
