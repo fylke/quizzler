@@ -25,6 +25,7 @@ This runs:
 ```bash
 just backend
 just frontend
+just frontend_integration
 just e2e
 ```
 
@@ -89,6 +90,7 @@ just playwright-install
 
 - Backend and end-to-end suites use pytest-randomly.
 - Frontend specs are run via Playwright against test_frontend/SpecRunner.html.
+- CI also runs `just frontend_integration` as a frontend-focused integration lane against backend-rendered pages.
 
 ## Home Markup Parity Guardrails
 
