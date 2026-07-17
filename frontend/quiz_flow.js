@@ -75,9 +75,9 @@ function updateHintDisplay(hintText, hintDifficulty, remainingGuesses, options =
     updateNextHintCostPreview(difficulty, guesses);
     updateRemainingGuessesDisplay(guesses, options);
     addHintToHistory(hintText, difficulty, options.images);
-    quizState.liveHintDifficulty = difficulty;
-    quizState.liveRemainingGuesses = guesses;
-    quizState.viewedHintDifficulty = difficulty;
+    quizState.currentHint.difficulty = difficulty;
+    quizState.currentHint.remainingGuesses = guesses;
+    quizState.currentHint.viewedDifficulty = difficulty;
 
     renderHintReviewControls();
     renderHintFromState();
@@ -228,11 +228,11 @@ function updateRemainingGuessesDisplay(remainingGuesses, options = {}) {
 
 function resetHintReviewState() {
     quizState.hintHistory = {};
-    quizState.hintImagesByDifficulty = {};
-    quizState.unlockedHintDifficulties = [];
-    quizState.liveHintDifficulty = null;
-    quizState.liveRemainingGuesses = null;
-    quizState.viewedHintDifficulty = null;
+    quizState.currentHint = {
+        difficulty: null,
+        remainingGuesses: null,
+        viewedDifficulty: null
+    };
 
     const hintReviewSection = document.getElementById('hintReviewSection');
     const hintHistoryButtons = document.getElementById('hintHistoryButtons');
@@ -278,23 +278,29 @@ function addHintToHistory(hintText, hintDifficulty, hintImages) {
     if (typeof hintText !== 'string') {
         return;
     }
-    if (!(hintDifficulty in quizState.hintHistory)) {
-        quizState.unlockedHintDifficulties.push(hintDifficulty);
-        quizState.unlockedHintDifficulties.sort((a, b) => b - a);
-    }
-    quizState.hintHistory[hintDifficulty] = hintText;
-    if (Array.isArray(hintImages) && hintImages.length > 0) {
-        quizState.hintImagesByDifficulty[hintDifficulty] = hintImages.slice();
-    }
+    const existingEntry = quizState.hintHistory[hintDifficulty] || {};
+    quizState.hintHistory[hintDifficulty] = {
+        text: hintText,
+        images: Array.isArray(hintImages) && hintImages.length > 0
+            ? hintImages.slice()
+            : (Array.isArray(existingEntry.images) ? existingEntry.images : [])
+    };
 }
 
 function selectHintForReview(hintDifficulty) {
     if (!(hintDifficulty in quizState.hintHistory)) {
         return;
     }
-    quizState.viewedHintDifficulty = hintDifficulty;
+    quizState.currentHint.viewedDifficulty = hintDifficulty;
     renderHintReviewControls();
     renderHintFromState();
+}
+
+function getUnlockedHintDifficulties() {
+    return Object.keys(quizState.hintHistory)
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a);
 }
 
 function renderHintReviewControls() {
@@ -306,17 +312,18 @@ function renderHintReviewControls() {
 
     hintHistoryButtons.innerHTML = '';
 
-    if (quizState.unlockedHintDifficulties.length <= 1) {
+    const unlockedHintDifficulties = getUnlockedHintDifficulties();
+    if (unlockedHintDifficulties.length <= 1) {
         hintReviewSection.classList.add('hidden');
         return;
     }
 
     hintReviewSection.classList.remove('hidden');
-    quizState.unlockedHintDifficulties.forEach(difficulty => {
+    unlockedHintDifficulties.forEach(difficulty => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'hint-history-btn';
-        if (difficulty === quizState.viewedHintDifficulty) {
+        if (difficulty === quizState.currentHint.viewedDifficulty) {
             button.classList.add('active');
         }
 
@@ -331,10 +338,11 @@ function renderHintReviewControls() {
 }
 
 function renderHintFromState() {
-    const viewedDifficulty = quizState.viewedHintDifficulty;
-    const liveDifficulty = quizState.liveHintDifficulty;
-    const remainingGuesses = quizState.liveRemainingGuesses;
-    const viewedHintText = quizState.hintHistory[viewedDifficulty] || '';
+    const viewedDifficulty = quizState.currentHint.viewedDifficulty;
+    const liveDifficulty = quizState.currentHint.difficulty;
+    const remainingGuesses = quizState.currentHint.remainingGuesses;
+    const viewedHint = quizState.hintHistory[viewedDifficulty] || null;
+    const viewedHintText = viewedHint && typeof viewedHint.text === 'string' ? viewedHint.text : '';
 
     document.getElementById('hint').textContent = viewedHintText;
 
@@ -347,7 +355,9 @@ function renderHintFromState() {
     document.getElementById('hintProgress').textContent = '';
     document.getElementById('hintPoints').textContent = '';
 
-    const imagesForViewedHint = quizState.hintImagesByDifficulty[viewedDifficulty];
+    const imagesForViewedHint = viewedHint && Array.isArray(viewedHint.images)
+        ? viewedHint.images
+        : null;
     if (Array.isArray(imagesForViewedHint) && imagesForViewedHint.length >= 2) {
         renderQuizImages(imagesForViewedHint);
         return;
@@ -402,12 +412,13 @@ function getAllUnlockedHintImagesForResults() {
     const hintImages = [];
     const seen = new Set();
 
-    const difficulties = Array.isArray(quizState.unlockedHintDifficulties)
-        ? quizState.unlockedHintDifficulties
-        : [];
+    const difficulties = getUnlockedHintDifficulties();
 
     difficulties.forEach(difficulty => {
-        const images = quizState.hintImagesByDifficulty[difficulty];
+        const hintEntry = quizState.hintHistory[difficulty];
+        const images = hintEntry && Array.isArray(hintEntry.images)
+            ? hintEntry.images
+            : null;
         if (!Array.isArray(images)) {
             return;
         }

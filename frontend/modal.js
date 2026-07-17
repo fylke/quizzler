@@ -179,7 +179,8 @@ const _HINT_COMPLAINT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function openHintComplaintModal() {
     const quizState = getModalApp().state.quizState;
     const quizId = quizState.currentQuizId;
-    const hintDifficulty = quizState.viewedHintDifficulty || quizState.liveHintDifficulty;
+    const currentHint = quizState.currentHint || {};
+    const hintDifficulty = currentHint.viewedDifficulty || currentHint.difficulty;
 
     if (!Number.isFinite(quizId) || !Number.isFinite(hintDifficulty)) {
         getModalApp().ui.showNotification('No active hint is available to report.', 'info');

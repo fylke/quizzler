@@ -1,14 +1,14 @@
-// Quiz State — only tracks the authenticated user; all quiz progress lives on the backend.
+// Quiz state keeps minimal client-side UI state. Scoring/progression remains backend-owned.
 let quizState = {
     user: null,
     isGuest: false,
     currentQuizId: null,
     hintHistory: {},
-    hintImagesByDifficulty: {},
-    unlockedHintDifficulties: [],
-    liveHintDifficulty: null,
-    liveRemainingGuesses: null,
-    viewedHintDifficulty: null
+    currentHint: {
+        difficulty: null,
+        remainingGuesses: null,
+        viewedDifficulty: null
+    }
 };
 
 let csrfToken = null;

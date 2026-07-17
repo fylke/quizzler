@@ -29,8 +29,11 @@ describe('Hint Complaint Modal', function () {
         document.body.appendChild(fixtureContainer);
 
         quizState.currentQuizId = 55;
-        quizState.liveHintDifficulty = 4;
-        quizState.viewedHintDifficulty = 5;
+        quizState.currentHint = {
+            difficulty: 4,
+            remainingGuesses: 2,
+            viewedDifficulty: 5
+        };
     });
 
     afterEach(function () {

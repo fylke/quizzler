@@ -12,11 +12,11 @@ describe('Guest Mode', function () {
             isGuest: false,
             currentQuizId: null,
             hintHistory: {},
-            hintImagesByDifficulty: {},
-            unlockedHintDifficulties: [],
-            liveHintDifficulty: null,
-            liveRemainingGuesses: null,
-            viewedHintDifficulty: null
+            currentHint: {
+                difficulty: null,
+                remainingGuesses: null,
+                viewedDifficulty: null
+            }
         };
 
         guestRestrictionsStatus = document.getElementById('guestRestrictionsStatus');
