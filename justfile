@@ -287,7 +287,7 @@ e2e-single selector seed='':
         exit 127
     fi
 
-frontend-integration selector seed='':
+frontend_integration_single selector seed='':
     #!/usr/bin/env bash
     set -euo pipefail
     # Frontend integration tests run against backend-rendered pages.
@@ -295,8 +295,8 @@ frontend-integration selector seed='':
     selector_value="{{selector}}"
     selector_value="${selector_value#selector=}"
     if [[ -z "$selector_value" ]]; then
-        echo "Usage: just frontend-integration <pytest-selector> [seed]"
-        echo "Example: just frontend-integration \"test_e2e/test_quiz.py\" 12345"
+        echo "Usage: just frontend_integration_single <pytest-selector> [seed]"
+        echo "Example: just frontend_integration_single \"test_e2e/test_quiz.py\" 12345"
         exit 2
     fi
 
@@ -307,6 +307,27 @@ frontend-integration selector seed='':
     else
         just e2e-single "$selector_value" "$seed_value"
     fi
+
+frontend_integration seed='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Curated frontend-focused integration suite against backend-rendered pages.
+    seed_value="{{seed}}"
+    seed_value="${seed_value#seed=}"
+    if [[ -z "$seed_value" ]]; then
+        seed_value="$(date +%s)"
+    fi
+
+    selectors=(
+        "test_e2e/test_auth.py"
+        "test_e2e/test_quiz.py"
+        "test_e2e/test_wrong_guess_animation.py"
+        "test_e2e/test_forgot_password.py"
+    )
+
+    for selector in "${selectors[@]}"; do
+        just frontend_integration_single "$selector" "$seed_value"
+    done
 
 test:
     #!/usr/bin/env bash

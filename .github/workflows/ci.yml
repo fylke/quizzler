@@ -142,6 +142,11 @@ jobs:
       - name: Run frontend specs
         run: just frontend
 
+      - name: Run frontend integration suite
+        env:
+          QUIZ_DATABASE_URL: sqlite:///./database/ci_quiz_data.db
+        run: just frontend_integration
+
       - name: Generate repository SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
         with:
