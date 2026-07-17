@@ -252,3 +252,55 @@
     margin: 4px 0;
 }
 
+/* ==================== Cookie Consent Banner ==================== */
+
+.cookie-consent-banner {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1100;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.cookie-consent-content {
+    width: min(900px, 100%);
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.42);
+    padding: 16px;
+    pointer-events: auto;
+}
+
+.cookie-consent-content h2 {
+    color: #f8fafc;
+    margin: 0 0 8px;
+    text-align: left;
+    font-size: 1.1em;
+}
+
+.cookie-consent-content p {
+    margin: 0 0 14px;
+    line-height: 1.45;
+}
+
+.cookie-consent-content .btn {
+    width: auto;
+}
+
+@media (max-width: 600px) {
+    .cookie-consent-banner {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .cookie-consent-content {
+        padding: 14px;
+    }
+}
+

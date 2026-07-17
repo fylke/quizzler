@@ -20,6 +20,7 @@ let submitting = false; // guards against double-click on submit
 let hintCounterAnimationTimeout = null;
 let remainingGuessesAnimationTimeout = null;
 const COUNTER_PUFF_DURATION_MS = 340;
+const COOKIE_CONSENT_STORAGE_KEY = 'quizzler_cookie_consent_acknowledged_v1';
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -148,6 +149,36 @@ function bindClick(elementId, handler, options = {}) {
             event.preventDefault();
         }
         handler(event);
+    });
+}
+
+function initializeCookieConsentBanner() {
+    const banner = document.getElementById('cookieConsentBanner');
+    const acknowledgeBtn = document.getElementById('cookieConsentAcknowledgeBtn');
+
+    if (!banner || !acknowledgeBtn) {
+        return;
+    }
+
+    let acknowledged = false;
+    try {
+        acknowledged = localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY) === 'true';
+    } catch (error) {
+        // If storage is unavailable, show notice every page load.
+        acknowledged = false;
+    }
+
+    if (!acknowledged) {
+        banner.style.display = 'flex';
+    }
+
+    acknowledgeBtn.addEventListener('click', () => {
+        banner.style.display = 'none';
+        try {
+            localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, 'true');
+        } catch (error) {
+            // Ignore storage failures; banner will reappear on next page load.
+        }
     });
 }
 
@@ -322,6 +353,7 @@ function animateWrongGuess(inputElement) {
 // Allow Enter key to submit answer
 document.addEventListener('DOMContentLoaded', () => {
     bindAuthAndMainScreenActions();
+    initializeCookieConsentBanner();
 
     document.getElementById('answerInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
