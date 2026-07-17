@@ -1,0 +1,53 @@
+/* Responsive */
+@media (max-width: 600px) {
+    .screen {
+        padding: var(--space-5);
+    }
+
+    .status-login-link,
+    .btn-stats-icon,
+    .btn-admin-icon,
+    .btn-logout-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .status-content h1 {
+        padding-right: 190px;
+    }
+
+    .status-icon-cluster {
+        gap: 8px;
+    }
+
+    .welcome-content h1 {
+        font-size: 2em;
+    }
+
+    .welcome-content .brand-subheading {
+        font-size: 0.9em;
+    }
+
+    .timer {
+        font-size: 2em;
+    }
+
+    .score-number {
+        font-size: 2.5em !important;
+    }
+
+    .quiz-image {
+        height: 150px;
+    }
+
+    .quiz-image.is-portrait {
+        width: auto;
+        max-width: 100%;
+    }
+
+    .result-images {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+

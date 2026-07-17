@@ -1,0 +1,254 @@
+/* ==================== Forgot Password Modal ==================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-card h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    text-align: center;
+}
+
+.modal-form-group {
+    margin-bottom: 20px;
+}
+
+.modal-form-group label {
+    display: block;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+}
+
+.modal-form-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.modal-form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.modal-form-group textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.modal-form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.hint-complaint-context {
+    color: #555;
+    font-size: 0.9em;
+    margin-bottom: 14px;
+}
+
+.inline-error {
+    display: block;
+    color: #f44336;
+    font-size: 0.8em;
+    margin-top: 4px;
+    min-height: 1.2em;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* ==================== Image Modal ==================== */
+
+.image-modal-overlay {
+    padding: 20px;
+}
+
+.image-modal-card {
+    position: relative;
+    max-width: min(92vw, 1100px);
+    width: 100%;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #0f172a;
+    color: #fff;
+}
+
+.image-modal-card.is-portrait {
+    max-width: min(82vw, 78vh, 760px);
+}
+
+.image-modal-image {
+    width: 100%;
+    max-height: calc(92vh - 88px);
+    object-fit: contain;
+    border-radius: 10px;
+    background: #111827;
+}
+
+.image-modal-caption {
+    margin: 0;
+    text-align: center;
+    font-size: 0.95em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.image-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.image-modal-close:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.image-modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 2em;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.image-modal-nav:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.image-modal-nav:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.image-modal-nav-prev {
+    left: 12px;
+}
+
+.image-modal-nav-next {
+    right: 12px;
+}
+
+.image-modal-nav.hidden {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .image-modal-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 1.7em;
+    }
+}
+
+/* ==================== Rules Modal ==================== */
+
+.rules-modal-card {
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.rules-modal-card #rulesModalTitle {
+    display: none;
+}
+
+.rules-modal-content {
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    text-align: left;
+    line-height: 1.6;
+    color: #333;
+}
+
+.rules-modal-content h1,
+.rules-modal-content h2,
+.rules-modal-content h3 {
+    color: #333;
+    margin: 16px 0 8px;
+    text-align: left;
+}
+
+.rules-modal-content h1 {
+    font-size: 1.4em;
+}
+
+.rules-modal-content h2 {
+    font-size: 1.2em;
+}
+
+.rules-modal-content h3 {
+    font-size: 1.05em;
+}
+
+.rules-modal-content p {
+    margin: 8px 0;
+}
+
+.rules-modal-content ul,
+.rules-modal-content ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.rules-modal-content li {
+    margin: 4px 0;
+}
+

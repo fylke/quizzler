@@ -1,0 +1,47 @@
+/* Results Screen */
+.results-content {
+    text-align: center;
+}
+
+.results-status {
+    font-size: 4em;
+    margin-bottom: var(--space-5);
+}
+
+.results-status.correct {
+    color: #4caf50;
+}
+
+.results-status.incorrect {
+    color: #f44336;
+}
+
+.results-details {
+    margin-bottom: var(--space-7);
+    font-size: 1.2em;
+}
+
+.results-details p {
+    margin: var(--space-3) 0;
+}
+
+.correct-answer {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+.points-earned {
+    font-size: 1.5em;
+    color: #667eea;
+    font-weight: bold;
+    margin: var(--space-4) 0;
+}
+
+#resultsImagesHeading {
+    margin: var(--space-6) 0 var(--space-4);
+}
+
+#resultsImages {
+    margin-bottom: var(--space-6);
+}
+

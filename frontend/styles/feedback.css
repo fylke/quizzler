@@ -1,0 +1,87 @@
+/* ==================== Wrong Guess Animations ==================== */
+
+@keyframes shake {
+    0%, 100% { left: 0; }
+    15% { left: -8px; }
+    30% { left: 8px; }
+    45% { left: -6px; }
+    60% { left: 6px; }
+    75% { left: -3px; }
+    90% { left: 3px; }
+}
+
+@keyframes redGlow {
+    0% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); }
+    25% { box-shadow: 0 0 40px 15px rgba(255, 0, 0, 0.8), 0 10px 40px rgba(0, 0, 0, 0.2); }
+    50% { box-shadow: 0 0 10px 5px rgba(255, 0, 0, 0.3), 0 10px 40px rgba(0, 0, 0, 0.2); }
+    75% { box-shadow: 0 0 40px 15px rgba(255, 0, 0, 0.8), 0 10px 40px rgba(0, 0, 0, 0.2); }
+    100% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); }
+}
+
+.wrong-guess-shake {
+    animation: shake 800ms ease-in-out, redGlow 800ms ease-in-out !important;
+    position: relative !important;
+}
+
+.wrong-guess-glow {
+    /* Both animations are driven by .wrong-guess-shake; this class is kept for detection/cleanup */
+    animation: none;
+}
+
+.wrong-guess-static {
+    animation: staticPulse 1.2s ease-in-out forwards !important;
+}
+
+@keyframes staticPulse {
+    0% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); background: white; }
+    25% { box-shadow: 0 0 40px 12px rgba(255, 0, 0, 0.5), 0 10px 40px rgba(0, 0, 0, 0.2); background: #fff5f5; }
+    50% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); background: white; }
+    75% { box-shadow: 0 0 40px 12px rgba(255, 0, 0, 0.5), 0 10px 40px rgba(0, 0, 0, 0.2); background: #fff5f5; }
+    100% { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); background: white; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wrong-guess-shake {
+        animation: none !important;
+    }
+
+    .wrong-guess-glow {
+        animation: none;
+    }
+}
+
+/* ==================== App Notification Toast ==================== */
+
+.app-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: 500;
+    z-index: 2000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.app-notification-error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.app-notification-info {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+}
+
+.app-notification-fade {
+    opacity: 0;
+}
+
