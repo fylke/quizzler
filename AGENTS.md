@@ -5,6 +5,7 @@ Guidelines for AI agents working on the Quizzler project.
 ## Hard Rules
 
 - E2E tests must be run via `just e2e` (or `just e2e-single <selector>` for a single test). Do not run Playwright E2E tests with direct `uv run pytest ...` commands.
+- Do not push when there are known failing tests. Fix failures first, then push.
 
 ## Project Overview
 

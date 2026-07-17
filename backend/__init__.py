@@ -388,7 +388,7 @@ def get_stats():
 @app.route("/reset-password")
 def reset_password_page():
     """Serve the password reset form page."""
-    return send_from_directory(STATIC_DIR, "reset_password.html")
+    return render_template("reset_password.html")
 
 
 @app.route("/")
