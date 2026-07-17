@@ -28,6 +28,23 @@ just frontend
 just e2e
 ```
 
+## Frontend Integration Category
+
+Use this target when you want frontend-focused integration tests that run against backend-rendered pages (instead of the static Jasmine fixture):
+
+```bash
+just frontend-integration "<pytest-selector>" [seed]
+```
+
+Examples:
+
+```bash
+just frontend-integration "test_e2e/test_quiz.py"
+just frontend-integration "test_e2e/test_quiz.py::test_submit_correct_answer[chromium]" 12345
+```
+
+This target is a category alias and internally routes through `just e2e-single` to keep the repository E2E execution rule intact.
+
 ## Reproduce with a Fixed Seed
 
 ```bash

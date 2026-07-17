@@ -287,6 +287,27 @@ e2e-single selector seed='':
         exit 127
     fi
 
+frontend-integration selector seed='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Frontend integration tests run against backend-rendered pages.
+    # Keep execution routed through e2e-single to follow repository conventions.
+    selector_value="{{selector}}"
+    selector_value="${selector_value#selector=}"
+    if [[ -z "$selector_value" ]]; then
+        echo "Usage: just frontend-integration <pytest-selector> [seed]"
+        echo "Example: just frontend-integration \"test_e2e/test_quiz.py\" 12345"
+        exit 2
+    fi
+
+    seed_value="{{seed}}"
+    seed_value="${seed_value#seed=}"
+    if [[ -z "$seed_value" ]]; then
+        just e2e-single "$selector_value"
+    else
+        just e2e-single "$selector_value" "$seed_value"
+    fi
+
 test:
     #!/usr/bin/env bash
     set -euo pipefail
