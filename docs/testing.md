@@ -92,17 +92,14 @@ just playwright-install
 - Frontend specs are run via Playwright against test_frontend/SpecRunner.html.
 - CI also runs `just frontend_integration` as a frontend-focused integration lane against backend-rendered pages.
 
-## Home Markup Parity Guardrails
+## Home Markup Guardrails
 
-The app currently keeps two home-page markup sources during migration:
+The production home page is rendered from backend templates (`backend/templates/index.html` and `backend/templates/partials/*.html`).
 
-- Backend-rendered template at `/` (composed from `backend/templates/partials/*.html`)
-- Static frontend fixture in `frontend/index.html` (used by frontend specs)
+Backend tests in `test_backend/test_main.py` validate the rendered home page for:
 
-To prevent silent drift between those sources, backend tests include parity checks in `test_backend/test_main.py` that validate:
+- Critical UI IDs
+- Script bootstrap order (`/static/app.js` through `/static/admin.js`)
+- Top-level screen and modal section ordering
 
-- Critical UI IDs exist in both rendered home markup and static fixture markup.
-- Script bootstrap order stays aligned (`/static/app.js` through `/static/admin.js`).
-- Top-level screen and modal section ordering remains consistent.
-
-When changing home-page markup or script tags, update both files and keep these parity tests green.
+When changing home-page markup or script tags, keep these rendered-page guardrails green.

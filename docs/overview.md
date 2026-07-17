@@ -70,14 +70,13 @@ stateDiagram-v2
 ## Frontend Composition Notes
 
 - The production home page (`/`) is rendered from `backend/templates/index.html` and composed from partials under `backend/templates/partials/`.
-- Frontend Jasmine specs still use the static fixture in `frontend/index.html`.
-- During this migration phase, treat backend-rendered home markup and static fixture markup as paired sources and keep them aligned.
-- Parity checks in `test_backend/test_main.py` enforce key IDs, script load order, and screen/modal ordering.
+- Backend-rendered home markup is the source of truth for page structure.
+- Guardrail checks in `test_backend/test_main.py` enforce key IDs, script load order, and screen/modal ordering on the rendered page.
 
 ## Migration Milestone
 
 Date: 2026-07-16
 
 - Home-page backend template composition now uses screen and modal partials under `backend/templates/partials/`.
-- Backend tests include parity guardrails against `frontend/index.html` for critical IDs, script order, and screen/modal order.
+- Backend tests include rendered-page guardrails for critical IDs, script order, and screen/modal order.
 - E2E quiz flow assertions were updated to current `resultsScreen` behavior after the screen-controller refactor.

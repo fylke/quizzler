@@ -2,7 +2,6 @@ import os
 import sys
 import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -228,25 +227,14 @@ class MainAppTestCase(unittest.TestCase):
         for element_id in CRITICAL_HOME_UI_IDS:
             self.assertIn(f'id="{element_id}"', page)
 
-    def test_frontend_static_fixture_contains_critical_home_ui_ids(self):
-        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
-        content = fixture.read_text(encoding='utf-8')
-
-        for element_id in CRITICAL_HOME_UI_IDS:
-            self.assertIn(f'id="{element_id}"', content)
-
-    def test_home_page_and_static_fixture_share_script_bootstrap_order(self):
+    def test_home_page_uses_expected_script_bootstrap_order(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
 
         rendered_page = response.get_data(as_text=True)
         self.assert_script_order(rendered_page)
 
-        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
-        fixture_content = fixture.read_text(encoding='utf-8')
-        self.assert_script_order(fixture_content)
-
-    def test_home_page_and_static_fixture_keep_screen_and_modal_order(self):
+    def test_home_page_keeps_screen_and_modal_order(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
 
@@ -260,19 +248,6 @@ class MainAppTestCase(unittest.TestCase):
             rendered_page,
             MODAL_ID_ORDER,
             'Rendered home page modal ordering drifted',
-        )
-
-        fixture = Path(ROOT_DIR) / 'frontend' / 'index.html'
-        fixture_content = fixture.read_text(encoding='utf-8')
-        self.assert_id_order(
-            fixture_content,
-            SCREEN_ID_ORDER,
-            'Frontend static fixture screen ordering drifted',
-        )
-        self.assert_id_order(
-            fixture_content,
-            MODAL_ID_ORDER,
-            'Frontend static fixture modal ordering drifted',
         )
 
     def test_check_answer_returns_correct_for_valid_answer(self):
