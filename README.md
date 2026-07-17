@@ -28,6 +28,16 @@ Core guides:
 - Operations (env vars, podman, backup/restore): [docs/operations.md](docs/operations.md)
 - Utility scripts overview: [scripts/README.md](scripts/README.md)
 
+## Common Test Commands
+
+```bash
+just backend
+just frontend
+just frontend_integration
+just e2e
+just test
+```
+
 Gameplay and architecture:
 
 - Product/flow overview: [docs/overview.md](docs/overview.md)

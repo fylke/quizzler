@@ -52,6 +52,11 @@ direnv allow
 ```bash
 just hardening
 just format
+just backend
+just frontend
+just frontend_integration
+just e2e
+just test
 just generate-small-webp
 just podman-up
 just podman-up-local
