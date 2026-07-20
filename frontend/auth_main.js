@@ -168,6 +168,7 @@ async function restoreActiveQuiz() {
 function toggleAuthMode(mode) {
     authMode = mode;
     const authButton = document.getElementById('authButton');
+    const nameInput = document.getElementById('name');
     const switchToRegister = document.getElementById('switchToRegister');
     const switchToLogin = document.getElementById('switchToLogin');
     const authHeading = document.getElementById('authHeading');
@@ -175,6 +176,9 @@ function toggleAuthMode(mode) {
 
     if (mode === 'register') {
         authButton.textContent = 'Create Account';
+        if (nameInput) {
+            nameInput.classList.remove('hidden');
+        }
         switchToRegister.classList.add('hidden');
         switchToLogin.classList.remove('hidden');
         authHeading.textContent = 'Quizzler';
@@ -182,6 +186,10 @@ function toggleAuthMode(mode) {
         updatePasswordStrength();
     } else {
         authButton.textContent = 'Log In';
+        if (nameInput) {
+            nameInput.classList.add('hidden');
+            nameInput.value = '';
+        }
         switchToRegister.classList.remove('hidden');
         switchToLogin.classList.add('hidden');
         authHeading.textContent = 'Quizzler';
@@ -228,6 +236,7 @@ function updatePasswordStrength() {
 }
 
 async function handleAuth() {
+    const name = document.getElementById('name')?.value.trim() || '';
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
 
@@ -243,6 +252,11 @@ async function handleAuth() {
         return;
     }
 
+    if (authMode === 'register' && !name) {
+        showAuthError('Please provide your name.');
+        return;
+    }
+
     const emailInput = document.getElementById('email');
     if (!emailInput.validity.valid) {
         showAuthError('Please enter a valid email address.');
@@ -251,7 +265,9 @@ async function handleAuth() {
 
     clearAuthError();
 
-    const payload = { email, password };
+    const payload = authMode === 'register'
+        ? { name, email, password }
+        : { email, password };
 
     try {
         const response = await fetch(`${API_BASE}/api/${authMode}`, {

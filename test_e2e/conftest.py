@@ -37,6 +37,9 @@ from backend import app  # noqa: E402
 from backend.models import db, Destination  # noqa: E402
 
 
+COOKIE_CONSENT_STORAGE_KEY = "quizzler_cookie_consent_acknowledged_v1"
+
+
 def _get_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
@@ -111,3 +114,19 @@ def clean_db(app_server):
         User.query.delete()
         db.session.commit()
     yield
+
+
+@pytest.fixture(autouse=True)
+def acknowledge_cookie_banner(context):
+    """Pre-acknowledge cookie consent so the banner does not intercept test clicks."""
+    context.add_init_script(
+        f"""
+        (() => {{
+            try {{
+                window.localStorage.setItem("{COOKIE_CONSENT_STORAGE_KEY}", "true");
+            }} catch (_) {{
+                // Ignore storage errors in constrained browser contexts.
+            }}
+        }})();
+        """
+    )
