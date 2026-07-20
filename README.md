@@ -51,6 +51,7 @@ Admin and runbooks:
 
 - Admin page behavior: [docs/admin_page.md](docs/admin_page.md)
 - Deployment checklist: [docs/deployment_checklist.md](docs/deployment_checklist.md)
+- Deployment automation prerequisites: [docs/deployment_automation_prerequisites.md](docs/deployment_automation_prerequisites.md)
 - Rollback procedure: [docs/rollback_procedure.md](docs/rollback_procedure.md)
 
 ## Tech Stack
