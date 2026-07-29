@@ -79,7 +79,7 @@ jobs:
           exit-code: '1'
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
