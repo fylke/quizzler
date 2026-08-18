@@ -13,6 +13,29 @@ Optional for container workflows:
 - Podman
 - podman-compose
 
+### Rootless Podman on WSL
+
+Rootless Podman bridge networking requires a running systemd user session. Enable
+systemd in `/etc/wsl.conf`:
+
+```ini
+[boot]
+systemd=true
+```
+
+From Windows PowerShell, restart WSL after saving the file:
+
+```powershell
+wsl --shutdown
+```
+
+Reopen the distribution and verify that the user D-Bus socket exists before
+running a Podman command:
+
+```bash
+test -S /run/user/$(id -u)/bus
+```
+
 ## Installation
 
 1. Clone and enter the repo.

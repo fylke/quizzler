@@ -78,10 +78,20 @@ generate-small-webp root='' width='960' height='960' quality='72' overwrite='fal
     fi
     "${cmd[@]}"
 
-podman-up:
+podman-preflight:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    if [[ ! -S "$runtime_dir/bus" ]]; then
+        echo "Rootless Podman requires a running systemd user session; no D-Bus socket was found at $runtime_dir/bus." >&2
+        echo "On WSL, enable systemd in /etc/wsl.conf, run 'wsl --shutdown' from Windows, then reopen this distribution." >&2
+        exit 1
+    fi
+
+podman-up: podman-preflight
     {{podman_compose}} up --build -d
 
-podman-up-local:
+podman-up-local: podman-preflight
     QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=2048 {{podman_compose}} up --build -d
 
 podman-down:
