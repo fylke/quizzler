@@ -1,5 +1,5 @@
 # Use immutable image references for supply-chain safety
-FROM python:3.11-slim@sha256:b27df5841f3355e9473f9a516d38a6783b6c8dfeacaf2d14a240f443b368ddb6
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
 
 # Set working directory in container
 WORKDIR /app
