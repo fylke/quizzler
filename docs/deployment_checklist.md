@@ -26,17 +26,6 @@ For GitHub-side deployment setup and workflow prerequisites, see [deployment_aut
   chmod 660 /share/Container/quizzler/database/quiz_data.db || true
   ```
 
-### If migrating from legacy name `travel-quizzer`
-
-- [ ] Stop old container and move host data path:
-  ```bash
-  docker stop travel-quizzer || true
-  if [ -d /share/Container/travel-quizzer ] && [ ! -d /share/Container/quizzler ]; then
-    mv /share/Container/travel-quizzer /share/Container/quizzler
-  fi
-  docker rename travel-quizzer quizzler || true
-  ```
-
 ---
 
 ## 2) Content You Must Place on QNAP
