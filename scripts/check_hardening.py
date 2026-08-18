@@ -14,6 +14,11 @@ def assert_contains(text: str, needle: str, label: str, failures: list[str]) -> 
         failures.append(f"{label}: missing '{needle}'")
 
 
+def assert_matches(text: str, pattern: str, label: str, failures: list[str]) -> None:
+    if not re.search(pattern, text, re.MULTILINE):
+        failures.append(f"{label}: missing pattern /{pattern}/")
+
+
 def check_uses_pinned_shas(workflow_rel: str, failures: list[str]) -> None:
     text = read_text(workflow_rel)
     for idx, line in enumerate(text.splitlines(), start=1):
@@ -35,9 +40,10 @@ def main() -> int:
     failures: list[str] = []
 
     containerfile = read_text("Containerfile")
-    assert_contains(
+    # Enforce immutable python base image pins while allowing safe minor/patch upgrades.
+    assert_matches(
         containerfile,
-        "FROM python:3.11-slim@sha256:",
+        r"^FROM\s+python:[0-9]+\.[0-9]+(?:\.[0-9]+)?-slim@sha256:[0-9a-f]{64}$",
         "Containerfile",
         failures,
     )
