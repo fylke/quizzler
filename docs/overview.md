@@ -82,7 +82,7 @@ stateDiagram-v2
     countries quiz row 42. Internal UUID v4 keys remain in the central
     `quiz_identity` catalog. Bare numeric destination IDs are not accepted by
     the public specific-quiz endpoint.
-- A shared URL uses `/?quiz=<public-id>`. After the application restores or creates
+- A shared URL uses `/quiz/<public-id>`. After the application restores or creates
     a player session, the linked quiz starts automatically and takes precedence
     over restoring a different active quiz.
 - The quiz screen copies the deep link to the clipboard.

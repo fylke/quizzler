@@ -28,7 +28,7 @@ def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
     expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
     # Wait for the quiz data to actually load (hint text appears)
     expect(page.locator("#hint")).not_to_be_empty(timeout=5000)
-    expect(page.locator("#shareQuizBtn")).to_have_text("Share this quiz")
+    expect(page.locator("#shareQuizBtn")).to_be_visible()
 
 
 def _continue_as_guest_and_start(page: Page, base_url: str):
@@ -180,7 +180,7 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
         """
     )
 
-    page.goto(f"{base_url}/?quiz={quiz_guid}")
+    page.goto(f"{base_url}/quiz/{quiz_guid}")
 
     expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
     expect(page.locator("#hint")).to_have_text("Located on the Seine river.")
@@ -189,7 +189,7 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
     page.locator("#shareQuizBtn").click()
     page.wait_for_function("window.__copiedQuizLink")
     shared_url = page.evaluate("window.__copiedQuizLink")
-    assert shared_url == f"{base_url}/?quiz={quiz_guid}"
+    assert shared_url == f"{base_url}/quiz/{quiz_guid}"
 
 
 def test_guest_register_migrates_completed_score(page: Page, base_url: str):

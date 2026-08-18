@@ -22,22 +22,42 @@
 }
 
 .quiz-share-btn {
-    min-width: 72px;
-    min-height: 40px;
-    padding: 8px 14px;
-    border: 1px solid #b7c6ce;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #0f2a3d;
-    font: inherit;
-    font-weight: 700;
+    align-self: flex-end;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    padding: 0;
+    color: #4d64c9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .quiz-share-btn:hover,
 .quiz-share-btn:focus-visible {
-    border-color: #147d74;
-    background: #e8f5f2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(74, 98, 196, 0.18);
+}
+
+.quiz-share-btn:focus-visible {
+    outline: 2px solid #4d64c9;
+    outline-offset: 2px;
+}
+
+.share-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background-color: currentColor;
+    background-size: 100% 100%;
+    -webkit-mask: url('/static/assets/icon-share.svg') no-repeat center;
+    mask: url('/static/assets/icon-share.svg') no-repeat center;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
 }
 
 .progress-info #currentHint {

@@ -237,21 +237,25 @@ function bindAuthAndMainScreenActions() {
 }
 
 function readSharedQuizRequest() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('quiz')) {
+    const pathMatch = window.location.pathname.match(/^\/quiz\/([^/]+)$/i);
+    if (!pathMatch) {
         return { present: false, guid: null };
     }
-    const guid = (params.get('quiz') || '').trim().toLowerCase();
+    let guid;
+    try {
+        guid = decodeURIComponent(pathMatch[1]).trim().toLowerCase();
+    } catch (error) {
+        guid = '';
+    }
     return {
         present: true,
         guid: QUIZ_ID_PATTERN.test(guid) ? guid : null
     };
 }
 
-function removeSharedQuizParameter() {
+function removeSharedQuizPath() {
     const url = new URL(window.location.href);
-    url.searchParams.delete('quiz');
-    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState({}, '', `${url.origin}/${url.search}${url.hash}`);
 }
 
 async function startSharedQuizIfPresent() {
@@ -262,7 +266,7 @@ async function startSharedQuizIfPresent() {
     const quizGuid = sharedQuizRequest.guid;
     sharedQuizRequest = { present: false, guid: null };
     if (!quizGuid) {
-        removeSharedQuizParameter();
+        removeSharedQuizPath();
         showNotification('Quiz not found');
         return false;
     }
@@ -270,7 +274,7 @@ async function startSharedQuizIfPresent() {
     try {
         const response = await fetch(`${API_BASE}/api/quiz/${quizGuid}`);
         if (!response.ok) {
-            removeSharedQuizParameter();
+            removeSharedQuizPath();
             showNotification('Quiz not found');
             return false;
         }
@@ -285,9 +289,7 @@ async function startSharedQuizIfPresent() {
 }
 
 function buildQuizShareUrl(quizGuid) {
-    const url = new URL(window.location.origin);
-    url.searchParams.set('quiz', quizGuid);
-    return url.toString();
+    return `${window.location.origin}/quiz/${encodeURIComponent(quizGuid)}`;
 }
 
 async function shareCurrentQuiz() {

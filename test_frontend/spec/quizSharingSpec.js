@@ -39,7 +39,7 @@ describe('Quiz sharing', function () {
         expect(shareSpy).not.toHaveBeenCalled();
         expect(writeTextSpy).toHaveBeenCalled();
         expect(writeTextSpy.calls.mostRecent().args[0]).toContain(
-            '?quiz=c1'
+            '/quiz/c1'
         );
     });
 
@@ -58,7 +58,7 @@ describe('Quiz sharing', function () {
 
         expect(writeTextSpy).toHaveBeenCalled();
         expect(writeTextSpy.calls.mostRecent().args[0]).toContain(
-            '?quiz=c1'
+            '/quiz/c1'
         );
         expect(document.getElementById('appNotification').textContent).toContain('copied');
     });

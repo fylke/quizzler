@@ -41,7 +41,7 @@ erDiagram
 `quiz_identity` is a polymorphic public-identity catalog. Its
 `(quiz_type, source_id)` pair is unique. The `guid` column is an internal
 canonical UUID v4 key; public lookup and links use a compact type-scoped ID such
-as `c42` in `/?quiz=c42`. The catalog does not use a database foreign key because
+as `c42` in `/quiz/c42`. The catalog does not use a database foreign key because
 registered quiz types may use different source tables.
 
 Restoring the database preserves the internal identity rows and their existing

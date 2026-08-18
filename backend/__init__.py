@@ -415,6 +415,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/quiz/<quiz_id>")
+def shared_quiz_page(quiz_id):
+    """Serve the main page for a shared compact quiz ID."""
+    return render_template("index.html")
+
+
 @app.route("/media/<path:filename>")
 def serve_media(filename):
     """Serve quiz images from the media directory."""
