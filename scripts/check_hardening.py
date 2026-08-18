@@ -47,9 +47,9 @@ def main() -> int:
         "Containerfile",
         failures,
     )
-    assert_contains(
+    assert_matches(
         containerfile,
-        "COPY --from=ghcr.io/astral-sh/uv@sha256:",
+        r"^COPY\s+--from=ghcr\.io/astral-sh/uv@sha256:[0-9a-f]{64}\s+/uv\s+/uvx\s+/bin/\s*$",
         "Containerfile",
         failures,
     )
@@ -63,11 +63,36 @@ def main() -> int:
         "--user 10001:10001",
         "cosign verify",
         "cosign sign --yes",
-        "image_ref:",
         "aquasecurity/trivy-action",
     ]
     for item in required_deploy_bits:
         assert_contains(deploy, item, ".github/workflows/deploy-qnap.yml", failures)
+
+    # Ensure deploy flow resolves and propagates an immutable digest reference.
+    assert_matches(
+        deploy,
+        r"(?s)Resolve immutable image reference.*?RepoDigests\s+0",
+        ".github/workflows/deploy-qnap.yml",
+        failures,
+    )
+    assert_matches(
+        deploy,
+        r"\$GITHUB_OUTPUT",
+        ".github/workflows/deploy-qnap.yml",
+        failures,
+    )
+    assert_matches(
+        deploy,
+        r"\$\{\{\s*steps\.[^.]+\.outputs\.[^}]+\s*\}\}",
+        ".github/workflows/deploy-qnap.yml",
+        failures,
+    )
+    assert_matches(
+        deploy,
+        r"\$\{\{\s*needs\.[^.]+\.outputs\.[^}]+\s*\}\}",
+        ".github/workflows/deploy-qnap.yml",
+        failures,
+    )
 
     backend = read_text("backend/__init__.py")
     for header in [
@@ -76,9 +101,14 @@ def main() -> int:
         "X-Frame-Options",
         "Referrer-Policy",
         "Permissions-Policy",
-        "CORS_ALLOWED_ORIGINS must be explicitly set in production",
     ]:
         assert_contains(backend, header, "backend/__init__.py", failures)
+    assert_matches(
+        backend,
+        r"(?s)if\s+_env\s*==\s*['\"]production['\"]\s+and\s*\(_cors_origins_raw\s*==\s*['\"]\*['\"]\s+or\s+not\s+_cors_origins_raw\)\s*:\s*raise\s+RuntimeError\(",
+        "backend/__init__.py",
+        failures,
+    )
 
     ci_workflow = read_text(".github/workflows/ci.yml")
     assert_contains(
