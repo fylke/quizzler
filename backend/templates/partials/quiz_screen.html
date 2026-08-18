@@ -33,9 +33,6 @@
                     <span class="hint-review-label">Review previous hints</span>
                     <div id="hintHistoryButtons" class="hint-history-buttons"></div>
                 </div>
-                <p class="hint-complaint-link-wrap">
-                    <a href="#" id="hintComplaintLink">Complain about this hint</a>
-                </p>
 
                 <div class="answer-section">
                     <input
@@ -53,14 +50,25 @@
                     </div>
                 </div>
 
-                <button
-                    class="quiz-share-btn"
-                    id="shareQuizBtn"
-                    type="button"
-                    aria-label="Share quiz"
-                    title="Share quiz"
-                >
-                    <span class="share-icon" aria-hidden="true"></span>
-                </button>
+                <div class="quiz-action-icons">
+                    <button
+                        class="quiz-feedback-btn"
+                        id="hintComplaintLink"
+                        type="button"
+                        aria-label="Complain about this hint"
+                        title="Complain about this hint"
+                    >
+                        <span class="feedback-icon" aria-hidden="true"></span>
+                    </button>
+                    <button
+                        class="quiz-share-btn"
+                        id="shareQuizBtn"
+                        type="button"
+                        aria-label="Share quiz"
+                        title="Share quiz"
+                    >
+                        <span class="share-icon" aria-hidden="true"></span>
+                    </button>
+                </div>
             </div>
         </div>

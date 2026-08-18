@@ -8,7 +8,7 @@ describe('Hint Complaint Modal', function () {
         fixtureContainer = document.createElement('div');
         fixtureContainer.id = 'hintComplaintFixture';
         fixtureContainer.innerHTML =
-            '<a href="#" id="hintComplaintLink">Complain about this hint</a>' +
+            '<button id="hintComplaintLink" type="button" aria-label="Complain about this hint" title="Complain about this hint"></button>' +
             '<div id="hintComplaintModal" class="modal-overlay" style="display:none;">' +
                 '<div class="modal-card">' +
                     '<h2 id="hintComplaintModalHeading">Hint complaint</h2>' +
