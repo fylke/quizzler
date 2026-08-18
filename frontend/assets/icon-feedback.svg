@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 24 24"
+   fill="none"
+   stroke="black"
+   stroke-width="1.8"
+   stroke-linecap="round"
+   stroke-linejoin="round"
+   aria-hidden="true"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="icon-feedback.svg"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5" />
+  <sodipodi:namedview
+     id="namedview5"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="48.625"
+     inkscape:cx="12"
+     inkscape:cy="12"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="4472"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
+  <circle
+     cx="12"
+     cy="12"
+     r="10"
+     stroke-width="2"
+     id="circle1"
+     style="stroke:#4d64c9;stroke-opacity:0.97254902" />
+  <rect
+     x="10.57051"
+     y="5.1761651"
+     width="2.8589807"
+     height="9.019392"
+     rx="0.81685162"
+     fill="#4d64c9"
+     id="rect3"
+     style="stroke:#4d64c9;stroke-width:0.941019;stroke-dasharray:none;stroke-opacity:0.972549" />
+  <rect
+     x="10.402258"
+     y="15.824109"
+     width="3.1954849"
+     height="3.330189"
+     rx="0.9129957"
+     fill="#4d64c9"
+     id="rect3-9"
+     style="stroke:#4d64c9;stroke-width:0.604515;stroke-dasharray:none;stroke-opacity:0.972549" />
+</svg>
