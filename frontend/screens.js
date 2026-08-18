@@ -63,9 +63,9 @@ const quizScreenController = {
     show() {
         showScreen('quizScreen');
     },
-    async startRandomQuiz() {
+    async startRandomQuiz(quizType) {
         this.show();
-        await loadQuestion();
+        await loadQuestion(quizType);
     },
     showSpecificQuiz(data) {
         this.show();

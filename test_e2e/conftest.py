@@ -35,6 +35,7 @@ for i in range(1, 13):
 
 from backend import app  # noqa: E402
 from backend.models import db, Destination  # noqa: E402
+from backend.quiz_catalog import get_or_create_quiz_identity  # noqa: E402
 
 
 COOKIE_CONSENT_STORAGE_KEY = "quizzler_cookie_consent_acknowledged_v1"
@@ -70,6 +71,8 @@ def app_server():
             correct_answers=["paris", "paris, france"],
         )
         db.session.add(dest)
+        db.session.flush()
+        get_or_create_quiz_identity("countries", dest.id)
         db.session.commit()
 
     server = make_server("127.0.0.1", port, app)
@@ -100,6 +103,13 @@ def app_server():
 def base_url(app_server):
     """Provide the base_url to pytest-playwright."""
     return app_server
+
+
+@pytest.fixture(scope="session")
+def quiz_guid(app_server):
+    """Return the public GUID for the seeded E2E quiz."""
+    with app.app_context():
+        return get_or_create_quiz_identity("countries", 1).guid
 
 
 @pytest.fixture()

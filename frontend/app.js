@@ -3,6 +3,7 @@ let quizState = {
     user: null,
     isGuest: false,
     currentQuizId: null,
+    currentQuizGuid: null,
     hintHistory: {},
     currentHint: {
         difficulty: null,
@@ -21,6 +22,8 @@ let hintCounterAnimationTimeout = null;
 let remainingGuessesAnimationTimeout = null;
 const COUNTER_PUFF_DURATION_MS = 340;
 const COOKIE_CONSENT_STORAGE_KEY = 'quizzler_cookie_consent_acknowledged_v1';
+const QUIZ_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+let sharedQuizRequest = readSharedQuizRequest();
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -216,6 +219,9 @@ function bindAuthAndMainScreenActions() {
     bindClick('runSpecificQuizBtn', () => {
         runSpecificQuiz();
     });
+    bindClick('shareQuizBtn', () => {
+        shareCurrentQuiz();
+    });
     bindClick('guestCreateAccountLink', () => {
         openCreateAccountFromGuestBanner();
     }, { preventDefault: true });
@@ -233,27 +239,85 @@ function bindAuthAndMainScreenActions() {
     });
 }
 
-async function runRandomQuiz() {
-    await getScreenController('quiz').startRandomQuiz();
+function readSharedQuizRequest() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('quiz')) {
+        return { present: false, guid: null };
+    }
+    const guid = (params.get('quiz') || '').trim().toLowerCase();
+    return {
+        present: true,
+        guid: QUIZ_GUID_PATTERN.test(guid) ? guid : null
+    };
 }
 
-async function runSpecificQuiz() {
-    const quizId = document.getElementById('specificQuizId').value.trim();
-    if (!/^[1-9]\d*$/.test(quizId)) {
-        showNotification('Quiz not found');
-        return;
+function removeSharedQuizParameter() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('quiz');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function startSharedQuizIfPresent() {
+    if (!sharedQuizRequest.present) {
+        return false;
     }
+
+    const quizGuid = sharedQuizRequest.guid;
+    sharedQuizRequest = { present: false, guid: null };
+    if (!quizGuid) {
+        removeSharedQuizParameter();
+        showNotification('Quiz not found');
+        return false;
+    }
+
     try {
-        const response = await fetch(`${API_BASE}/api/quiz/${quizId}`);
+        const response = await fetch(`${API_BASE}/api/quiz/${quizGuid}`);
         if (!response.ok) {
+            removeSharedQuizParameter();
             showNotification('Quiz not found');
-            return;
+            return false;
         }
         const data = await response.json();
         getScreenController('quiz').showSpecificQuiz(data);
+        return true;
     } catch (error) {
-        console.error('Error starting specific quiz:', error);
+        console.error('Error opening shared quiz:', error);
         showNotification('Failed to load quiz.');
+        return false;
+    }
+}
+
+function buildQuizShareUrl(quizGuid) {
+    const url = new URL(window.location.origin);
+    url.searchParams.set('quiz', quizGuid);
+    return url.toString();
+}
+
+async function shareCurrentQuiz() {
+    const quizGuid = quizState.currentQuizGuid;
+    if (!QUIZ_GUID_PATTERN.test(quizGuid || '')) {
+        showNotification('This quiz cannot be shared yet.');
+        return;
+    }
+
+    const shareUrl = buildQuizShareUrl(quizGuid);
+    if (typeof navigator.share === 'function') {
+        try {
+            await navigator.share({ title: 'GeoQuizzler', url: shareUrl });
+            return;
+        } catch (error) {
+            if (error?.name === 'AbortError') {
+                return;
+            }
+        }
+    }
+
+    try {
+        await navigator.clipboard.writeText(shareUrl);
+        showNotification('Quiz link copied.', 'success');
+    } catch (error) {
+        console.error('Error sharing quiz:', error);
+        showNotification('Unable to share this quiz.');
     }
 }
 

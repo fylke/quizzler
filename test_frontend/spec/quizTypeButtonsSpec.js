@@ -75,6 +75,37 @@ describe('Quiz Type Buttons - Property Tests', function () {
 
     describe('Property 5: Button labels match quiz type display names', function () {
 
+        it('starts the quiz type represented by the clicked button', function (done) {
+            var requestedUrl = '';
+            window.fetch = function (url) {
+                if (url.indexOf('/api/quiz-types') !== -1) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: function () {
+                            return Promise.resolve([
+                                { identifier: 'cities', displayName: 'Cities' }
+                            ]);
+                        }
+                    });
+                }
+                requestedUrl = url;
+                return Promise.resolve({
+                    ok: false,
+                    json: function () { return Promise.resolve({ error: 'No data' }); }
+                });
+            };
+
+            loadQuizTypeButtons().then(function () {
+                document.querySelector('.quiz-type-btn').click();
+                setTimeout(function () {
+                    expect(requestedUrl).toContain('/api/quiz?type=cities');
+                    done();
+                }, 0);
+            }).catch(function (err) {
+                done.fail(err);
+            });
+        });
+
         it('each button text matches the displayName from quiz type data', function (done) {
             var quizTypes = [
                 { identifier: 'countries', displayName: 'Countries' },

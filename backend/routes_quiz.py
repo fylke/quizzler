@@ -1,115 +1,32 @@
 """Quiz blueprint — quiz flow, hints, and answer checking."""
 
 import os
-import random
 import re
-from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request, session
 
 from .auth import get_current_player, player_required
 from .email_service import EmailServiceError, send_hint_complaint_email
-from .models import Destination, GuestQuizResult, QuizResult, db
+from .models import db
+from .quiz_adapters import get_quiz_adapter, get_quiz_adapters
+from .quiz_catalog import get_or_create_quiz_identity, resolve_quiz_guid
+from .quiz_types import get_quiz_type
 from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 
 quiz_bp = Blueprint("quiz", __name__)
 
 
-RESULT_IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
 MEDIA_ACCESS_SESSION_KEY = "media_access_state"
 
 
-def _media_root() -> Path:
-    """Return the media root directory from env or project default."""
-    media_dir = os.environ.get("MEDIA_DIR")
-    if media_dir:
-        return Path(str(media_dir))
-
-    media_dir = current_app.config.get("MEDIA_DIR")
-    if media_dir:
-        return Path(str(media_dir))
-
-    default_media = Path(__file__).resolve().parent.parent / "media"
-    return Path(os.environ.get("MEDIA_DIR", str(default_media)))
-
-
-def _result_images_for_destination(destination_id: int) -> list[str]:
-    """Return all result image URLs for a destination.
-
-    Result images are discovered from media/countries/<id>/ image files.
-    """
-    destination_dir = _media_root() / "countries" / str(destination_id)
-    if not destination_dir.is_dir():
-        current_app.logger.debug(
-            "Result images directory not found for destination %s: %s",
-            destination_id,
-            destination_dir,
-        )
-        return []
-
-    image_files = [
-        file_path
-        for file_path in sorted(destination_dir.iterdir(), key=lambda p: p.name)
-        if file_path.is_file() and file_path.suffix.lower() in RESULT_IMAGE_EXTENSIONS
-    ]
-
-    selected_by_stem: dict[str, Path] = {}
-    for file_path in image_files:
-        stem = file_path.stem
-        base_stem = stem[: -len("_small")] if stem.endswith("_small") else stem
-        existing = selected_by_stem.get(base_stem)
-
-        if existing is None:
-            selected_by_stem[base_stem] = file_path
-            continue
-
-        # Match hint image behavior: if an optimized _small.webp variant exists,
-        # prefer it over the base file for the same logical image.
-        if file_path.stem.endswith("_small") and not existing.stem.endswith("_small"):
-            selected_by_stem[base_stem] = file_path
-
-    images = [
-        f"/media/countries/{destination_id}/{selected_by_stem[stem].name}"
-        for stem in sorted(selected_by_stem)
-    ]
-
-    current_app.logger.debug(
-        "Discovered %s result images for destination %s in %s",
-        len(images),
-        destination_id,
-        destination_dir,
-    )
-
-    return images
-
-
-def _hint_images_for_destination(destination_id: int, hint_difficulty: int) -> list[str]:
-    """Return the two quiz image URLs, preferring optimized _small.webp assets."""
-    destination_dir = _media_root() / "countries" / str(destination_id)
-    images: list[str] = []
-
-    for suffix in ("a", "b"):
-        optimized_name = f"{hint_difficulty}{suffix}_small.webp"
-        optimized_path = destination_dir / optimized_name
-        if optimized_path.is_file():
-            images.append(f"/media/countries/{destination_id}/{optimized_name}")
-        else:
-            images.append(f"/media/countries/{destination_id}/{hint_difficulty}{suffix}.jpg")
-
-    return images
-
-
 def _active_result_for_player(player):
-    if player.is_user:
-        return QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).first()
-    if player.is_guest:
-        return GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id,
-            ongoing=True,
-        ).first()
-    return None
+    for adapter in get_quiz_adapters():
+        result = adapter.active_result(player)
+        if result is not None:
+            return adapter, result
+    return None, None
 
 
 def _get_score_lock() -> dict | None:
@@ -117,13 +34,14 @@ def _get_score_lock() -> dict | None:
     if not isinstance(lock, dict):
         return None
 
-    required_keys = {"destination_id", "hint_difficulty", "remaining_guesses"}
+    required_keys = {"quiz_type", "source_id", "hint_difficulty", "remaining_guesses"}
     if not required_keys.issubset(lock.keys()):
         return None
 
     try:
         return {
-            "destination_id": int(lock["destination_id"]),
+            "quiz_type": str(lock["quiz_type"]),
+            "source_id": int(lock["source_id"]),
             "hint_difficulty": int(lock["hint_difficulty"]),
             "remaining_guesses": int(lock["remaining_guesses"]),
         }
@@ -131,9 +49,10 @@ def _get_score_lock() -> dict | None:
         return None
 
 
-def _set_score_lock(destination_id: int, hint_difficulty: int, remaining_guesses: int):
+def _set_score_lock(quiz_type: str, source_id: int, hint_difficulty: int, remaining_guesses: int):
     session[SCORE_LOCK_SESSION_KEY] = {
-        "destination_id": int(destination_id),
+        "quiz_type": quiz_type,
+        "source_id": int(source_id),
         "hint_difficulty": int(hint_difficulty),
         "remaining_guesses": int(remaining_guesses),
     }
@@ -148,22 +67,24 @@ def _get_media_access_state() -> dict | None:
     if not isinstance(state, dict):
         return None
 
-    required_keys = {"destination_id", "hint_difficulty"}
+    required_keys = {"quiz_type", "source_id", "hint_difficulty"}
     if not required_keys.issubset(state.keys()):
         return None
 
     try:
         return {
-            "destination_id": int(state["destination_id"]),
+            "quiz_type": str(state["quiz_type"]),
+            "source_id": int(state["source_id"]),
             "hint_difficulty": int(state["hint_difficulty"]),
         }
     except (TypeError, ValueError):
         return None
 
 
-def _set_media_access_state(destination_id: int, hint_difficulty: int):
+def _set_media_access_state(quiz_type: str, source_id: int, hint_difficulty: int):
     session[MEDIA_ACCESS_SESSION_KEY] = {
-        "destination_id": int(destination_id),
+        "quiz_type": quiz_type,
+        "source_id": int(source_id),
         "hint_difficulty": int(hint_difficulty),
     }
 
@@ -172,13 +93,15 @@ def _clear_media_access_state():
     session.pop(MEDIA_ACCESS_SESSION_KEY, None)
 
 
-def _restore_locked_score_if_needed(quiz_result) -> int | None:
+def _restore_locked_score_if_needed(adapter, quiz_result) -> int | None:
     """Restore preserved score fields for a rerun result when lock matches."""
     lock = _get_score_lock()
     if lock is None:
         return None
 
-    if lock["destination_id"] != quiz_result.destination_id:
+    if lock["quiz_type"] != adapter.identifier:
+        return None
+    if lock["source_id"] != adapter.result_source_id(quiz_result):
         return None
 
     quiz_result.hint_difficulty = lock["hint_difficulty"]
@@ -186,34 +109,13 @@ def _restore_locked_score_if_needed(quiz_result) -> int | None:
     return lock["hint_difficulty"] * lock["remaining_guesses"]
 
 
-def _result_for_player_and_destination(player, destination_id):
-    if player.is_user:
-        return QuizResult.query.filter_by(
-            user_id=player.user_id,
-            destination_id=destination_id,
-        ).first()
-    if player.is_guest:
-        return GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id,
-            destination_id=destination_id,
-        ).first()
-    return None
-
-
 def _end_active_quizzes_for_player(player):
-    if player.is_user:
-        active_results = QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).all()
-    elif player.is_guest:
-        active_results = GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id,
-            ongoing=True,
-        ).all()
-    else:
-        active_results = []
-
-    for result in active_results:
-        _restore_locked_score_if_needed(result)
-        result.ongoing = False
+    active_results = []
+    for adapter in get_quiz_adapters():
+        for result in adapter.active_results(player):
+            active_results.append(result)
+            _restore_locked_score_if_needed(adapter, result)
+            result.ongoing = False
 
     if active_results:
         db.session.commit()
@@ -222,26 +124,20 @@ def _end_active_quizzes_for_player(player):
     _clear_media_access_state()
 
 
-def _new_result_for_player(player, destination_id):
-    if player.is_user:
-        return QuizResult(user_id=player.user_id, destination_id=destination_id)
-    return GuestQuizResult(
-        guest_session_id=player.guest_session_id,
-        destination_id=destination_id,
-    )
-
-
-def _start_quiz_for_player(player, destination):
+def _start_quiz_for_player(player, adapter, question):
     """Set up server-side state for a new quiz and return response payload."""
     hint_difficulty = STARTING_HINT_DIFFICULTY
-    hint_text = getattr(destination, f"hint{hint_difficulty}", "")
+    source_id = adapter.question_id(question)
+    hint_text = adapter.hint_text(question, hint_difficulty)
+    identity = get_or_create_quiz_identity(adapter.identifier, source_id)
 
     _end_active_quizzes_for_player(player)
 
-    quiz_result = _result_for_player_and_destination(player, destination.id)
+    quiz_result = adapter.result_for_question(player, source_id)
     if quiz_result is not None and not quiz_result.ongoing:
         _set_score_lock(
-            destination_id=quiz_result.destination_id,
+            quiz_type=adapter.identifier,
+            source_id=adapter.result_source_id(quiz_result),
             hint_difficulty=quiz_result.hint_difficulty,
             remaining_guesses=quiz_result.remaining_guesses,
         )
@@ -249,47 +145,59 @@ def _start_quiz_for_player(player, destination):
         _clear_score_lock()
 
     if quiz_result is None:
-        quiz_result = _new_result_for_player(player, destination.id)
+        quiz_result = adapter.new_result(player, source_id)
 
     quiz_result.hint_difficulty = hint_difficulty
     quiz_result.remaining_guesses = MAX_GUESSES
     quiz_result.ongoing = True
     db.session.add(quiz_result)
     db.session.commit()
-    _set_media_access_state(destination.id, hint_difficulty)
+    _set_media_access_state(adapter.identifier, source_id, hint_difficulty)
 
     return {
-        "id": destination.id,
+        "id": source_id,
+        "guid": identity.guid,
+        "quizType": adapter.identifier,
         "hint": hint_text,
         "hintDifficulty": hint_difficulty,
         "remainingGuesses": MAX_GUESSES,
-        "images": _hint_images_for_destination(destination.id, hint_difficulty),
+        "images": adapter.hint_images(question, hint_difficulty),
     }
 
 
 @quiz_bp.route("/api/quiz", methods=["GET"])
 @player_required
 def get_quiz():
-    """Return a random destination along with its first hint and pictures."""
-    destinations = Destination.query.all()
-    if not destinations:
+    """Return a random question for a registered quiz type."""
+    quiz_type = get_quiz_type(request.args.get("type", "countries"))
+    adapter = get_quiz_adapter(quiz_type.adapter) if quiz_type is not None else None
+    if adapter is None:
+        return jsonify({"error": "Quiz type not found"}), 404
+
+    question = adapter.random_question()
+    if question is None:
         return jsonify({"error": "No quiz data available"}), 404
 
-    random_destination = random.choice(destinations)
     player = get_current_player()
-    return jsonify(_start_quiz_for_player(player, random_destination))
+    return jsonify(_start_quiz_for_player(player, adapter, question))
 
 
-@quiz_bp.route("/api/quiz/<int:destination_id>", methods=["GET"])
+@quiz_bp.route("/api/quiz/<uuid:quiz_guid>", methods=["GET"])
 @player_required
-def get_specific_quiz(destination_id):
-    """Return a specific destination for a quiz."""
-    destination = Destination.query.filter_by(id=destination_id).first()
-    if not destination:
-        return jsonify({"error": "Destination not found"}), 404
+def get_specific_quiz(quiz_guid):
+    """Return a specific quiz identified by its public GUID."""
+    identity = resolve_quiz_guid(quiz_guid)
+    quiz_type = get_quiz_type(identity.quiz_type) if identity is not None else None
+    adapter = get_quiz_adapter(quiz_type.adapter) if quiz_type is not None else None
+    if identity is None or adapter is None:
+        return jsonify({"error": "Quiz not found"}), 404
+
+    question = adapter.get_question(identity.source_id)
+    if question is None:
+        return jsonify({"error": "Quiz not found"}), 404
 
     player = get_current_player()
-    return jsonify(_start_quiz_for_player(player, destination))
+    return jsonify(_start_quiz_for_player(player, adapter, question))
 
 
 @quiz_bp.route("/api/quiz/active", methods=["GET"])
@@ -297,24 +205,29 @@ def get_specific_quiz(destination_id):
 def get_active_quiz():
     """Return the active quiz state for the logged-in user."""
     player = get_current_player()
-    quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
-    destination = Destination.query.filter_by(id=quiz_result.destination_id).first()
-    if destination is None:
+    source_id = adapter.result_source_id(quiz_result)
+    question = adapter.get_question(source_id)
+    if question is None:
         return jsonify({"error": "Question not found"}), 404
 
     difficulty = quiz_result.hint_difficulty
-    hint_text = getattr(destination, f"hint{difficulty}", "")
-    _set_media_access_state(destination.id, difficulty)
+    hint_text = adapter.hint_text(question, difficulty)
+    identity = get_or_create_quiz_identity(adapter.identifier, source_id)
+    db.session.commit()
+    _set_media_access_state(adapter.identifier, source_id, difficulty)
     return jsonify(
         {
-            "id": destination.id,
+            "id": source_id,
+            "guid": identity.guid,
+            "quizType": adapter.identifier,
             "hint": hint_text,
             "hintDifficulty": difficulty,
             "remainingGuesses": quiz_result.remaining_guesses,
-            "images": _hint_images_for_destination(destination.id, difficulty),
+            "images": adapter.hint_images(question, difficulty),
         }
     )
 
@@ -324,7 +237,7 @@ def get_active_quiz():
 def get_hint():
     """Fetch the next hint for the user's active quiz, decrementing difficulty."""
     player = get_current_player()
-    quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -333,21 +246,22 @@ def get_hint():
     if new_difficulty < 1:
         return jsonify({"error": "No more hints remaining"}), 404
 
-    question = Destination.query.filter_by(id=quiz_result.destination_id).first()
+    source_id = adapter.result_source_id(quiz_result)
+    question = adapter.get_question(source_id)
     if not question:
         return jsonify({"error": "Question not found"}), 404
 
     quiz_result.hint_difficulty = new_difficulty
     db.session.commit()
-    _set_media_access_state(question.id, new_difficulty)
+    _set_media_access_state(adapter.identifier, source_id, new_difficulty)
 
-    hint_text = getattr(question, f"hint{new_difficulty}", "")
+    hint_text = adapter.hint_text(question, new_difficulty)
     return jsonify(
         {
             "hint": hint_text,
             "hintDifficulty": new_difficulty,
             "remainingGuesses": quiz_result.remaining_guesses,
-            "images": _hint_images_for_destination(question.id, new_difficulty),
+            "images": adapter.hint_images(question, new_difficulty),
         }
     )
 
@@ -360,31 +274,32 @@ def check_answer():
     user_answer = (data.get("answer") or "").lower().strip()
 
     player = get_current_player()
-    quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
-    question = Destination.query.filter_by(id=quiz_result.destination_id).first()
+    source_id = adapter.result_source_id(quiz_result)
+    question = adapter.get_question(source_id)
     if not question:
         return jsonify({"error": "Question not found"}), 404
 
-    is_correct = user_answer in question.correct_answers
+    is_correct = user_answer in adapter.correct_answers(question)
 
     if is_correct:
         attempt_points = quiz_result.hint_difficulty * quiz_result.remaining_guesses
-        preserved_score = _restore_locked_score_if_needed(quiz_result)
+        preserved_score = _restore_locked_score_if_needed(adapter, quiz_result)
         score_preserved = preserved_score is not None
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
-        _set_media_access_state(question.id, 1)
+        _set_media_access_state(adapter.identifier, source_id, 1)
         response_payload = {
             "correct": True,
-            "answer": question.name,
+            "answer": adapter.answer_name(question),
             "points": attempt_points,
             "scorePreserved": score_preserved,
-            "resultImages": _result_images_for_destination(question.id),
+            "resultImages": adapter.result_images(question),
         }
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
@@ -395,19 +310,19 @@ def check_answer():
     # Wrong answer — decrement remaining guesses
     quiz_result.remaining_guesses -= 1
     if quiz_result.remaining_guesses <= 0:
-        preserved_score = _restore_locked_score_if_needed(quiz_result)
+        preserved_score = _restore_locked_score_if_needed(adapter, quiz_result)
         score_preserved = preserved_score is not None
         quiz_result.ongoing = False
         db.session.commit()
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
-        _set_media_access_state(question.id, 1)
+        _set_media_access_state(adapter.identifier, source_id, 1)
         response_payload = {
             "correct": False,
-            "answer": question.name,
+            "answer": adapter.answer_name(question),
             "points": 0,
             "scorePreserved": score_preserved,
-            "resultImages": _result_images_for_destination(question.id),
+            "resultImages": adapter.result_images(question),
         }
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
@@ -419,18 +334,20 @@ def check_answer():
     # Users progress to the next hint only via the skip-hint flow.
 
     db.session.commit()
-    _set_media_access_state(question.id, quiz_result.hint_difficulty)
+    _set_media_access_state(
+        adapter.identifier,
+        source_id,
+        quiz_result.hint_difficulty,
+    )
 
-    hint_text = getattr(question, f"hint{quiz_result.hint_difficulty}", "")
+    hint_text = adapter.hint_text(question, quiz_result.hint_difficulty)
     return jsonify(
         {
             "correct": False,
             "remainingGuesses": quiz_result.remaining_guesses,
             "hintDifficulty": quiz_result.hint_difficulty,
             "hint": hint_text,
-            "images": _hint_images_for_destination(
-                question.id, quiz_result.hint_difficulty
-            ),
+            "images": adapter.hint_images(question, quiz_result.hint_difficulty),
         }
     )
 
@@ -460,11 +377,12 @@ def submit_hint_complaint():
         return jsonify({"error": "Complaint message is too long."}), 400
 
     player = get_current_player()
-    quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = _active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
-    if quiz_result.destination_id != quiz_id:
+    source_id = adapter.result_source_id(quiz_result)
+    if source_id != quiz_id:
         return jsonify({"error": "quizId does not match active quiz."}), 400
 
     if not (1 <= hint_difficulty <= HINT_COUNT):
@@ -474,7 +392,7 @@ def submit_hint_complaint():
     if hint_difficulty < quiz_result.hint_difficulty:
         return jsonify({"error": "Hint level has not been unlocked yet."}), 400
 
-    question = Destination.query.filter_by(id=quiz_result.destination_id).first()
+    question = adapter.get_question(source_id)
     if not question:
         return jsonify({"error": "Question not found"}), 404
 
@@ -484,7 +402,7 @@ def submit_hint_complaint():
         or ""
     ).strip()
 
-    hint_text = getattr(question, f"hint{hint_difficulty}", "")
+    hint_text = adapter.hint_text(question, hint_difficulty)
     try:
         send_hint_complaint_email(
             admin_address=admin_email,

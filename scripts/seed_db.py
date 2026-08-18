@@ -22,7 +22,10 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash
 
 from backend import app
-from backend.models import db, Destination, User
+from backend.models import db, User
+from backend.quiz_adapters import get_quiz_adapter
+from backend.quiz_catalog import synchronize_quiz_identities
+from backend.quiz_types import get_registry
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_SEED_FILE = os.path.join(PROJECT_ROOT, "data", "countries.json")
@@ -49,7 +52,9 @@ def _ensure_legacy_sqlite_schema_compatibility():
         row[1] for row in db.session.execute(text('PRAGMA table_info("user")')).all()
     }
     if "password_changed_at" not in user_columns:
-        db.session.execute(text('ALTER TABLE "user" ADD COLUMN password_changed_at DATETIME'))
+        db.session.execute(
+            text('ALTER TABLE "user" ADD COLUMN password_changed_at DATETIME')
+        )
         db.session.commit()
         print("  Added missing user.password_changed_at column for legacy schema")
 
@@ -64,7 +69,9 @@ def _resolve_admin_accounts(has_existing_admins):
     """
     custom_email = os.environ.get("ADMIN_BOOTSTRAP_EMAIL", "").strip()
     custom_password = os.environ.get("ADMIN_BOOTSTRAP_PASSWORD", "")
-    require_custom = os.environ.get("REQUIRE_CUSTOM_ADMIN_BOOTSTRAP", "").strip().lower() == "true"
+    require_custom = (
+        os.environ.get("REQUIRE_CUSTOM_ADMIN_BOOTSTRAP", "").strip().lower() == "true"
+    )
 
     if custom_password:
         if len(custom_password) < 12:
@@ -96,7 +103,11 @@ def _load_destinations(path=None):
         List of destination dicts, or None if file not found.
     """
     seed_path = path or os.environ.get("SEED_DATA_PATH") or DEFAULT_SEED_FILE
-    if not os.path.isfile(seed_path) and seed_path == DEFAULT_SEED_FILE and os.path.isfile(LEGACY_SEED_FILE):
+    if (
+        not os.path.isfile(seed_path)
+        and seed_path == DEFAULT_SEED_FILE
+        and os.path.isfile(LEGACY_SEED_FILE)
+    ):
         print(
             f"WARNING: {DEFAULT_SEED_FILE} not found, falling back to {LEGACY_SEED_FILE}",
             file=sys.stderr,
@@ -108,12 +119,22 @@ def _load_destinations(path=None):
         return json.load(f)
 
 
-def seed(destinations=None):
-    """Seed the database with destinations and admin users.
+def _load_quiz_type_data(identifier):
+    """Load optional seed data for a non-country registered quiz type."""
+    seed_path = os.path.join(PROJECT_ROOT, "data", f"{identifier}.json")
+    if not os.path.isfile(seed_path):
+        return None
+    with open(seed_path, "r", encoding="utf-8") as seed_file:
+        return json.load(seed_file)
+
+
+def seed(destinations=None, quiz_data=None):
+    """Seed registered standard quiz types and admin users.
 
     Args:
         destinations: Optional list of destination dicts. If None, loads from
                       data/countries.json (or SEED_DATA_PATH env var).
+        quiz_data: Optional mapping of quiz type identifiers to record lists.
     """
     with app.app_context():
         try:
@@ -141,64 +162,53 @@ def seed(destinations=None):
 
             db.session.commit()
 
-            existing = Destination.query.count()
-            if existing > 0:
-                print(f"Database already has {existing} destination(s). Skipping seed.")
-                print("Use --force to seed anyway (existing data will be kept).")
-                if "--force" not in sys.argv:
-                    return
+            synchronized = synchronize_quiz_identities()
+            db.session.commit()
+            if synchronized:
+                print(f"  Added {synchronized} missing quiz identity mapping(s)")
+            supplied_quiz_data = dict(quiz_data or {})
+            if destinations is not None:
+                supplied_quiz_data["countries"] = destinations
 
-            # Load destinations from file if not passed directly
-            if destinations is None:
-                destinations = _load_destinations()
-            if not destinations:
-                print(
-                    "ERROR: No seed data found. Place destination data in "
-                    "data/countries.json or set SEED_DATA_PATH.",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-
-            added = 0
-            for dest_data in destinations:
-                destination_id = dest_data.get("id")
-
-                if destination_id is not None:
-                    # Allow explicit IDs in seed JSON so media/<id>/ paths are stable.
-                    if Destination.query.filter_by(id=destination_id).first():
-                        print(f"  Skipping id={destination_id} '{dest_data['name']}' (id already exists)")
-                        continue
-
-                # Skip if a destination with the same name already exists
-                if Destination.query.filter_by(name=dest_data["name"]).first():
-                    print(f"  Skipping '{dest_data['name']}' (already exists)")
+            total_added = 0
+            for quiz_type in get_registry():
+                adapter = get_quiz_adapter(quiz_type.adapter or quiz_type.identifier)
+                if adapter is None or not hasattr(adapter, "seed_questions"):
                     continue
 
-                create_kwargs = {
-                    "name": dest_data["name"],
-                    "hint1": dest_data["hint1"],
-                    "hint1_source": dest_data.get("hint1_source"),
-                    "hint2": dest_data["hint2"],
-                    "hint2_source": dest_data.get("hint2_source"),
-                    "hint3": dest_data["hint3"],
-                    "hint3_source": dest_data.get("hint3_source"),
-                    "hint4": dest_data["hint4"],
-                    "hint4_source": dest_data.get("hint4_source"),
-                    "hint5": dest_data["hint5"],
-                    "hint5_source": dest_data.get("hint5_source"),
-                    "correct_answers": dest_data["correct_answers"],
-                }
-                if destination_id is not None:
-                    create_kwargs["id"] = int(destination_id)
+                existing = adapter.question_model.query.count()
+                if existing > 0 and "--force" not in sys.argv:
+                    print(
+                        f"Quiz type '{quiz_type.identifier}' already has "
+                        f"{existing} question(s). Skipping seed."
+                    )
+                    continue
 
-                dest = Destination(**create_kwargs)
-                db.session.add(dest)
-                added += 1
+                records = supplied_quiz_data.get(quiz_type.identifier)
+                if records is None:
+                    records = (
+                        _load_destinations()
+                        if quiz_type.identifier == "countries"
+                        else _load_quiz_type_data(quiz_type.identifier)
+                    )
+                if not records:
+                    if quiz_type.identifier == "countries" and destinations is None:
+                        print(
+                            "ERROR: No seed data found. Place destination data in "
+                            "data/countries.json or set SEED_DATA_PATH.",
+                            file=sys.stderr,
+                        )
+                        sys.exit(1)
+                    continue
 
+                added = adapter.seed_questions(records)
+                total_added += added
+                print(f"  Seeded {added} question(s) for '{quiz_type.identifier}'")
+
+            db.session.flush()
+            synchronize_quiz_identities()
             db.session.commit()
-            print(
-                f"Seeded {added} destination(s). Total now: {Destination.query.count()}"
-            )
+            print(f"Seeded {total_added} question(s) across registered quiz types")
         except (OperationalError, RuntimeError, ValueError) as e:
             print(f"ERROR: Seed script failed - {e}", file=sys.stderr)
             sys.exit(1)

@@ -23,6 +23,19 @@ describe('Admin Panel', function () {
         });
     });
 
+    describe('quiz type routing', function () {
+        afterEach(function () {
+            currentAdminQuizType = 'countries';
+            currentAdminQuizTypeName = 'Countries';
+        });
+
+        it('uses generic admin question routes for additional types', function () {
+            currentAdminQuizType = 'cities';
+            expect(adminQuestionsUrl()).toMatch(/\/api\/admin\/quiz-types\/cities\/questions$/);
+            expect(adminQuestionsUrl(7)).toMatch(/\/api\/admin\/quiz-types\/cities\/questions\/7$/);
+        });
+    });
+
     // ========== escapeAttr ==========
     describe('escapeAttr', function () {
         it('escapes double quotes', function () {

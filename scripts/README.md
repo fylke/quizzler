@@ -1,3 +1,5 @@
+- Seeds registered standard quiz types and bootstrap admin credentials.
+- Uses `data/<quiz-type>.json` for registered standard quiz types.
 # Scripts
 
 This directory contains utility scripts used for local development, deployment, and maintenance tasks.

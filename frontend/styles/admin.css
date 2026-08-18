@@ -15,7 +15,26 @@
 }
 
 .admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-bottom: 20px;
+}
+
+.admin-actions label {
+    font-weight: 600;
+    color: #333;
+}
+
+#adminQuizTypeSelect {
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid #b8c2cc;
+    border-radius: 8px;
+    background: #fff;
+    color: #222;
+    font: inherit;
 }
 
 #adminDestCount {

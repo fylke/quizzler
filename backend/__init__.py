@@ -19,6 +19,8 @@ from .auth import (  # noqa: F401 — re-exported for backward compatibility
     player_required,
 )
 from .models import Destination, GuestQuizResult, QuizResult, User, db
+from .quiz_adapters import get_quiz_adapter_by_media_namespace, get_quiz_adapters
+from .quiz_catalog import synchronize_quiz_identities
 from .quiz_types import IDENTIFIER_PATTERN, get_registry, validate_registry
 from .routes_admin import admin_bp
 from .routes_auth import auth_bp
@@ -118,25 +120,22 @@ def _disable_limiter_in_testing():
 logger = logging.getLogger(__name__)
 
 _HINT_IMAGE_PATH_RE = re.compile(
-    r"^countries/(?P<destination_id>\d+)/(?P<hint_difficulty>[1-5])[ab](?:\.jpg|_small\.webp)$",
+    r"^(?P<namespace>[a-z0-9_-]+)/(?P<source_id>\d+)/(?P<hint_difficulty>[1-5])[ab](?:\.jpg|_small\.webp)$",
     re.IGNORECASE,
 )
 _ZERO_PREFIX_MEDIA_PATH_RE = re.compile(
-    r"^countries/(?P<destination_id>\d+)/(?P<filename>0[^/]+)$",
+    r"^(?P<namespace>[a-z0-9_-]+)/(?P<source_id>\d+)/(?P<filename>0[^/]+)$",
     re.IGNORECASE,
 )
 MEDIA_ACCESS_SESSION_KEY = "media_access_state"
 
 
 def _active_quiz_result_for_player(player):
-    if player.is_user:
-        return QuizResult.query.filter_by(user_id=player.user_id, ongoing=True).first()
-    if player.is_guest:
-        return GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id,
-            ongoing=True,
-        ).first()
-    return None
+    for adapter in get_quiz_adapters():
+        result = adapter.active_result(player)
+        if result is not None:
+            return adapter, result
+    return None, None
 
 
 def _media_access_state_from_session() -> dict | None:
@@ -144,12 +143,12 @@ def _media_access_state_from_session() -> dict | None:
     if not isinstance(state, dict):
         return None
 
-    required_keys = {"destination_id", "hint_difficulty"}
+    required_keys = {"quiz_type", "source_id", "hint_difficulty"}
     if not required_keys.issubset(state.keys()):
         return None
 
     try:
-        destination_id = int(state["destination_id"])
+        source_id = int(state["source_id"])
         hint_difficulty = int(state["hint_difficulty"])
     except (TypeError, ValueError):
         return None
@@ -158,7 +157,8 @@ def _media_access_state_from_session() -> dict | None:
         return None
 
     return {
-        "destination_id": destination_id,
+        "quiz_type": str(state["quiz_type"]),
+        "source_id": source_id,
         "hint_difficulty": hint_difficulty,
     }
 
@@ -175,12 +175,17 @@ def _can_access_media_path(filename: str) -> bool:
         if player is None:
             return False
 
-        requested_destination_id = int(zero_prefixed_match.group("destination_id"))
-        quiz_result = _active_quiz_result_for_player(player)
+        requested_source_id = int(zero_prefixed_match.group("source_id"))
+        requested_adapter = get_quiz_adapter_by_media_namespace(
+            zero_prefixed_match.group("namespace")
+        )
+        active_adapter, quiz_result = _active_quiz_result_for_player(player)
         if quiz_result is None:
             return True
 
-        if requested_destination_id != quiz_result.destination_id:
+        if requested_adapter is not active_adapter:
+            return True
+        if requested_source_id != active_adapter.result_source_id(quiz_result):
             return True
 
         # During an active hint flow, keep 0-prefixed result-gallery assets restricted.
@@ -190,21 +195,28 @@ def _can_access_media_path(filename: str) -> bool:
     if player is None:
         return False
 
-    requested_destination_id = int(match.group("destination_id"))
+    requested_source_id = int(match.group("source_id"))
     requested_hint_difficulty = int(match.group("hint_difficulty"))
+    requested_adapter = get_quiz_adapter_by_media_namespace(match.group("namespace"))
+    if requested_adapter is None:
+        return False
 
     session_state = _media_access_state_from_session()
     if session_state is not None:
-        if session_state["destination_id"] != requested_destination_id:
+        if session_state["quiz_type"] != requested_adapter.identifier:
+            return False
+        if session_state["source_id"] != requested_source_id:
             return False
         # Unlocked hints are the current live hint and all previously revealed harder hints.
         return requested_hint_difficulty >= session_state["hint_difficulty"]
 
-    quiz_result = _active_quiz_result_for_player(player)
+    active_adapter, quiz_result = _active_quiz_result_for_player(player)
     if quiz_result is None:
         return False
 
-    if requested_destination_id != quiz_result.destination_id:
+    if requested_adapter is not active_adapter:
+        return False
+    if requested_source_id != active_adapter.result_source_id(quiz_result):
         return False
 
     # Unlocked hints are the current live hint and all previously revealed harder hints.
@@ -262,6 +274,14 @@ if _registry_errors:
         logger.error("Quiz type registry error: %s", _err)
     sys.exit(1)
 
+with app.app_context():
+    try:
+        synchronize_quiz_identities()
+        db.session.commit()
+    except (RuntimeError, sqlalchemy.exc.OperationalError) as e:
+        logger.error("Quiz identity synchronization failed: %s", e)
+        sys.exit(1)
+
 # ---------------------------------------------------------------------------
 # Register blueprints
 # ---------------------------------------------------------------------------
@@ -303,12 +323,11 @@ def get_validation_rules():
 def get_status():
     """Return quiz stats for the current user."""
     player = get_current_player()
-    if player.is_user:
-        results = QuizResult.query.filter_by(user_id=player.user_id).all()
-    else:
-        results = GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id
-        ).all()
+    results = [
+        result
+        for adapter in get_quiz_adapters()
+        for result in adapter.all_results(player)
+    ]
 
     completed = [r for r in results if not r.ongoing]
     total_points = sum(
@@ -361,23 +380,22 @@ def get_rules(quiz_type):
 def get_stats():
     """Return detailed cumulative statistics for the current user."""
     player = get_current_player()
-    if player.is_user:
-        results = QuizResult.query.filter_by(user_id=player.user_id).all()
-    else:
-        results = GuestQuizResult.query.filter_by(
-            guest_session_id=player.guest_session_id
-        ).all()
+    adapter_results = [
+        (adapter, result)
+        for adapter in get_quiz_adapters()
+        for result in adapter.all_results(player)
+    ]
 
-    completed = [r for r in results if not r.ongoing]
-    ongoing = [r for r in results if r.ongoing]
+    completed = [pair for pair in adapter_results if not pair[1].ongoing]
+    ongoing = [pair for pair in adapter_results if pair[1].ongoing]
 
     completed_dicts = [
         {
-            "hint_difficulty": r.hint_difficulty,
-            "remaining_guesses": r.remaining_guesses,
-            "destination_id": r.destination_id,
+            "hint_difficulty": result.hint_difficulty,
+            "remaining_guesses": result.remaining_guesses,
+            "destination_id": adapter.result_source_id(result),
         }
-        for r in completed
+        for adapter, result in completed
     ]
 
     stats = compute_stats(completed_dicts)

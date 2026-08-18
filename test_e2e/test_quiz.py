@@ -162,6 +162,35 @@ def test_guest_refresh_restores_active_quiz(page: Page, base_url: str):
     expect(page.locator("#hint")).to_have_text(initial_hint)
 
 
+def test_shared_quiz_link_auto_starts_and_can_be_shared(
+    page: Page,
+    context,
+    base_url: str,
+    quiz_guid: str,
+):
+    """A fresh recipient starts the GUID quiz and shares the same deep link."""
+    context.add_init_script(
+        """
+        window.__sharedQuizPayload = null;
+        Object.defineProperty(navigator, 'share', {
+            configurable: true,
+            value: async payload => { window.__sharedQuizPayload = payload; },
+        });
+        """
+    )
+
+    page.goto(f"{base_url}/?quiz={quiz_guid}")
+
+    expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#hint")).to_have_text("Located on the Seine river.")
+    expect(page.locator("#shareQuizBtn")).to_be_visible()
+
+    page.locator("#shareQuizBtn").click()
+    page.wait_for_function("window.__sharedQuizPayload?.url")
+    shared_url = page.evaluate("window.__sharedQuizPayload.url")
+    assert shared_url == f"{base_url}/?quiz={quiz_guid}"
+
+
 def test_guest_register_migrates_completed_score(page: Page, base_url: str):
     """Completing a quiz as guest and then registering preserves the score."""
     _continue_as_guest_and_start(page, base_url)
