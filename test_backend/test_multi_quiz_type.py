@@ -58,6 +58,7 @@ class MultiQuizTypeTestCase(unittest.TestCase):
         display_name="Cities",
         rules_file="countries.md",
         source_table="test_cities",
+        public_code="y",
         adapter="cities",
     )
 

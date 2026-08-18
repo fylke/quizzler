@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.models import db, Destination, QuizResult, User
-from backend.quiz_catalog import get_or_create_quiz_identity
+from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -249,7 +249,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
             self.test_user_id = user.id
             identity = get_or_create_quiz_identity("countries", dest.id)
             db.session.commit()
-            self.quiz_guid = identity.guid
+            self.quiz_guid = public_quiz_id("countries", dest.id)
 
         # Log in via session transaction (avoids issues with cross-test DB config)
         with self.client.session_transaction() as sess:
@@ -276,7 +276,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
 
         # Verify field types
         self.assertIsInstance(data["id"], int)
-        self.assertEqual(UUID(data["guid"]).version, 4)
+        self.assertRegex(data["guid"], r"^c[0-9]+$")
         self.assertIsInstance(data["hint"], str)
         self.assertIsInstance(data["hintDifficulty"], int)
         self.assertIsInstance(data["remainingGuesses"], int)

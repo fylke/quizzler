@@ -2,7 +2,7 @@
 
 Quiz-type-independent gameplay is dispatched through adapters in
 `backend/quiz_adapters.py`. Once a type is registered, the existing random,
-GUID, active-quiz, hint, answer, sharing, statistics, guest migration, and
+public-ID, active-quiz, hint, answer, sharing, statistics, guest migration, and
 media-authorization flows use its adapter without route or frontend changes.
 
 ## Standard Types
@@ -43,9 +43,13 @@ QuizType(
     display_name="Cities",
     rules_file="cities.md",
     source_table="cities",
+    public_code="y",
     adapter="cities",
 )
 ```
+
+`public_code` is one unique lowercase letter used to build compact public IDs
+from the type code and source row ID, such as `y7`.
 
 The type identifier, adapter identifier, media namespace, and public API value
 must agree. Startup validation fails when a registry entry has no adapter or
@@ -58,7 +62,7 @@ convention as countries. The frontend sends the selected identifier to
 ## Data Management
 ## Data Management
 
-The central GUID catalog automatically backfills every registered source table
+The central identity catalog automatically backfills every registered source table
 that has an `id` column. Standard types also receive shared data management:
 
 - The seed command loads `data/<identifier>.json` and skips populated types

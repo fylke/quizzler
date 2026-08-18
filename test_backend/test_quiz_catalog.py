@@ -2,16 +2,15 @@
 
 import os
 import unittest
-from uuid import UUID
 
 os.environ.setdefault("QUIZ_DATABASE_URL", "sqlite:///:memory:")
 
 from backend import app
 from backend.models import Destination, QuizIdentity, db
 from backend.quiz_catalog import (
-    canonical_quiz_guid,
     get_or_create_quiz_identity,
-    resolve_quiz_guid,
+    public_quiz_id,
+    resolve_quiz_id,
     synchronize_quiz_identities,
 )
 
@@ -55,8 +54,9 @@ class QuizCatalogTestCase(unittest.TestCase):
 
             identities = QuizIdentity.query.order_by(QuizIdentity.source_id).all()
             self.assertEqual(len(identities), 2)
-            self.assertTrue(
-                all(UUID(identity.guid).version == 4 for identity in identities)
+            self.assertEqual(
+                [public_quiz_id("countries", identity.source_id) for identity in identities],
+                ["c1", "c2"],
             )
 
             self.assertEqual(synchronize_quiz_identities(), 0)
@@ -71,11 +71,10 @@ class QuizCatalogTestCase(unittest.TestCase):
 
             second = get_or_create_quiz_identity("countries", 1)
             self.assertEqual(second.guid, guid)
-            self.assertEqual(resolve_quiz_guid(guid).source_id, 1)
-
-    def test_resolve_rejects_non_v4_and_malformed_values(self):
-        self.assertIsNone(canonical_quiz_guid("not-a-guid"))
-        self.assertIsNone(canonical_quiz_guid("00000000-0000-0000-0000-000000000000"))
+            self.assertEqual(resolve_quiz_id("c1").source_id, 1)
+            self.assertEqual(public_quiz_id("countries", 1), "c1")
+            self.assertIsNone(resolve_quiz_id(guid))
+            self.assertIsNone(resolve_quiz_id("not-a-quiz-id"))
 
 
 if __name__ == "__main__":

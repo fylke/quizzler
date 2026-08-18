@@ -5,7 +5,7 @@ describe('Quiz sharing', function () {
     beforeEach(function () {
         originalShareDescriptor = Object.getOwnPropertyDescriptor(navigator, 'share');
         originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
-        quizState.currentQuizGuid = '11111111-1111-4111-8111-111111111111';
+        quizState.currentQuizGuid = 'c1';
     });
 
     afterEach(function () {
@@ -22,18 +22,25 @@ describe('Quiz sharing', function () {
         document.getElementById('appNotification')?.remove();
     });
 
-    it('uses Web Share with a GUID deep link when available', async function () {
+    it('copies a GUID deep link even when Web Share is available', async function () {
         var shareSpy = jasmine.createSpy('share').and.returnValue(Promise.resolve());
+        var writeTextSpy = jasmine.createSpy('writeText').and.returnValue(Promise.resolve());
         Object.defineProperty(navigator, 'share', {
             configurable: true,
             value: shareSpy
         });
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText: writeTextSpy }
+        });
 
         await shareCurrentQuiz();
 
-        expect(shareSpy).toHaveBeenCalled();
-        var payload = shareSpy.calls.mostRecent().args[0];
-        expect(payload.url).toContain('?quiz=11111111-1111-4111-8111-111111111111');
+        expect(shareSpy).not.toHaveBeenCalled();
+        expect(writeTextSpy).toHaveBeenCalled();
+        expect(writeTextSpy.calls.mostRecent().args[0]).toContain(
+            '?quiz=c1'
+        );
     });
 
     it('copies the GUID deep link when Web Share is unavailable', async function () {
@@ -51,7 +58,7 @@ describe('Quiz sharing', function () {
 
         expect(writeTextSpy).toHaveBeenCalled();
         expect(writeTextSpy.calls.mostRecent().args[0]).toContain(
-            '?quiz=11111111-1111-4111-8111-111111111111'
+            '?quiz=c1'
         );
         expect(document.getElementById('appNotification').textContent).toContain('copied');
     });

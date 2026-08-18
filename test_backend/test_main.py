@@ -81,7 +81,6 @@ CRITICAL_HOME_UI_IDS = [
     'welcomeScreen',
     'authButton',
     'statusScreen',
-    'runSpecificQuizBtn',
     'statsScreen',
     'guestRestrictionsStatus',
     'backToMainFromStatsBtn',

@@ -22,7 +22,7 @@ let hintCounterAnimationTimeout = null;
 let remainingGuessesAnimationTimeout = null;
 const COUNTER_PUFF_DURATION_MS = 340;
 const COOKIE_CONSENT_STORAGE_KEY = 'quizzler_cookie_consent_acknowledged_v1';
-const QUIZ_GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const QUIZ_ID_PATTERN = /^[a-z][0-9]+$/i;
 let sharedQuizRequest = readSharedQuizRequest();
 
 // Validation rules fetched from the backend — single source of truth.
@@ -216,9 +216,6 @@ function bindAuthAndMainScreenActions() {
     bindClick('runRandomQuizBtn', () => {
         runRandomQuiz();
     });
-    bindClick('runSpecificQuizBtn', () => {
-        runSpecificQuiz();
-    });
     bindClick('shareQuizBtn', () => {
         shareCurrentQuiz();
     });
@@ -247,7 +244,7 @@ function readSharedQuizRequest() {
     const guid = (params.get('quiz') || '').trim().toLowerCase();
     return {
         present: true,
-        guid: QUIZ_GUID_PATTERN.test(guid) ? guid : null
+        guid: QUIZ_ID_PATTERN.test(guid) ? guid : null
     };
 }
 
@@ -295,23 +292,12 @@ function buildQuizShareUrl(quizGuid) {
 
 async function shareCurrentQuiz() {
     const quizGuid = quizState.currentQuizGuid;
-    if (!QUIZ_GUID_PATTERN.test(quizGuid || '')) {
+    if (!QUIZ_ID_PATTERN.test(quizGuid || '')) {
         showNotification('This quiz cannot be shared yet.');
         return;
     }
 
     const shareUrl = buildQuizShareUrl(quizGuid);
-    if (typeof navigator.share === 'function') {
-        try {
-            await navigator.share({ title: 'GeoQuizzler', url: shareUrl });
-            return;
-        } catch (error) {
-            if (error?.name === 'AbortError') {
-                return;
-            }
-        }
-    }
-
     try {
         await navigator.clipboard.writeText(shareUrl);
         showNotification('Quiz link copied.', 'success');
@@ -422,12 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('answerInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             submitAnswer();
-        }
-    });
-
-    document.getElementById('specificQuizId')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            runSpecificQuiz();
         }
     });
 

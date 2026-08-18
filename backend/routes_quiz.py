@@ -9,7 +9,11 @@ from .auth import get_current_player, player_required
 from .email_service import EmailServiceError, send_hint_complaint_email
 from .models import db
 from .quiz_adapters import get_quiz_adapter, get_quiz_adapters
-from .quiz_catalog import get_or_create_quiz_identity, resolve_quiz_guid
+from .quiz_catalog import (
+    get_or_create_quiz_identity,
+    public_quiz_id,
+    resolve_quiz_id,
+)
 from .quiz_types import get_quiz_type
 from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 
@@ -156,7 +160,7 @@ def _start_quiz_for_player(player, adapter, question):
 
     return {
         "id": source_id,
-        "guid": identity.guid,
+        "guid": public_quiz_id(identity.quiz_type, identity.source_id),
         "quizType": adapter.identifier,
         "hint": hint_text,
         "hintDifficulty": hint_difficulty,
@@ -182,11 +186,11 @@ def get_quiz():
     return jsonify(_start_quiz_for_player(player, adapter, question))
 
 
-@quiz_bp.route("/api/quiz/<uuid:quiz_guid>", methods=["GET"])
+@quiz_bp.route("/api/quiz/<quiz_guid>", methods=["GET"])
 @player_required
 def get_specific_quiz(quiz_guid):
-    """Return a specific quiz identified by its public GUID."""
-    identity = resolve_quiz_guid(quiz_guid)
+    """Return a specific quiz identified by its public ID."""
+    identity = resolve_quiz_id(quiz_guid)
     quiz_type = get_quiz_type(identity.quiz_type) if identity is not None else None
     adapter = get_quiz_adapter(quiz_type.adapter) if quiz_type is not None else None
     if identity is None or adapter is None:
@@ -222,7 +226,7 @@ def get_active_quiz():
     return jsonify(
         {
             "id": source_id,
-            "guid": identity.guid,
+            "guid": public_quiz_id(identity.quiz_type, identity.source_id),
             "quizType": adapter.identifier,
             "hint": hint_text,
             "hintDifficulty": difficulty,

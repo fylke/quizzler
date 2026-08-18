@@ -539,23 +539,3 @@ function showResults(isCorrect, points, correctAnswer, resultImages = [], option
 async function runRandomQuiz(quizType = 'countries') {
     await getScreenController('quiz').startRandomQuiz(quizType);
 }
-
-async function runSpecificQuiz() {
-    const quizGuid = document.getElementById('specificQuizId').value.trim().toLowerCase();
-    if (!QUIZ_GUID_PATTERN.test(quizGuid)) {
-        showNotification('Quiz not found');
-        return;
-    }
-    try {
-        const response = await fetch(`${API_BASE}/api/quiz/${quizGuid}`);
-        if (!response.ok) {
-            showNotification('Quiz not found');
-            return;
-        }
-        const data = await response.json();
-        getScreenController('quiz').showSpecificQuiz(data);
-    } catch (error) {
-        console.error('Error starting specific quiz:', error);
-        showNotification('Failed to load quiz.');
-    }
-}

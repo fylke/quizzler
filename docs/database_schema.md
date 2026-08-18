@@ -39,12 +39,13 @@ erDiagram
 ```
 
 `quiz_identity` is a polymorphic public-identity catalog. Its
-`(quiz_type, source_id)` pair is unique, while `guid` is a canonical UUID v4
-used by public quiz lookup and links such as `/?quiz=<guid>`. The catalog does
-not use a database foreign key because registered quiz types may use different
-source tables.
+`(quiz_type, source_id)` pair is unique. The `guid` column is an internal
+canonical UUID v4 key; public lookup and links use a compact type-scoped ID such
+as `c42` in `/?quiz=c42`. The catalog does not use a database foreign key because
+registered quiz types may use different source tables.
 
-GUIDs are generated per deployment. Restoring the database preserves them;
-rebuilding a database from source data may produce different GUIDs. Integer
-source IDs remain internal keys for result relationships, scoring, complaints,
-and media directories.
+Restoring the database preserves the internal identity rows and their existing
+links. Rebuilding a database from source data preserves the compact IDs as long
+as the source IDs and registered type codes remain unchanged. Integer source IDs
+remain the keys for result relationships, scoring, complaints, and media
+directories.

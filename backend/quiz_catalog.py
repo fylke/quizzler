@@ -1,23 +1,23 @@
-"""Globally unique public identities for quizzes."""
+"""Stable internal and compact public identities for quizzes."""
 
-from uuid import UUID, uuid4
+import re
+from uuid import uuid4
 
 from sqlalchemy import select
 
 from .models import QuizIdentity, db
-from .quiz_types import QuizType, get_registry
+from .quiz_types import QuizType, get_registry, get_quiz_type
+
+PUBLIC_ID_PATTERN = r"^[a-z][0-9]+$"
 
 
-def canonical_quiz_guid(value: object) -> str | None:
-    """Return a canonical UUID v4 string, or ``None`` for invalid input."""
-    try:
-        parsed = UUID(str(value))
-    except (AttributeError, TypeError, ValueError):
-        return None
-
-    if parsed.version != 4:
-        return None
-    return str(parsed)
+def public_quiz_id(quiz_type: str, source_id: int) -> str:
+    """Build the compact public ID for a quiz source row."""
+    quiz_type_entry = get_quiz_type(quiz_type)
+    if quiz_type_entry is None:
+        raise ValueError(f"Unknown quiz type: {quiz_type}")
+    public_code = quiz_type_entry.public_code or quiz_type_entry.identifier[:1]
+    return f"{public_code}{int(source_id)}"
 
 
 def get_or_create_quiz_identity(quiz_type: str, source_id: int) -> QuizIdentity:
@@ -46,12 +46,25 @@ def get_quiz_identity(quiz_type: str, source_id: int) -> QuizIdentity | None:
     ).first()
 
 
-def resolve_quiz_guid(guid: object) -> QuizIdentity | None:
-    """Resolve a canonical UUID v4 to its catalog entry."""
-    canonical_guid = canonical_quiz_guid(guid)
-    if canonical_guid is None:
-        return None
-    return db.session.get(QuizIdentity, canonical_guid)
+def resolve_quiz_id(quiz_id: object) -> QuizIdentity | None:
+    """Resolve a compact public ID to its catalog entry."""
+    value = str(quiz_id).strip().lower()
+    if re.fullmatch(PUBLIC_ID_PATTERN, value):
+        quiz_type_entry = next(
+            (
+                entry
+                for entry in get_registry()
+                if (entry.public_code or entry.identifier[:1]) == value[0]
+            ),
+            None,
+        )
+        if quiz_type_entry is not None:
+            return QuizIdentity.query.filter_by(
+                quiz_type=quiz_type_entry.identifier,
+                source_id=int(value[1:]),
+            ).first()
+
+    return None
 
 
 def synchronize_quiz_identities(

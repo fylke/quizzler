@@ -78,14 +78,14 @@ stateDiagram-v2
 
 ## Sharing Quizzes
 
-- Public quiz identities are UUID v4 values resolved through the central
-    `quiz_identity` catalog. Numeric destination IDs are not accepted by the
-    public specific-quiz endpoint.
-- A shared URL uses `/?quiz=<guid>`. After the application restores or creates
+- Public quiz identities use a compact type-scoped ID, such as `c42` for
+    countries quiz row 42. Internal UUID v4 keys remain in the central
+    `quiz_identity` catalog. Bare numeric destination IDs are not accepted by
+    the public specific-quiz endpoint.
+- A shared URL uses `/?quiz=<public-id>`. After the application restores or creates
     a player session, the linked quiz starts automatically and takes precedence
     over restoring a different active quiz.
-- The quiz screen uses the browser Web Share API when available and copies the
-    same deep link to the clipboard as a fallback.
+- The quiz screen copies the deep link to the clipboard.
 
 ## Migration Milestone
 

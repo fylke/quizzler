@@ -59,8 +59,9 @@ What it backs up:
 The database backup includes the `quiz_identity` table and therefore preserves
 existing shared quiz links. On startup and during seeding, Quizzler
 idempotently creates missing catalog rows for registered quiz source tables.
-A fresh database rebuild generates new deployment-local UUID v4 values, so old
-links from another database are not expected to resolve.
+A fresh database rebuild retains compact links when the source IDs and quiz type
+codes are unchanged. Links for deleted or renumbered source rows are not
+expected to resolve.
 
 Manual workflow inputs:
 

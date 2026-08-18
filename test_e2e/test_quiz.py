@@ -28,6 +28,7 @@ def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
     expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
     # Wait for the quiz data to actually load (hint text appears)
     expect(page.locator("#hint")).not_to_be_empty(timeout=5000)
+    expect(page.locator("#shareQuizBtn")).to_have_text("Share this quiz")
 
 
 def _continue_as_guest_and_start(page: Page, base_url: str):
@@ -168,13 +169,13 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
     base_url: str,
     quiz_guid: str,
 ):
-    """A fresh recipient starts the GUID quiz and shares the same deep link."""
+    """A fresh recipient starts the GUID quiz and copies the same deep link."""
     context.add_init_script(
         """
-        window.__sharedQuizPayload = null;
-        Object.defineProperty(navigator, 'share', {
+        window.__copiedQuizLink = null;
+        Object.defineProperty(navigator, 'clipboard', {
             configurable: true,
-            value: async payload => { window.__sharedQuizPayload = payload; },
+            value: { writeText: async value => { window.__copiedQuizLink = value; } },
         });
         """
     )
@@ -186,8 +187,8 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
     expect(page.locator("#shareQuizBtn")).to_be_visible()
 
     page.locator("#shareQuizBtn").click()
-    page.wait_for_function("window.__sharedQuizPayload?.url")
-    shared_url = page.evaluate("window.__sharedQuizPayload.url")
+    page.wait_for_function("window.__copiedQuizLink")
+    shared_url = page.evaluate("window.__copiedQuizLink")
     assert shared_url == f"{base_url}/?quiz={quiz_guid}"
 
 

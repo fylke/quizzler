@@ -6,7 +6,7 @@ from .admin import normalize_answers, validate_destination_payload
 from .auth import admin_required, csrf_protected
 from .models import Destination, QuizIdentity, db
 from .quiz_adapters import get_quiz_adapter
-from .quiz_catalog import get_or_create_quiz_identity
+from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from .quiz_types import get_quiz_type
 
 admin_bp = Blueprint("admin", __name__)
@@ -74,7 +74,10 @@ def create_question(quiz_type):
     db.session.flush()
     identity = get_or_create_quiz_identity(quiz_type, adapter.question_id(question))
     db.session.commit()
-    return jsonify({"id": adapter.question_id(question), "guid": identity.guid}), 201
+    return jsonify({
+        "id": adapter.question_id(question),
+        "guid": public_quiz_id(identity.quiz_type, identity.source_id),
+    }), 201
 
 
 @admin_bp.route(
@@ -186,7 +189,10 @@ def create_destination():
     identity = get_or_create_quiz_identity("countries", destination.id)
     db.session.commit()
 
-    return jsonify({"id": destination.id, "guid": identity.guid}), 201
+    return jsonify({
+        "id": destination.id,
+        "guid": public_quiz_id(identity.quiz_type, identity.source_id),
+    }), 201
 
 
 @admin_bp.route("/api/admin/destinations/<int:destination_id>", methods=["DELETE"])

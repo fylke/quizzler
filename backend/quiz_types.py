@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+PUBLIC_CODE_PATTERN = re.compile(r"^[a-z]$")
 _RULES_DIR = Path(__file__).parent / "assets" / "rules"
 
 
@@ -21,6 +22,7 @@ class QuizType:
     display_name: str
     rules_file: str
     source_table: str
+    public_code: str = ""
     adapter: str | None = None
 
 
@@ -30,6 +32,7 @@ QUIZ_TYPES: list[QuizType] = [
         display_name="Countries",
         rules_file="countries.md",
         source_table="countries",
+        public_code="c",
         adapter="countries",
     ),
 ]
@@ -61,6 +64,7 @@ def validate_registry(quiz_types: list[QuizType]) -> list[str]:
     """
     errors: list[str] = []
     seen_identifiers: set[str] = set()
+    seen_public_codes: set[str] = set()
 
     from .quiz_adapters import get_quiz_adapter
 
@@ -80,6 +84,17 @@ def validate_registry(quiz_types: list[QuizType]) -> list[str]:
         if qt.identifier in seen_identifiers:
             errors.append(f"Duplicate identifier: '{qt.identifier}'")
         seen_identifiers.add(qt.identifier)
+
+        if qt.public_code:
+            if not PUBLIC_CODE_PATTERN.fullmatch(qt.public_code):
+                errors.append(
+                    f"Invalid public_code for '{qt.identifier}': "
+                    "must be one lowercase letter"
+                )
+            elif qt.public_code in seen_public_codes:
+                errors.append(f"Duplicate public_code: '{qt.public_code}'")
+            else:
+                seen_public_codes.add(qt.public_code)
 
         rules_path = _RULES_DIR / qt.rules_file
         if not rules_path.is_file():
