@@ -5,12 +5,14 @@ Validates Requirements: 1.1, 1.2, 1.4, 3.2, 3.3, 3.5, 5.1, 5.3, 5.4, 5.5
 
 import os
 import unittest
+from uuid import UUID
 from unittest.mock import patch
 
 from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.models import db, Destination, QuizResult, User
+from backend.quiz_catalog import get_or_create_quiz_identity
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -245,6 +247,9 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
             db.session.add(user)
             db.session.commit()
             self.test_user_id = user.id
+            identity = get_or_create_quiz_identity("countries", dest.id)
+            db.session.commit()
+            self.quiz_guid = identity.guid
 
         # Log in via session transaction (avoids issues with cross-test DB config)
         with self.client.session_transaction() as sess:
@@ -263,6 +268,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         data = response.get_json()
         # Verify all required fields are present
         self.assertIn("id", data)
+        self.assertIn("guid", data)
         self.assertIn("hint", data)
         self.assertIn("hintDifficulty", data)
         self.assertIn("remainingGuesses", data)
@@ -270,6 +276,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
 
         # Verify field types
         self.assertIsInstance(data["id"], int)
+        self.assertEqual(UUID(data["guid"]).version, 4)
         self.assertIsInstance(data["hint"], str)
         self.assertIsInstance(data["hintDifficulty"], int)
         self.assertIsInstance(data["remainingGuesses"], int)
@@ -297,8 +304,8 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertIn(images[1], [f"{base}b.jpg", f"{base}b_small.webp"])
 
     def test_specific_quiz_endpoint_returns_expected_structure(self):
-        """Requirement 5.3: /api/quiz/<id> also returns the same structure."""
-        response = self.client.get("/api/quiz/42")
+        """Requirement 5.3: /api/quiz/<guid> returns the same structure."""
+        response = self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.assertEqual(response.status_code, 200)
 
         data = response.get_json()
@@ -309,13 +316,25 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertIn("images", data)
 
         self.assertEqual(data["id"], 42)
+        self.assertEqual(data["guid"], self.quiz_guid)
         self.assertEqual(data["hintDifficulty"], 5)
         self.assertEqual(data["remainingGuesses"], 3)
         self.assertEqual(data["hint"], "Hint level 5 - hardest")
 
+    def test_numeric_specific_quiz_lookup_is_not_public(self):
+        response = self.client.get("/api/quiz/42")
+        self.assertEqual(response.status_code, 404)
+
+    def test_unknown_quiz_guid_returns_not_found(self):
+        response = self.client.get(
+            "/api/quiz/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json(), {"error": "Quiz not found"})
+
     def test_specific_quiz_images_follow_media_url_pattern(self):
         """Requirement 5.5: Specific quiz images follow .jpg or _small.webp pattern."""
-        response = self.client.get("/api/quiz/42")
+        response = self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.assertEqual(response.status_code, 200)
 
         data = response.get_json()
@@ -328,7 +347,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
     def test_correct_answer_stores_score_with_formula(self):
         """Requirement 5.4: Score = hint_difficulty × remaining_guesses."""
         # Start a specific quiz (destination 42, hint_difficulty=5, remaining_guesses=3)
-        self.client.get("/api/quiz/42")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
 
         # Answer correctly on the first try: score = 5 * 3 = 15
         response = self.client.post(
@@ -354,7 +373,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
     def test_score_after_wrong_answers(self):
         """Requirement 5.4: Score decreases as guesses are used up."""
         # Start quiz: hint_difficulty=5, remaining_guesses=3
-        self.client.get("/api/quiz/42")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
 
         # Wrong answer: remaining_guesses goes from 3 to 2, hint_difficulty stays at 5
         resp1 = self.client.post(
@@ -379,13 +398,13 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
     def test_rerun_keeps_original_score_for_stats(self):
         """Re-running a completed quiz must not overwrite the original stored score."""
         # First run: solve immediately for 15 points (5 * 3)
-        self.client.get("/api/quiz/42")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         first = self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.get_json()["points"], 15)
 
         # Re-run the same quiz and score lower on this replay.
-        self.client.get("/api/quiz/42")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.client.get("/api/hint")  # hint_difficulty 5 -> 4
         replay = self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
         self.assertEqual(replay.status_code, 200)
@@ -417,7 +436,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
     def test_quiz_result_composite_key(self):
         """Requirement 5.4: Results stored with composite key (user_id, destination_id)."""
         # Start and complete a quiz
-        self.client.get("/api/quiz/42")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
 
         with app.app_context():

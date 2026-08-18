@@ -35,6 +35,7 @@ stateDiagram-v2
     }
 
     QuizScreen --> QuizScreen: ButtonNextHint
+    QuizScreen --> QuizScreen: ButtonShareQuiz
     QuizScreen --> QuizScreen: ButtonAnswer (Incorrect guess)
     QuizScreen --> CorrectScreen: ButtonAnswer (Correct guess)
     QuizScreen --> FailureScreen: ButtonAnswer (Incorrect guess, no more guesses)
@@ -44,6 +45,7 @@ stateDiagram-v2
         PictureHint
         ButtonAnswer
         ButtonNextHint
+        ButtonShareQuiz
     }
 
     CorrectScreen --> MainScreen: ButtonBackToMain
@@ -66,12 +68,24 @@ stateDiagram-v2
 
 - Hint flow details, including hint review image switching behavior: [hint.md](hint.md)
 - Media image naming and authorization behavior (including session-cache fast path): [media_images.md](media_images.md)
+- Quiz-type adapter and registration contract: [quiz_types.md](quiz_types.md)
 
 ## Frontend Composition Notes
 
 - The production home page (`/`) is rendered from `backend/templates/index.html` and composed from partials under `backend/templates/partials/`.
 - Backend-rendered home markup is the source of truth for page structure.
 - Guardrail checks in `test_backend/test_main.py` enforce key IDs, script load order, and screen/modal ordering on the rendered page.
+
+## Sharing Quizzes
+
+- Public quiz identities are UUID v4 values resolved through the central
+    `quiz_identity` catalog. Numeric destination IDs are not accepted by the
+    public specific-quiz endpoint.
+- A shared URL uses `/?quiz=<guid>`. After the application restores or creates
+    a player session, the linked quiz starts automatically and takes precedence
+    over restoring a different active quiz.
+- The quiz screen uses the browser Web Share API when available and copies the
+    same deep link to the clipboard as a fallback.
 
 ## Migration Milestone
 

@@ -4,6 +4,7 @@ function displayQuiz(data) {
     submitting = false;
     resetHintReviewState();
     quizState.currentQuizId = Number(data.id) || null;
+    quizState.currentQuizGuid = typeof data.guid === 'string' ? data.guid : null;
     const initialImages = Array.isArray(data.images) && data.images.length >= 2
         ? data.images
         : getHintImageUrls(quizState.currentQuizId, data.hintDifficulty);
@@ -41,9 +42,11 @@ function renderQuizImages(images) {
     });
 }
 
-async function loadQuestion() {
+async function loadQuestion(quizType = 'countries') {
     try {
-        const response = await fetch(`${API_BASE}/api/quiz`);
+        const response = await fetch(
+            `${API_BASE}/api/quiz?type=${encodeURIComponent(quizType)}`
+        );
         if (!response.ok) {
             const error = await response.json();
             showNotification(error.error || 'Unable to load quiz.');
@@ -533,18 +536,18 @@ function showResults(isCorrect, points, correctAnswer, resultImages = [], option
     showRegisteredScreen('results', isCorrect, points, correctAnswer, resultImages, options);
 }
 
-async function runRandomQuiz() {
-    await getScreenController('quiz').startRandomQuiz();
+async function runRandomQuiz(quizType = 'countries') {
+    await getScreenController('quiz').startRandomQuiz(quizType);
 }
 
 async function runSpecificQuiz() {
-    const quizId = document.getElementById('specificQuizId').value.trim();
-    if (!/^[1-9]\d*$/.test(quizId)) {
+    const quizGuid = document.getElementById('specificQuizId').value.trim().toLowerCase();
+    if (!QUIZ_GUID_PATTERN.test(quizGuid)) {
         showNotification('Quiz not found');
         return;
     }
     try {
-        const response = await fetch(`${API_BASE}/api/quiz/${quizId}`);
+        const response = await fetch(`${API_BASE}/api/quiz/${quizGuid}`);
         if (!response.ok) {
             showNotification('Quiz not found');
             return;

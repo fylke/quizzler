@@ -4,6 +4,7 @@ import unittest
 
 from backend import app
 from backend.models import Destination, GuestSession, QuizResult, User, db
+from backend.quiz_catalog import get_or_create_quiz_identity
 from werkzeug.security import generate_password_hash
 
 
@@ -29,6 +30,9 @@ class GuestTrackingTestCase(unittest.TestCase):
             )
             db.session.add(destination)
             db.session.commit()
+            identity = get_or_create_quiz_identity("countries", destination.id)
+            db.session.commit()
+            self.quiz_guid = identity.guid
 
     def tearDown(self):
         with app.app_context():
@@ -78,7 +82,7 @@ class GuestTrackingTestCase(unittest.TestCase):
     def test_guest_stats_are_persisted_server_side(self):
         self._start_guest_session()
 
-        self.client.get("/api/quiz/1")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         answer_response = self.client.post(
             "/api/check-answer", json={"answer": "paris"}
         )
@@ -95,7 +99,7 @@ class GuestTrackingTestCase(unittest.TestCase):
 
     def test_register_migrates_guest_results_into_new_account(self):
         self._start_guest_session()
-        self.client.get("/api/quiz/1")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.client.post("/api/check-answer", json={"answer": "paris"})
 
         response = self.client.post(
@@ -129,7 +133,7 @@ class GuestTrackingTestCase(unittest.TestCase):
             db.session.commit()
 
         self._start_guest_session()
-        self.client.get("/api/quiz/1")
+        self.client.get(f"/api/quiz/{self.quiz_guid}")
         self.client.get("/api/hint")
 
         response = self.client.post(

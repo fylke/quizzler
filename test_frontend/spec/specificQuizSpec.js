@@ -1,5 +1,5 @@
-// Feature: quiz-type-selection, Task 8.1: Specific quiz by ID behavior
-describe('Specific Quiz by ID', function () {
+// Feature: quiz sharing: Specific quiz by GUID behavior
+describe('Specific Quiz by GUID', function () {
 
     // **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
@@ -16,7 +16,7 @@ describe('Specific Quiz by ID', function () {
             '<div class="quiz-actions">' +
                 '<div class="specific-quiz-section">' +
                     '<div class="input-row">' +
-                        '<input type="text" id="specificQuizId" placeholder="Run specific quiz">' +
+                        '<input type="text" id="specificQuizId" placeholder="Paste quiz GUID">' +
                         '<button onclick="runSpecificQuiz()" class="btn btn-primary" id="runSpecificQuizBtn">Go</button>' +
                     '</div>' +
                 '</div>' +
@@ -47,7 +47,7 @@ describe('Specific Quiz by ID', function () {
             var input = document.getElementById('specificQuizId');
             expect(input).not.toBeNull();
             expect(input.type).toBe('text');
-            expect(input.placeholder).toBe('Run specific quiz');
+            expect(input.placeholder).toBe('Paste quiz GUID');
         });
 
         it('does not render a separate label for specific quiz input', function () {
@@ -86,7 +86,7 @@ describe('Specific Quiz by ID', function () {
             expect(notification.textContent).toContain('Quiz not found');
         });
 
-        it('shows notification when quiz ID is non-numeric', function () {
+        it('shows notification when quiz GUID is malformed', function () {
             var input = document.getElementById('specificQuizId');
             input.value = 'abc';
 
@@ -102,10 +102,10 @@ describe('Specific Quiz by ID', function () {
 
         it('shows notification when backend returns quiz not found', function (done) {
             var input = document.getElementById('specificQuizId');
-            input.value = '99999';
+            input.value = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
             window.fetch = function (url) {
-                if (url.indexOf('/api/quiz/99999') !== -1) {
+                if (url.indexOf('/api/quiz/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') !== -1) {
                     return Promise.resolve({
                         ok: false,
                         json: function () {
@@ -130,17 +130,18 @@ describe('Specific Quiz by ID', function () {
 
     describe('Requirement 6.2: Successful quiz load', function () {
 
-        it('navigates to quiz screen when valid ID returns quiz data', function (done) {
+        it('navigates to quiz screen when valid GUID returns quiz data', function (done) {
             var input = document.getElementById('specificQuizId');
-            input.value = '5';
+            input.value = '11111111-1111-4111-8111-111111111111';
 
             window.fetch = function (url) {
-                if (url.indexOf('/api/quiz/5') !== -1) {
+                if (url.indexOf('/api/quiz/11111111-1111-4111-8111-111111111111') !== -1) {
                     return Promise.resolve({
                         ok: true,
                         json: function () {
                             return Promise.resolve({
                                 id: 5,
+                                guid: '11111111-1111-4111-8111-111111111111',
                                 hint: 'A famous European capital',
                                 hintDifficulty: 3,
                                 remainingGuesses: 5,

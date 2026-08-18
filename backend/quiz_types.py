@@ -1,8 +1,8 @@
 """Quiz type registry for the Quizzler application.
 
-Defines available quiz types and provides startup validation. Adding a
-new quiz type requires only appending to the QUIZ_TYPES list and placing
-the corresponding rules markdown file in backend/assets/rules/.
+Defines available quiz types and provides startup validation. Conventional
+hint-based types use ``StandardQuizAdapter``; see ``docs/quiz_types.md`` for
+the source/result model and registration contract.
 """
 
 import re
@@ -21,6 +21,7 @@ class QuizType:
     display_name: str
     rules_file: str
     source_table: str
+    adapter: str | None = None
 
 
 QUIZ_TYPES: list[QuizType] = [
@@ -29,6 +30,7 @@ QUIZ_TYPES: list[QuizType] = [
         display_name="Countries",
         rules_file="countries.md",
         source_table="countries",
+        adapter="countries",
     ),
 ]
 
@@ -36,6 +38,14 @@ QUIZ_TYPES: list[QuizType] = [
 def get_registry() -> list[QuizType]:
     """Return the list of registered quiz types."""
     return QUIZ_TYPES
+
+
+def get_quiz_type(identifier: str) -> QuizType | None:
+    """Return a registered quiz type by identifier."""
+    return next(
+        (quiz_type for quiz_type in QUIZ_TYPES if quiz_type.identifier == identifier),
+        None,
+    )
 
 
 def validate_registry(quiz_types: list[QuizType]) -> list[str]:
@@ -51,6 +61,8 @@ def validate_registry(quiz_types: list[QuizType]) -> list[str]:
     """
     errors: list[str] = []
     seen_identifiers: set[str] = set()
+
+    from .quiz_adapters import get_quiz_adapter
 
     for qt in quiz_types:
         if not IDENTIFIER_PATTERN.match(qt.identifier):
@@ -73,6 +85,19 @@ def validate_registry(quiz_types: list[QuizType]) -> list[str]:
         if not rules_path.is_file():
             errors.append(
                 f"Rules file not found for '{qt.identifier}': {qt.rules_file}"
+            )
+
+        adapter_identifier = qt.adapter or qt.identifier
+        adapter = get_quiz_adapter(adapter_identifier)
+        if adapter is None:
+            errors.append(
+                f"Quiz adapter not found for '{qt.identifier}': "
+                f"{adapter_identifier}"
+            )
+        elif adapter.identifier != qt.identifier:
+            errors.append(
+                f"Quiz adapter identifier mismatch for '{qt.identifier}': "
+                f"{adapter.identifier}"
             )
 
     return errors

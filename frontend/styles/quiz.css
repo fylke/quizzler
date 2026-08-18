@@ -3,15 +3,41 @@
     margin-bottom: var(--space-7);
 }
 
+.quiz-header-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--space-3);
+}
+
 .progress-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: var(--space-3);
     font-size: 1.2em;
     color: #0f2a3d;
     font-weight: 800;
+}
+
+.quiz-share-btn {
+    min-width: 72px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid #b7c6ce;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0f2a3d;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.quiz-share-btn:hover,
+.quiz-share-btn:focus-visible {
+    border-color: #147d74;
+    background: #e8f5f2;
 }
 
 .progress-info #currentHint {

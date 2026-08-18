@@ -45,6 +45,16 @@
         max-width: 100%;
     }
 
+    .quiz-header-row {
+        align-items: start;
+    }
+
+    .progress-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
     .result-images {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

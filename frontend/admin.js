@@ -1,6 +1,8 @@
 // ==================== Admin Panel ====================
 
 let editingDestId = null;
+let currentAdminQuizType = 'countries';
+let currentAdminQuizTypeName = 'Countries';
 
 function getAdminApp() {
     return window.QuizzlerApp;
@@ -8,76 +10,53 @@ function getAdminApp() {
 
 function bindAdminClick(elementId, handler) {
     const element = document.getElementById(elementId);
-    if (!element) {
-        return;
-    }
-
-    element.addEventListener('click', handler);
+    if (element) element.addEventListener('click', handler);
 }
 
 function setupAdminEventBindings() {
-    bindAdminClick('backToMainFromAdminBtn', () => {
-        hideAdminScreen();
-    });
-    bindAdminClick('addDestinationBtn', () => {
-        showDestinationForm();
-    });
-    bindAdminClick('addImageFieldBtn', () => {
-        addImageField('');
-    });
-    bindAdminClick('addAnswerFieldBtn', () => {
-        addAnswerField('');
-    });
-    bindAdminClick('saveDestinationBtn', () => {
-        saveDestination();
-    });
-    bindAdminClick('cancelDestinationBtn', () => {
+    bindAdminClick('backToMainFromAdminBtn', hideAdminScreen);
+    bindAdminClick('addDestinationBtn', () => showDestinationForm());
+    bindAdminClick('addImageFieldBtn', () => addImageField(''));
+    bindAdminClick('addAnswerFieldBtn', () => addAnswerField(''));
+    bindAdminClick('saveDestinationBtn', saveDestination);
+    bindAdminClick('cancelDestinationBtn', hideAdminForm);
+    bindAdminClick('adminDeleteCancelBtn', hideDeleteDialog);
+
+    document.getElementById('adminQuizTypeSelect')?.addEventListener('change', (event) => {
+        currentAdminQuizType = event.target.value;
+        currentAdminQuizTypeName = event.target.selectedOptions[0]?.textContent || currentAdminQuizType;
         hideAdminForm();
-    });
-    bindAdminClick('adminDeleteCancelBtn', () => {
-        hideDeleteDialog();
+        updateAdminTypeLabels();
+        loadDestinations();
     });
 
     document.getElementById('adminDestList')?.addEventListener('click', (event) => {
         const button = event.target.closest('button[data-action]');
-        if (!button) {
-            return;
-        }
-
+        if (!button) return;
         const destinationId = Number(button.dataset.destinationId);
-        if (!Number.isFinite(destinationId)) {
-            return;
-        }
-
+        if (!Number.isFinite(destinationId)) return;
         if (button.dataset.action === 'edit-destination') {
             showDestinationForm(destinationId);
-            return;
-        }
-
-        if (button.dataset.action === 'delete-destination') {
+        } else if (button.dataset.action === 'delete-destination') {
             deleteDestination(destinationId, button.dataset.destinationName || '');
         }
     });
 
     document.getElementById('adminImagesContainer')?.addEventListener('click', (event) => {
         const button = event.target.closest('button[data-action="remove-image-field"]');
-        if (button) {
-            removeImageField(button);
-        }
+        if (button) removeImageField(button);
     });
-
     document.getElementById('adminAnswersContainer')?.addEventListener('click', (event) => {
         const button = event.target.closest('button[data-action="remove-answer-field"]');
-        if (button) {
-            removeAnswerField(button);
-        }
+        if (button) removeAnswerField(button);
     });
 }
 
-function showAdminScreen() {
+async function showAdminScreen() {
     getAdminApp().ui.showScreen('adminScreen');
     hideAdminForm();
-    loadDestinations();
+    await loadAdminQuizTypes();
+    await loadDestinations();
 }
 
 function hideAdminScreen() {
@@ -98,22 +77,64 @@ function showAdminSuccess(message) {
     setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
+function adminQuestionsUrl(sourceId) {
+    const apiBase = getAdminApp().api.baseUrl;
+    const baseUrl = currentAdminQuizType === 'countries'
+        ? `${apiBase}/api/admin/destinations`
+        : `${apiBase}/api/admin/quiz-types/${encodeURIComponent(currentAdminQuizType)}/questions`;
+    return sourceId ? `${baseUrl}/${sourceId}` : baseUrl;
+}
+
+function updateAdminTypeLabels() {
+    const isCountries = currentAdminQuizType === 'countries';
+    document.getElementById('addDestinationBtn').textContent = isCountries
+        ? 'Add New Destination'
+        : `Add ${currentAdminQuizTypeName} Question`;
+    document.getElementById('adminEmptyState').textContent = isCountries
+        ? 'The quiz database is empty. Add a destination to get started.'
+        : `No ${currentAdminQuizTypeName.toLowerCase()} questions are available.`;
+    document.getElementById('adminDestName').placeholder = isCountries
+        ? 'Destination name'
+        : 'Question answer name';
+}
+
+async function loadAdminQuizTypes() {
+    const select = document.getElementById('adminQuizTypeSelect');
+    if (!select) return;
+    try {
+        const response = await fetch(`${getAdminApp().api.baseUrl}/api/quiz-types`);
+        if (!response.ok) return;
+        const quizTypes = await response.json();
+        select.innerHTML = quizTypes.map(type =>
+            `<option value="${escapeAttr(type.identifier)}">${escapeHtml(type.displayName)}</option>`
+        ).join('');
+        if (!quizTypes.some(type => type.identifier === currentAdminQuizType) && quizTypes.length) {
+            currentAdminQuizType = quizTypes[0].identifier;
+        }
+        select.value = currentAdminQuizType;
+        currentAdminQuizTypeName = select.selectedOptions[0]?.textContent || currentAdminQuizType;
+        updateAdminTypeLabels();
+    } catch (error) {
+        console.error('Error loading admin quiz types:', error);
+    }
+}
+
 async function loadDestinations() {
     const listEl = document.getElementById('adminDestList');
     const countEl = document.getElementById('adminDestCount');
     const emptyEl = document.getElementById('adminEmptyState');
-    const apiBase = getAdminApp().api.baseUrl;
-
     try {
-        const response = await fetch(`${apiBase}/api/admin/destinations`);
+        const response = await fetch(adminQuestionsUrl());
         if (!response.ok) {
             const err = await response.json();
             showAdminError(err.error || 'Failed to load destinations');
             return;
         }
         const data = await response.json();
-        const destinations = data.destinations;
-        countEl.textContent = `Total destinations: ${data.count}`;
+        const destinations = data.destinations || data.questions || [];
+        countEl.textContent = currentAdminQuizType === 'countries'
+            ? `Total destinations: ${data.count}`
+            : `Total ${currentAdminQuizTypeName.toLowerCase()} questions: ${data.count}`;
 
         if (destinations.length === 0) {
             emptyEl.style.display = 'block';
@@ -148,7 +169,6 @@ async function showDestinationForm(id) {
     editingDestId = id || null;
     const formTitle = document.getElementById('adminFormTitle');
     const formEl = document.getElementById('adminForm');
-    const apiBase = getAdminApp().api.baseUrl;
 
     // Clear form fields
     document.getElementById('adminDestName').value = '';
@@ -159,9 +179,11 @@ async function showDestinationForm(id) {
     document.getElementById('adminAnswersContainer').innerHTML = '';
 
     if (editingDestId) {
-        formTitle.textContent = 'Edit Destination';
+        formTitle.textContent = currentAdminQuizType === 'countries'
+            ? 'Edit Destination'
+            : `Edit ${currentAdminQuizTypeName} Question`;
         try {
-            const response = await fetch(`${apiBase}/api/admin/destinations/${editingDestId}`);
+            const response = await fetch(adminQuestionsUrl(editingDestId));
             if (!response.ok) {
                 const err = await response.json();
                 showAdminError(err.error || 'Failed to load destination');
@@ -184,7 +206,9 @@ async function showDestinationForm(id) {
             return;
         }
     } else {
-        formTitle.textContent = 'Add New Destination';
+        formTitle.textContent = currentAdminQuizType === 'countries'
+            ? 'Add New Destination'
+            : `Add ${currentAdminQuizTypeName} Question`;
         // Start with 2 image fields and 1 answer field
         addImageField('');
         addImageField('');
@@ -209,7 +233,6 @@ function hideAdminForm() {
 
 async function saveDestination() {
     const app = getAdminApp();
-    const apiBase = app.api.baseUrl;
     const rules = app.state.validationRules;
     const name = document.getElementById('adminDestName').value.trim();
     const hints = [];
@@ -262,13 +285,13 @@ async function saveDestination() {
     try {
         let response;
         if (editingDestId) {
-            response = await fetch(`${apiBase}/api/admin/destinations/${editingDestId}`, {
+            response = await fetch(adminQuestionsUrl(editingDestId), {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(payload)
             });
         } else {
-            response = await fetch(`${apiBase}/api/admin/destinations`, {
+            response = await fetch(adminQuestionsUrl(), {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(payload)
@@ -285,7 +308,8 @@ async function saveDestination() {
             return;
         }
 
-        showAdminSuccess(editingDestId ? 'Destination updated successfully' : 'Destination created successfully');
+        const itemName = currentAdminQuizType === 'countries' ? 'Destination' : 'Question';
+        showAdminSuccess(editingDestId ? `${itemName} updated successfully` : `${itemName} created successfully`);
         hideAdminForm();
         loadDestinations();
     } catch (error) {
@@ -296,7 +320,6 @@ async function saveDestination() {
 
 function deleteDestination(id, name) {
     const app = getAdminApp();
-    const apiBase = app.api.baseUrl;
     const dialog = document.getElementById('adminDeleteDialog');
     document.getElementById('adminDeleteName').textContent = name;
     dialog.style.display = 'flex';
@@ -311,7 +334,7 @@ function deleteDestination(id, name) {
             headers['X-CSRF-Token'] = app.state.csrfToken;
         }
         try {
-            const response = await fetch(`${apiBase}/api/admin/destinations/${id}`, {
+            const response = await fetch(adminQuestionsUrl(id), {
                 method: 'DELETE',
                 headers
             });
@@ -319,7 +342,9 @@ function deleteDestination(id, name) {
                 const err = await response.json();
                 showAdminError(err.error || 'Failed to delete destination');
             } else {
-                showAdminSuccess('Destination deleted successfully');
+                showAdminSuccess(currentAdminQuizType === 'countries'
+                    ? 'Destination deleted successfully'
+                    : 'Question deleted successfully');
                 loadDestinations();
             }
         } catch (error) {

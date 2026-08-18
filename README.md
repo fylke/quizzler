@@ -46,6 +46,7 @@ Gameplay and architecture:
 - Answer checking flow: [docs/check_answer.md](docs/check_answer.md)
 - Media naming and optimization: [docs/media_images.md](docs/media_images.md)
 - Database schema: [docs/database_schema.md](docs/database_schema.md)
+- Adding quiz types: [docs/quiz_types.md](docs/quiz_types.md)
 
 Admin and runbooks:
 

@@ -8,7 +8,7 @@ from functools import wraps
 
 from flask import jsonify, request, session
 
-from .models import GuestQuizResult, GuestSession, QuizResult, User, db
+from .models import GuestSession, User, db
 
 GUEST_TOKEN_COOKIE = "guest_token"
 GUEST_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 365 * 20
@@ -78,32 +78,41 @@ def get_current_guest_session() -> GuestSession | None:
 
 def migrate_guest_session_to_user(user: User, guest_session: GuestSession) -> None:
     """Move guest quiz progress into the authenticated user's account."""
-    guest_results = GuestQuizResult.query.filter_by(
-        guest_session_id=guest_session.id
-    ).all()
+    from .quiz_adapters import get_quiz_adapters
+
+    adapters = get_quiz_adapters()
+    guest_results_by_adapter = [
+        (adapter, adapter.guest_results(guest_session.id))
+        for adapter in adapters
+    ]
+    guest_results = [
+        result
+        for _, adapter_results in guest_results_by_adapter
+        for result in adapter_results
+    ]
     if not guest_results:
         db.session.delete(guest_session)
         db.session.commit()
         return
 
+    user_player = PlayerContext(kind="user", user=user)
     if any(result.ongoing for result in guest_results):
-        QuizResult.query.filter_by(user_id=user.id, ongoing=True).update({"ongoing": False})
+        for adapter in adapters:
+            for active_result in adapter.active_results(user_player):
+                active_result.ongoing = False
 
-    for guest_result in guest_results:
-        user_result = QuizResult.query.filter_by(
-            user_id=user.id,
-            destination_id=guest_result.destination_id,
-        ).first()
-        if user_result is None:
-            user_result = QuizResult(
-                user_id=user.id,
-                destination_id=guest_result.destination_id,
-            )
+    for adapter, adapter_results in guest_results_by_adapter:
+        for guest_result in adapter_results:
+            source_id = adapter.result_source_id(guest_result)
+            user_result = adapter.result_for_question(user_player, source_id)
+            if user_result is None:
+                user_result = adapter.new_result(user_player, source_id)
 
-        user_result.hint_difficulty = guest_result.hint_difficulty
-        user_result.remaining_guesses = guest_result.remaining_guesses
-        user_result.ongoing = guest_result.ongoing
-        db.session.add(user_result)
+            user_result.hint_difficulty = guest_result.hint_difficulty
+            user_result.remaining_guesses = guest_result.remaining_guesses
+            user_result.ongoing = guest_result.ongoing
+            db.session.add(user_result)
+            db.session.delete(guest_result)
 
     db.session.delete(guest_session)
     db.session.commit()

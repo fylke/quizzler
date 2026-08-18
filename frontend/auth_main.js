@@ -22,8 +22,11 @@ async function loadUser() {
         if (response.status === 401) {
             const restoredGuest = await restoreGuestSession();
             if (restoredGuest) {
-                const restoredActiveQuiz = await restoreActiveQuiz();
-                if (!restoredActiveQuiz) {
+                const sharedQuizStarted = await startSharedQuizIfPresent();
+                const restoredActiveQuiz = sharedQuizStarted
+                    ? false
+                    : await restoreActiveQuiz();
+                if (!sharedQuizStarted && !restoredActiveQuiz) {
                     if (suppressNextAutoStatusScreen) {
                         suppressNextAutoStatusScreen = false;
                     } else {
@@ -48,8 +51,9 @@ async function loadUser() {
         quizState.user = data;
         quizState.isGuest = false;
         csrfToken = data.csrfToken || null;
-        const restoredActiveQuiz = await restoreActiveQuiz();
-        if (!restoredActiveQuiz) {
+        const sharedQuizStarted = await startSharedQuizIfPresent();
+        const restoredActiveQuiz = sharedQuizStarted ? false : await restoreActiveQuiz();
+        if (!sharedQuizStarted && !restoredActiveQuiz) {
             showStatusScreen();
         }
     } catch (error) {
@@ -108,8 +112,9 @@ async function continueAsGuest(isAutoStart = false) {
         const data = await response.json();
         applyGuestSession(data);
 
-        const restoredActiveQuiz = await restoreActiveQuiz();
-        if (!restoredActiveQuiz) {
+        const sharedQuizStarted = await startSharedQuizIfPresent();
+        const restoredActiveQuiz = sharedQuizStarted ? false : await restoreActiveQuiz();
+        if (!sharedQuizStarted && !restoredActiveQuiz) {
             if (isAutoStart && suppressNextAutoStatusScreen) {
                 suppressNextAutoStatusScreen = false;
             } else {
@@ -401,7 +406,7 @@ async function loadQuizTypeButtons() {
             if (type.identifier === 'countries') {
                 btn.title = 'Guess the country based on a text- and two picture hints. You have 5 hint levels and 3 guesses.';
             }
-            btn.addEventListener('click', () => runRandomQuiz());
+            btn.addEventListener('click', () => runRandomQuiz(type.identifier));
 
             const infoBtn = document.createElement('button');
             infoBtn.className = 'btn btn-secondary quiz-type-info-btn';

@@ -9,6 +9,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend import app
 from backend.models import db, Destination, User
+from backend.quiz_catalog import get_or_create_quiz_identity
 from werkzeug.security import generate_password_hash
 
 # Small fixture used by tests so they don't rely on the removed JSON file
@@ -191,13 +192,21 @@ class MainAppTestCase(unittest.TestCase):
             )
             db.session.add(self.test_user)
             db.session.commit()
+            quiz_guids = {
+                item['id']: get_or_create_quiz_identity('countries', item['id']).guid
+                for item in SAMPLE_DATA
+            }
+            db.session.commit()
 
         login_response = self.client.post('/api/login', json={
             'email': 'test@example.com',
             'password': 'password123'
         })
         self.assertEqual(login_response.status_code, 200)
-        self.quiz_data = SAMPLE_DATA
+        self.quiz_data = [
+            {**item, 'guid': quiz_guids[item['id']]}
+            for item in SAMPLE_DATA
+        ]
 
     def tearDown(self):
         with app.app_context():
@@ -254,7 +263,7 @@ class MainAppTestCase(unittest.TestCase):
     def test_check_answer_returns_correct_for_valid_answer(self):
         question = self.quiz_data[0]
         # Start a quiz first so server-side state exists
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.post('/api/check-answer', json={
             'answer': question['correct_answers'][0]
@@ -287,7 +296,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / 'README.txt').write_bytes(b'not-an-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
 
                 response = self.client.post('/api/check-answer', json={
                     'answer': question['correct_answers'][0]
@@ -329,7 +338,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '002_small.webp').write_bytes(b'optimized-only')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
 
                 response = self.client.post('/api/check-answer', json={
                     'answer': question['correct_answers'][0]
@@ -364,7 +373,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '1a.jpg').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
 
                 response = self.client.post('/api/check-answer', json={
                     'answer': question['correct_answers'][0]
@@ -383,7 +392,7 @@ class MainAppTestCase(unittest.TestCase):
     def test_check_answer_returns_incorrect_for_invalid_answer(self):
         question = self.quiz_data[0]
         # Start a quiz first so server-side state exists
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.post('/api/check-answer', json={
             'answer': 'not a valid place'
@@ -398,7 +407,7 @@ class MainAppTestCase(unittest.TestCase):
 
     def test_get_hint_returns_updated_images_for_new_difficulty(self):
         question = self.quiz_data[0]
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.get('/api/hint')
         self.assertEqual(response.status_code, 200)
@@ -427,7 +436,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '5b_small.webp').write_bytes(b'test-image')
 
             try:
-                response = self.client.get(f'/api/quiz/{question["id"]}')
+                response = self.client.get(f'/api/quiz/{question["guid"]}')
                 self.assertEqual(response.status_code, 200)
 
                 data = response.get_json()
@@ -446,14 +455,14 @@ class MainAppTestCase(unittest.TestCase):
 
     def test_hint_media_returns_403_for_locked_hint_difficulty(self):
         question = self.quiz_data[0]
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
         self.assertEqual(response.status_code, 403)
 
     def test_hint_media_small_webp_returns_403_for_locked_hint_difficulty(self):
         question = self.quiz_data[0]
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.get(f"/media/countries/{question['id']}/4a_small.webp")
         self.assertEqual(response.status_code, 403)
@@ -470,7 +479,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '001.jpg').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
 
                 response = self.client.get(f"/media/countries/{question['id']}/001.jpg")
                 self.assertEqual(response.status_code, 403)
@@ -492,7 +501,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '001.jpg').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
                 response = self.client.post('/api/check-answer', json={
                     'answer': question['correct_answers'][0]
                 })
@@ -519,7 +528,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '4a.jpg').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
                 self.client.get('/api/hint')
 
                 response = self.client.get(f"/media/countries/{question['id']}/4a.jpg")
@@ -543,7 +552,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '4a_small.webp').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
                 self.client.get('/api/hint')
 
                 response = self.client.get(f"/media/countries/{question['id']}/4a_small.webp")
@@ -567,7 +576,7 @@ class MainAppTestCase(unittest.TestCase):
             (destination_media_dir / '4a.jpg').write_bytes(b'test-image')
 
             try:
-                self.client.get(f'/api/quiz/{question["id"]}')
+                self.client.get(f'/api/quiz/{question["guid"]}')
                 self.client.get('/api/hint')
 
                 with patch('backend._active_quiz_result_for_player', side_effect=RuntimeError('should not run')):
@@ -589,7 +598,7 @@ class MainAppTestCase(unittest.TestCase):
 
     def test_get_active_quiz_returns_current_hint_state(self):
         question = self.quiz_data[0]
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         # Move to the next hint so restored state is not just the initial default.
         self.client.get('/api/hint')
@@ -612,7 +621,7 @@ class MainAppTestCase(unittest.TestCase):
 
     def test_check_answer_wrong_guess_keeps_current_hint_images(self):
         question = self.quiz_data[0]
-        self.client.get(f'/api/quiz/{question["id"]}')
+        self.client.get(f'/api/quiz/{question["guid"]}')
 
         response = self.client.post('/api/check-answer', json={
             'answer': 'not a valid place'

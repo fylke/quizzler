@@ -6,6 +6,22 @@ from datetime import UTC, datetime
 
 db = SQLAlchemy()
 
+
+class QuizIdentity(db.Model):
+    __tablename__ = 'quiz_identity'
+    __table_args__ = (
+        db.UniqueConstraint(
+            'quiz_type',
+            'source_id',
+            name='uq_quiz_identity_source',
+        ),
+    )
+
+    guid = db.Column(db.String(36), primary_key=True)
+    quiz_type = db.Column(db.String(64), nullable=False, index=True)
+    source_id = db.Column(db.Integer, nullable=False)
+
+
 class Destination(db.Model):
     __tablename__ = 'countries'
 
