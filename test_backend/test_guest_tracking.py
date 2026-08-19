@@ -4,7 +4,7 @@ import unittest
 
 from backend import app
 from backend.models import Destination, GuestSession, QuizResult, User, db
-from backend.quiz_catalog import get_or_create_quiz_identity
+from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from werkzeug.security import generate_password_hash
 
 
@@ -32,7 +32,7 @@ class GuestTrackingTestCase(unittest.TestCase):
             db.session.commit()
             identity = get_or_create_quiz_identity("countries", destination.id)
             db.session.commit()
-            self.quiz_guid = identity.guid
+            self.quiz_guid = public_quiz_id(identity.quiz_type, identity.source_id)
 
     def tearDown(self):
         with app.app_context():

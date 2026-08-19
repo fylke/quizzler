@@ -9,7 +9,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend import app
 from backend.models import db, Destination, User
-from backend.quiz_catalog import get_or_create_quiz_identity
+from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from werkzeug.security import generate_password_hash
 
 # Small fixture used by tests so they don't rely on the removed JSON file
@@ -191,10 +191,10 @@ class MainAppTestCase(unittest.TestCase):
             )
             db.session.add(self.test_user)
             db.session.commit()
-            quiz_guids = {
-                item['id']: get_or_create_quiz_identity('countries', item['id']).guid
-                for item in SAMPLE_DATA
-            }
+            quiz_guids = {}
+            for item in SAMPLE_DATA:
+                get_or_create_quiz_identity('countries', item['id'])
+                quiz_guids[item['id']] = public_quiz_id('countries', item['id'])
             db.session.commit()
 
         login_response = self.client.post('/api/login', json={
