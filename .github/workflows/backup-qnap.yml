@@ -123,7 +123,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            BASE_DIR="/share/Container/quizzler"
+            BASE_DIR="/share/CACHEDEV2_DATA/Container/quizzler"
             DB_FILE="$BASE_DIR/database/quiz_data.db"
             MEDIA_DIR="$BASE_DIR/media"
             BACKUP_DIR="$BASE_DIR/backups"
@@ -334,7 +334,7 @@ jobs:
 
           ssh -i "$KEY_FILE" -p "$QNAP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             "$QNAP_USER@$QNAP_HOST" \
-            "cat /share/Container/quizzler/backups/last_backup_report.json" \
+            "cat /share/CACHEDEV2_DATA/Container/quizzler/backups/last_backup_report.json" \
             > .tmp-reports/backup-report.json
 
       - name: Upload backup report artifact
@@ -361,7 +361,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            BASE_DIR="/share/Container/quizzler"
+            BASE_DIR="/share/CACHEDEV2_DATA/Container/quizzler"
             BACKUP_DIR="$BASE_DIR/backups"
             DB_DIR="$BASE_DIR/database"
             DB_FILE="$DB_DIR/quiz_data.db"
@@ -550,7 +550,7 @@ jobs:
 
           ssh -i "$KEY_FILE" -p "$QNAP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             "$QNAP_USER@$QNAP_HOST" \
-            "cat /share/Container/quizzler/backups/last_restore_report.json" \
+            "cat /share/CACHEDEV2_DATA/Container/quizzler/backups/last_restore_report.json" \
             > .tmp-reports/restore-report.json
 
       - name: Upload restore report artifact
