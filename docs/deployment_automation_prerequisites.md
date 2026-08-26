@@ -77,3 +77,7 @@ For tag deploys, the workflow performs these checks automatically:
 
 Operational recommendation:
 - Keep using immutable image references (digest) for troubleshooting and rollback confidence.
+
+## Nightly Vulnerability Scan
+
+The `Nightly Container Vulnerability Scan` workflow builds the current `main` image every day at 03:30 UTC and scans it for unfixed `HIGH` and `CRITICAL` vulnerabilities. It can also be started manually from the GitHub Actions page. The deployment workflow keeps its pre-deploy vulnerability gate; the nightly scan detects newly disclosed vulnerabilities after deployment.
