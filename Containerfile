@@ -17,8 +17,9 @@ COPY pyproject.toml uv.lock ./
 # Install production dependencies
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Remove build-time packaging tools not needed at runtime.
-RUN python -m pip uninstall -y setuptools wheel jaraco.context || true
+# Replace vulnerable packages reported in the Python base image metadata.
+RUN python -m pip install --no-cache-dir "setuptools>=78.1.1" "msgpack>=1.2.1" \
+	&& python -m pip uninstall -y wheel jaraco.context || true
 
 # Create runtime directories used by bind mounts/temp files
 RUN mkdir -p /app/database /tmp
