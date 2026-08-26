@@ -122,7 +122,7 @@ jobs:
         run: uv sync --all-groups
 
       - name: Install just
-        uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532
+        uses: taiki-e/install-action@6cd13508893c0e7eab5f273c2575d3859bd7229a
         with:
           tool: just
 
