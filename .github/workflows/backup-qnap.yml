@@ -114,12 +114,13 @@ jobs:
     steps:
       - name: Run weekly backup on QNAP
         id: qnap_backup
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
         with:
           host: ${{ secrets.QNAP_HOST }}
           port: ${{ secrets.QNAP_SSH_PORT }}
           username: ${{ secrets.QNAP_USER }}
           key: ${{ secrets.QNAP_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -euo pipefail
 
@@ -352,12 +353,13 @@ jobs:
     steps:
       - name: Restore backup on QNAP
         id: qnap_restore
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
         with:
           host: ${{ secrets.QNAP_HOST }}
           port: ${{ secrets.QNAP_SSH_PORT }}
           username: ${{ secrets.QNAP_USER }}
           key: ${{ secrets.QNAP_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -euo pipefail
 
@@ -430,8 +432,8 @@ jobs:
                 return 0
               fi
               for candidate in \
-                /share/CACHEDEV2_DATA/.qpkg/container-station/bin/docker \
-                /share/CACHEDEV2_DATA/.qpkg/ContainerStation/bin/docker; do
+                /share/CACHEDEV1_DATA/.qpkg/container-station/bin/docker \
+                /share/CACHEDEV1_DATA/.qpkg/ContainerStation/bin/docker; do
                 if [ -x "$candidate" ]; then
                   echo "$candidate"
                   return 0
