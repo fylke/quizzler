@@ -5,6 +5,10 @@
   },
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
+  "userEnvProbe": "none",
+  "containerEnv": {
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venvs/quizzler"
+  },
   "postCreateCommand": "uv sync --all-groups --frozen && uv run --group test playwright install --with-deps chromium",
   "forwardPorts": [5000],
   "portsAttributes": {
@@ -23,7 +27,7 @@
         "ms-azuretools.vscode-containers"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.defaultInterpreterPath": "/home/vscode/.venvs/quizzler/bin/python",
         "python.testing.pytestEnabled": true,
         "python.testing.pytestArgs": [
           "test_backend"
