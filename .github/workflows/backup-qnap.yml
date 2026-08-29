@@ -26,6 +26,10 @@ concurrency:
   group: qnap-backup
   cancel-in-progress: false
 
+env:
+  # Set the repository variable to a directory on the QNAP volume with sufficient free space.
+  QNAP_BACKUP_DIR: ${{ vars.QNAP_BACKUP_DIR }}
+
 jobs:
   lint_workflow_scripts:
     name: Lint embedded workflow scripts
@@ -121,13 +125,18 @@ jobs:
           username: ${{ secrets.QNAP_USER }}
           key: ${{ secrets.QNAP_SSH_KEY }}
           command_timeout: 30m
+          envs: QNAP_BACKUP_DIR
           script: |
             set -euo pipefail
 
             BASE_DIR="/share/CACHEDEV2_DATA/Container/quizzler"
             DB_FILE="$BASE_DIR/database/quiz_data.db"
             MEDIA_DIR="$BASE_DIR/media"
-            BACKUP_DIR="$BASE_DIR/backups"
+            BACKUP_DIR="${QNAP_BACKUP_DIR:-$BASE_DIR/backups}"
+            if [[ "$BACKUP_DIR" != /* ]]; then
+              echo "QNAP_BACKUP_DIR must be an absolute QNAP path: $BACKUP_DIR" >&2
+              exit 1
+            fi
             STATE_FILE="$BACKUP_DIR/.last_backup_state"
             REPORT_FILE="$BACKUP_DIR/last_backup_report.json"
 
@@ -333,9 +342,11 @@ jobs:
           printf '%s\n' "$QNAP_KEY" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
 
+          BACKUP_DIR="${QNAP_BACKUP_DIR:-/share/CACHEDEV2_DATA/Container/quizzler/backups}"
+
           ssh -i "$KEY_FILE" -p "$QNAP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             "$QNAP_USER@$QNAP_HOST" \
-            "cat /share/CACHEDEV2_DATA/Container/quizzler/backups/last_backup_report.json" \
+            "cat \"$BACKUP_DIR/last_backup_report.json\"" \
             > .tmp-reports/backup-report.json
 
       - name: Upload backup report artifact
@@ -360,11 +371,16 @@ jobs:
           username: ${{ secrets.QNAP_USER }}
           key: ${{ secrets.QNAP_SSH_KEY }}
           command_timeout: 30m
+          envs: QNAP_BACKUP_DIR
           script: |
             set -euo pipefail
 
             BASE_DIR="/share/CACHEDEV2_DATA/Container/quizzler"
-            BACKUP_DIR="$BASE_DIR/backups"
+            BACKUP_DIR="${QNAP_BACKUP_DIR:-$BASE_DIR/backups}"
+            if [[ "$BACKUP_DIR" != /* ]]; then
+              echo "QNAP_BACKUP_DIR must be an absolute QNAP path: $BACKUP_DIR" >&2
+              exit 1
+            fi
             DB_DIR="$BASE_DIR/database"
             DB_FILE="$DB_DIR/quiz_data.db"
             MEDIA_DIR="$BASE_DIR/media"
@@ -550,9 +566,11 @@ jobs:
           printf '%s\n' "$QNAP_KEY" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
 
+          BACKUP_DIR="${QNAP_BACKUP_DIR:-/share/CACHEDEV2_DATA/Container/quizzler/backups}"
+
           ssh -i "$KEY_FILE" -p "$QNAP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
             "$QNAP_USER@$QNAP_HOST" \
-            "cat /share/CACHEDEV2_DATA/Container/quizzler/backups/last_restore_report.json" \
+            "cat \"$BACKUP_DIR/last_restore_report.json\"" \
             > .tmp-reports/restore-report.json
 
       - name: Upload restore report artifact
