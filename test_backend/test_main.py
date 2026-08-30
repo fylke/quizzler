@@ -417,8 +417,8 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(
             data['images'],
             [
-                f"/media/countries/{question['id']}/4a.jpg",
-                f"/media/countries/{question['id']}/4b.jpg",
+                f"/media/countries/{question['id']}/4a_small.webp",
+                f"/media/countries/{question['id']}/4b_small.webp",
             ],
         )
 
@@ -613,8 +613,8 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(
             data['images'],
             [
-                f"/media/countries/{question['id']}/4a.jpg",
-                f"/media/countries/{question['id']}/4b.jpg",
+                f"/media/countries/{question['id']}/4a_small.webp",
+                f"/media/countries/{question['id']}/4b_small.webp",
             ],
         )
 
@@ -634,8 +634,8 @@ class MainAppTestCase(unittest.TestCase):
         self.assertEqual(
             data['images'],
             [
-                f"/media/countries/{question['id']}/5a.jpg",
-                f"/media/countries/{question['id']}/5b.jpg",
+                f"/media/countries/{question['id']}/5a_small.webp",
+                f"/media/countries/{question['id']}/5b_small.webp",
             ],
         )
 

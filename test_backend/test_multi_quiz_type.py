@@ -123,7 +123,7 @@ class MultiQuizTypeTestCase(unittest.TestCase):
         self.assertEqual(quiz["quizType"], "cities")
         self.assertEqual(quiz["id"], 1)
         self.assertTrue(quiz["guid"])
-        self.assertEqual(quiz["images"][0], "/media/cities/1/5a.jpg")
+        self.assertEqual(quiz["images"][0], "/media/cities/1/5a_small.webp")
 
         hint = self.client.get("/api/hint")
         self.assertEqual(hint.status_code, 200)
