@@ -31,7 +31,9 @@ describe('Image Enlargement', function () {
                     '<button id="imageModalPrevBtn" type="button" class="image-modal-nav image-modal-nav-prev" aria-label="Show previous hint image">&#8249;</button>' +
                     '<button id="imageModalNextBtn" type="button" class="image-modal-nav image-modal-nav-next" aria-label="Show next hint image">&#8250;</button>' +
                     '<button id="imageModalCloseBtn" type="button" class="image-modal-close" aria-label="Close enlarged image">×</button>' +
-                    '<img id="imageModalImage" src="" alt="" class="image-modal-image">' +
+                    '<div id="imageModalMedia" class="image-modal-media">' +
+                        '<img id="imageModalImage" src="" alt="" class="image-modal-image">' +
+                    '</div>' +
                 '</div>' +
             '</div>';
         document.body.appendChild(fixtureContainer);
@@ -164,5 +166,38 @@ describe('Image Enlargement', function () {
 
         expect(card.classList.contains('is-portrait')).toBeTrue();
         expect(card.classList.contains('is-landscape')).toBeFalse();
+    });
+
+    it('magnifies while the primary mouse button is dragged over the modal image', function () {
+        openImageModal('https://example.com/modal.jpg', 'Modal image');
+
+        var media = document.getElementById('imageModalMedia');
+        var image = document.getElementById('imageModalImage');
+        spyOn(media, 'getBoundingClientRect').and.returnValue({
+            left: 0,
+            top: 0,
+            width: 400,
+            height: 300
+        });
+
+        media.dispatchEvent(new PointerEvent('pointerdown', {
+            pointerId: 1,
+            pointerType: 'mouse',
+            button: 0,
+            clientX: 100,
+            clientY: 150
+        }));
+
+        expect(media.classList.contains('is-magnified')).toBeTrue();
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('2.25');
+        expect(image.style.getPropertyValue('--image-magnification-origin')).toBe('25% 50%');
+
+        media.dispatchEvent(new PointerEvent('pointerup', {
+            pointerId: 1,
+            pointerType: 'mouse'
+        }));
+
+        expect(media.classList.contains('is-magnified')).toBeFalse();
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('');
     });
 });

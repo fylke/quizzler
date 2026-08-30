@@ -55,6 +55,19 @@
         gap: 4px;
     }
 
+    .answer-section,
+    .answer-section .button-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .answer-section input,
+    .answer-section .button-group .btn,
+    .answer-section .button-group .next-hint-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+
     .result-images {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

@@ -471,6 +471,111 @@ document.addEventListener('DOMContentLoaded', function () {
 let _imageModalTrigger = null;
 let _imageModalGallery = null;
 
+function _resetImageMagnification() {
+    const mediaEl = document.getElementById('imageModalMedia');
+    const imageEl = document.getElementById('imageModalImage');
+
+    if (mediaEl) {
+        mediaEl.classList.remove('is-magnified');
+    }
+    if (imageEl) {
+        imageEl.style.removeProperty('--image-magnification');
+        imageEl.style.removeProperty('--image-magnification-origin');
+    }
+}
+
+function _setImageMagnification(imageEl, mediaEl, scale, clientX, clientY) {
+    const bounds = mediaEl.getBoundingClientRect();
+    const x = Math.min(Math.max(clientX - bounds.left, 0), bounds.width);
+    const y = Math.min(Math.max(clientY - bounds.top, 0), bounds.height);
+    const originX = bounds.width ? (x / bounds.width) * 100 : 50;
+    const originY = bounds.height ? (y / bounds.height) * 100 : 50;
+
+    imageEl.style.setProperty('--image-magnification', String(scale));
+    imageEl.style.setProperty('--image-magnification-origin', `${originX}% ${originY}%`);
+    mediaEl.classList.toggle('is-magnified', scale > 1);
+}
+
+function _setupImageMagnifier(modal, imageEl) {
+    const mediaEl = document.getElementById('imageModalMedia');
+    if (!modal || !mediaEl || !imageEl || mediaEl.dataset.magnifierBound === 'true') {
+        return;
+    }
+
+    const activePointers = new Map();
+    let pinchStartDistance = 0;
+    let pinchStartScale = 1;
+
+    const getTouchPointers = () => Array.from(activePointers.values())
+        .filter(pointer => pointer.pointerType === 'touch');
+
+    const updatePinch = () => {
+        const touches = getTouchPointers();
+        if (touches.length !== 2) {
+            return;
+        }
+
+        const [firstTouch, secondTouch] = touches;
+        const distance = Math.hypot(
+            secondTouch.clientX - firstTouch.clientX,
+            secondTouch.clientY - firstTouch.clientY
+        );
+        const midpointX = (firstTouch.clientX + secondTouch.clientX) / 2;
+        const midpointY = (firstTouch.clientY + secondTouch.clientY) / 2;
+        const scale = Math.min(Math.max(pinchStartScale * (distance / pinchStartDistance), 1), 4);
+        _setImageMagnification(imageEl, mediaEl, scale, midpointX, midpointY);
+    };
+
+    mediaEl.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) {
+            return;
+        }
+
+        activePointers.set(event.pointerId, event);
+        if (typeof mediaEl.setPointerCapture === 'function') {
+            mediaEl.setPointerCapture(event.pointerId);
+        }
+
+        if (event.pointerType === 'mouse') {
+            _setImageMagnification(imageEl, mediaEl, 2.25, event.clientX, event.clientY);
+            return;
+        }
+
+        const touches = getTouchPointers();
+        if (touches.length === 2) {
+            pinchStartDistance = Math.hypot(
+                touches[1].clientX - touches[0].clientX,
+                touches[1].clientY - touches[0].clientY
+            );
+            pinchStartScale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+        }
+    });
+
+    mediaEl.addEventListener('pointermove', event => {
+        if (!activePointers.has(event.pointerId)) {
+            return;
+        }
+
+        activePointers.set(event.pointerId, event);
+        if (event.pointerType === 'mouse') {
+            _setImageMagnification(imageEl, mediaEl, 2.25, event.clientX, event.clientY);
+        } else {
+            updatePinch();
+        }
+    });
+
+    const releasePointer = event => {
+        activePointers.delete(event.pointerId);
+        if (event.pointerType === 'mouse' || getTouchPointers().length < 2) {
+            _resetImageMagnification();
+        }
+    };
+
+    mediaEl.addEventListener('pointerup', releasePointer);
+    mediaEl.addEventListener('pointercancel', releasePointer);
+    mediaEl.dataset.magnifierBound = 'true';
+}
+
 function _applyImageModalOrientationClass(modal, imageEl) {
     const cardEl = modal ? modal.querySelector('.image-modal-card') : null;
     if (!cardEl || !imageEl) {
@@ -501,6 +606,8 @@ function _setImageModalContent(entry) {
         return;
     }
 
+    _resetImageMagnification();
+    _setupImageMagnifier(modal, imageEl);
     imageEl.src = _toLightboxImageUrl(entry.url);
     imageEl.alt = entry.alt;
     imageEl.onload = function () {
@@ -608,6 +715,7 @@ function closeImageModal() {
     if (imageEl) {
         imageEl.src = '';
     }
+    _resetImageMagnification();
     if (cardEl) {
         cardEl.classList.remove('is-portrait', 'is-landscape');
     }
