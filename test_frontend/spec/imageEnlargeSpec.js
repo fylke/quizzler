@@ -179,6 +179,7 @@ describe('Image Enlargement', function () {
             width: 400,
             height: 300
         });
+        spyOn(media, 'setPointerCapture');
 
         media.dispatchEvent(new PointerEvent('pointerdown', {
             pointerId: 1,
@@ -199,5 +200,42 @@ describe('Image Enlargement', function () {
 
         expect(media.classList.contains('is-magnified')).toBeFalse();
         expect(image.style.getPropertyValue('--image-magnification')).toBe('');
+    });
+
+    it('preserves pinch magnification after touch pointers are released', function () {
+        openImageModal('https://example.com/modal.jpg', 'Modal image');
+
+        var media = document.getElementById('imageModalMedia');
+        var image = document.getElementById('imageModalImage');
+        spyOn(media, 'getBoundingClientRect').and.returnValue({
+            left: 0,
+            top: 0,
+            width: 400,
+            height: 300
+        });
+        spyOn(media, 'setPointerCapture');
+
+        function dispatchTouchPointer(type, pointerId, clientX, clientY) {
+            var event = new Event(type);
+            Object.defineProperties(event, {
+                pointerId: { value: pointerId },
+                pointerType: { value: 'touch' },
+                clientX: { value: clientX },
+                clientY: { value: clientY }
+            });
+            media.dispatchEvent(event);
+        }
+
+        dispatchTouchPointer('pointerdown', 1, 100, 150);
+        dispatchTouchPointer('pointerdown', 2, 200, 150);
+        dispatchTouchPointer('pointermove', 2, 300, 150);
+
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('2');
+
+        dispatchTouchPointer('pointerup', 2, 300, 150);
+        dispatchTouchPointer('pointerup', 1, 100, 150);
+
+        expect(media.classList.contains('is-magnified')).toBeTrue();
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('2');
     });
 });

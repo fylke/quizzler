@@ -470,6 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 let _imageModalTrigger = null;
 let _imageModalGallery = null;
+const IMAGE_MAX_MAGNIFICATION = 6;
 
 function _resetImageMagnification() {
     const mediaEl = document.getElementById('imageModalMedia');
@@ -522,7 +523,10 @@ function _setupImageMagnifier(modal, imageEl) {
         );
         const midpointX = (firstTouch.clientX + secondTouch.clientX) / 2;
         const midpointY = (firstTouch.clientY + secondTouch.clientY) / 2;
-        const scale = Math.min(Math.max(pinchStartScale * (distance / pinchStartDistance), 1), 4);
+        const scale = Math.min(
+            Math.max(pinchStartScale * (distance / pinchStartDistance), 1),
+            IMAGE_MAX_MAGNIFICATION
+        );
         _setImageMagnification(imageEl, mediaEl, scale, midpointX, midpointY);
     };
 
@@ -566,7 +570,7 @@ function _setupImageMagnifier(modal, imageEl) {
 
     const releasePointer = event => {
         activePointers.delete(event.pointerId);
-        if (event.pointerType === 'mouse' || getTouchPointers().length < 2) {
+        if (event.pointerType === 'mouse') {
             _resetImageMagnification();
         }
     };
