@@ -223,8 +223,26 @@ jobs:
             BACKUP_DB_ARCHIVE="$BACKUP_DIR/db_${TIMESTAMP}.tar.gz"
             BACKUP_MEDIA_ARCHIVE="$BACKUP_DIR/media_${TIMESTAMP}.tar.gz"
             BACKUP_MANIFEST="$BACKUP_DIR/manifest_${TIMESTAMP}.txt"
+            TMP_ROOT="$BACKUP_DIR/.backup-tmp"
+            mkdir -p "$TMP_ROOT"
 
-            TMP_DIR=$(mktemp -d)
+            DB_SIZE_KB=$(du -sk "$DB_FILE" | awk '{print $1}')
+            if [ -d "$MEDIA_DIR" ]; then
+              MEDIA_SIZE_KB=$(du -sk "$MEDIA_DIR" | awk '{print $1}')
+            else
+              MEDIA_SIZE_KB=0
+            fi
+            REQUIRED_SPACE_KB=$((MEDIA_SIZE_KB * 2 + DB_SIZE_KB * 3 + 262144))
+            AVAILABLE_SPACE_KB=$(df -Pk "$BACKUP_DIR" | awk 'END {print $4}')
+
+            echo "Backup and verification filesystem capacity:"
+            df -h "$BACKUP_DIR" "$TMP_ROOT"
+            if [[ ! "$AVAILABLE_SPACE_KB" =~ ^[0-9]+$ ]] || [ "$AVAILABLE_SPACE_KB" -lt "$REQUIRED_SPACE_KB" ]; then
+              echo "Insufficient space for backup and verification: need at least ${REQUIRED_SPACE_KB} KB, have ${AVAILABLE_SPACE_KB:-unknown} KB" >&2
+              exit 1
+            fi
+
+            TMP_DIR=$(mktemp -d "$TMP_ROOT/backup-verify.XXXXXX")
             trap 'rm -rf "$TMP_DIR"' EXIT
 
             cp "$DB_FILE" "$TMP_DIR/quiz_data.db"
