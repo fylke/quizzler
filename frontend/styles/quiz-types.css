@@ -37,6 +37,14 @@
     border-radius: 8px;
 }
 
+.rules-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+    background: url('/static/assets/icon-rules.svg') no-repeat center;
+    background-size: contain;
+}
+
 .quiz-type-empty-message {
     color: #666;
     font-style: italic;

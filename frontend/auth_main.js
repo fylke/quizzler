@@ -395,7 +395,10 @@ async function loadQuizTypeButtons() {
             const infoBtn = document.createElement('button');
             infoBtn.className = 'btn btn-secondary quiz-type-info-btn';
             infoBtn.setAttribute('aria-label', `Rules for ${type.displayName}`);
-            infoBtn.textContent = 'ℹ️';
+            const rulesIcon = document.createElement('span');
+            rulesIcon.className = 'rules-icon';
+            rulesIcon.setAttribute('aria-hidden', 'true');
+            infoBtn.appendChild(rulesIcon);
             infoBtn.addEventListener('click', () => openRulesModal(type.identifier));
 
             row.appendChild(btn);

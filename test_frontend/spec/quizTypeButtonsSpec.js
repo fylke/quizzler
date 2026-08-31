@@ -258,6 +258,29 @@ describe('Quiz Type Buttons - Property Tests', function () {
                 done.fail(err);
             });
         });
+
+        it('renders a rules button with a rules-icon for each quiz type', function (done) {
+            var quizTypes = [
+                { identifier: 'cities', displayName: 'Cities' },
+                { identifier: 'countries', displayName: 'Countries' }
+            ];
+
+            mockFetchSuccess(quizTypes);
+
+            loadQuizTypeButtons().then(function () {
+                var infoButtons = document.querySelectorAll('.quiz-type-info-btn');
+                expect(infoButtons.length).toBe(2);
+
+                for (var i = 0; i < infoButtons.length; i++) {
+                    var icon = infoButtons[i].querySelector('.rules-icon');
+                    expect(icon).not.toBeNull();
+                    expect(icon.getAttribute('aria-hidden')).toBe('true');
+                }
+                done();
+            }).catch(function (err) {
+                done.fail(err);
+            });
+        });
     });
 
     describe('Empty quiz type list', function () {
