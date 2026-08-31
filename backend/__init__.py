@@ -323,32 +323,6 @@ def get_validation_rules():
     return jsonify(validation_rules_dict())
 
 
-@app.route("/api/status", methods=["GET"])
-@player_required
-def get_status():
-    """Return quiz stats for the current user."""
-    player = get_current_player()
-    results = [
-        result
-        for adapter in get_quiz_adapters()
-        for result in adapter.all_results(player)
-    ]
-
-    completed = [r for r in results if not r.ongoing]
-    total_points = sum(
-        r.hint_difficulty * r.remaining_guesses
-        for r in completed
-        if r.remaining_guesses > 0
-    )
-    return jsonify(
-        {
-            "quizzesCompleted": len(completed),
-            "totalPoints": total_points,
-            "quizzesOngoing": len([r for r in results if r.ongoing]),
-        }
-    )
-
-
 @app.route("/api/quiz-types", methods=["GET"])
 @player_required
 def list_quiz_types():
