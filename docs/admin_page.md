@@ -18,9 +18,9 @@ flowchart TD
     List -->|"Delete"| Dialog
     List -->|"Add New Destination"| Form
 
-    Form -->|"Save"| API_Write[POST/PUT /api/admin/destinations]
+    Form -->|"Save"| API_Write[POST/PUT /api/admin/quiz-types/countries/questions]
     Form -->|"Cancel"| List
-    Dialog -->|"Confirm"| API_Delete[DELETE /api/admin/destinations/:id]
+    Dialog -->|"Confirm"| API_Delete[DELETE /api/admin/quiz-types/countries/questions/:id]
     Dialog -->|"Cancel"| List
 
     API_Write -->|"Success"| List
@@ -38,11 +38,11 @@ flowchart LR
     end
 
     subgraph Endpoints["Admin API"]
-        GET_LIST["GET /api/admin/destinations"]
-        GET_ONE["GET /api/admin/destinations/:id"]
-        POST["POST /api/admin/destinations"]
-        PUT["PUT /api/admin/destinations/:id"]
-        DELETE["DELETE /api/admin/destinations/:id"]
+        GET_LIST["GET /api/admin/quiz-types/countries/questions"]
+        GET_ONE["GET /api/admin/quiz-types/countries/questions/:id"]
+        POST["POST /api/admin/quiz-types/countries/questions"]
+        PUT["PUT /api/admin/quiz-types/countries/questions/:id"]
+        DELETE["DELETE /api/admin/quiz-types/countries/questions/:id"]
     end
 
     GET_LIST -.->|"auth only"| A2
@@ -54,11 +54,11 @@ flowchart LR
 
 | Method | Endpoint | Auth | CSRF | Description |
 |--------|----------|------|------|-------------|
-| GET | `/api/admin/destinations` | admin | No | List all destinations (id + name) |
-| GET | `/api/admin/destinations/:id` | admin | No | Get full destination data |
-| POST | `/api/admin/destinations` | admin | Yes | Create a new destination |
-| PUT | `/api/admin/destinations/:id` | admin | Yes | Replace all fields of a destination |
-| DELETE | `/api/admin/destinations/:id` | admin | Yes | Delete destination + cascade results |
+| GET | `/api/admin/quiz-types/countries/questions` | admin | No | List all country questions (id + name) |
+| GET | `/api/admin/quiz-types/countries/questions/:id` | admin | No | Get full country question data |
+| POST | `/api/admin/quiz-types/countries/questions` | admin | Yes | Create a new country question |
+| PUT | `/api/admin/quiz-types/countries/questions/:id` | admin | Yes | Replace all fields of a country question |
+| DELETE | `/api/admin/quiz-types/countries/questions/:id` | admin | Yes | Delete country question + cascade results |
 
 ## Screen Layout
 

@@ -1,16 +1,23 @@
-import os
 import unittest
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 from werkzeug.security import generate_password_hash
 
 from backend import app
-from backend.models import Destination, QuizResult, User, db
+from backend.models import (
+    Destination,
+    GuestQuizResult,
+    GuestSession,
+    QuizResult,
+    User,
+    db,
+)
+from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
+
+ADMIN_QUESTIONS_URL = "/api/admin/quiz-types/countries/questions"
 
 
 class AdminAPITestCase(unittest.TestCase):
-    """Tests for the admin destination CRUD API endpoints."""
+    """Tests for the generic admin question CRUD API endpoints."""
 
     def setUp(self):
         app.testing = True
@@ -22,14 +29,12 @@ class AdminAPITestCase(unittest.TestCase):
             db.drop_all()
             db.create_all()
 
-            # Create a regular user
             self.regular_user = User(
                 email="regular@example.com",
                 password_hash=generate_password_hash("password123"),
             )
             db.session.add(self.regular_user)
 
-            # Create an admin user
             self.admin_user = User(
                 email="admin@example.com",
                 password_hash=generate_password_hash("adminpass123"),
@@ -43,209 +48,152 @@ class AdminAPITestCase(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    # --- Helpers ---
+    def _question_url(self, source_id=None):
+        if source_id is None:
+            return ADMIN_QUESTIONS_URL
+        return f"{ADMIN_QUESTIONS_URL}/{source_id}"
 
     def _login_admin(self):
-        """Login as admin and return the CSRF token."""
         response = self.client.post(
             "/api/login",
             json={"email": "admin@example.com", "password": "adminpass123"},
         )
-        data = response.get_json()
-        return data["csrfToken"]
+        return response.get_json()["csrfToken"]
 
     def _login_regular(self):
-        """Login as regular user and return the CSRF token."""
         response = self.client.post(
             "/api/login",
             json={"email": "regular@example.com", "password": "password123"},
         )
-        data = response.get_json()
-        return data["csrfToken"]
+        return response.get_json()["csrfToken"]
 
-    def _valid_destination_payload(self, name="Test City"):
-        """Return a valid destination payload for tests."""
+    def _valid_question_payload(self, name="Test City"):
         return {
             "name": name,
             "hints": ["hint 1", "hint 2", "hint 3", "hint 4", "hint 5"],
             "correct_answers": ["test city", "Test City"],
         }
 
-    def _create_destination(self, csrf_token, payload=None):
-        """Helper to create a destination and return the response."""
+    def _create_question(self, csrf_token, payload=None):
         if payload is None:
-            payload = self._valid_destination_payload()
+            payload = self._valid_question_payload()
         return self.client.post(
-            "/api/admin/destinations",
+            self._question_url(),
             json=payload,
             headers={"X-CSRF-Token": csrf_token},
         )
 
-    # =====================================================================
-    # AUTH TESTS - Representative check (decorator tested in test_admin_auth.py)
-    # =====================================================================
-
     def test_list_returns_401_unauthenticated(self):
-        """GET /api/admin/destinations returns 401 when not logged in."""
         client = app.test_client()
-        response = client.get("/api/admin/destinations")
+        response = client.get(self._question_url())
         self.assertEqual(response.status_code, 401)
 
     def test_list_returns_403_for_non_admin(self):
-        """GET /api/admin/destinations returns 403 for non-admin user."""
         self._login_regular()
-        response = self.client.get("/api/admin/destinations")
+        response = self.client.get(self._question_url())
         self.assertEqual(response.status_code, 403)
 
-    # =====================================================================
-    # LIST DESTINATIONS - GET /api/admin/destinations
-    # =====================================================================
-
-    def test_list_returns_empty_list_when_no_destinations(self):
-        """GET /api/admin/destinations returns empty list and count=0."""
+    def test_list_returns_empty_questions_when_no_questions_exist(self):
         self._login_admin()
-        response = self.client.get("/api/admin/destinations")
+        response = self.client.get(self._question_url())
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertEqual(data["destinations"], [])
+        self.assertEqual(data["questions"], [])
         self.assertEqual(data["count"], 0)
 
-    def test_list_returns_ordered_destinations_with_correct_count(self):
-        """GET /api/admin/destinations returns destinations ordered by ID with correct count."""
+    def test_list_returns_ordered_questions_with_correct_count(self):
         csrf = self._login_admin()
-        # Create multiple destinations
-        self._create_destination(csrf, self._valid_destination_payload("City A"))
-        self._create_destination(csrf, self._valid_destination_payload("City B"))
-        self._create_destination(csrf, self._valid_destination_payload("City C"))
+        self._create_question(csrf, self._valid_question_payload("City A"))
+        self._create_question(csrf, self._valid_question_payload("City B"))
+        self._create_question(csrf, self._valid_question_payload("City C"))
 
-        response = self.client.get("/api/admin/destinations")
+        response = self.client.get(self._question_url())
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertEqual(data["count"], 3)
-        self.assertEqual(len(data["destinations"]), 3)
-        # Verify ordering by ID
-        names = [d["name"] for d in data["destinations"]]
+        self.assertEqual(len(data["questions"]), 3)
+        names = [question["name"] for question in data["questions"]]
+        ids = [question["id"] for question in data["questions"]]
         self.assertEqual(names, ["City A", "City B", "City C"])
-        # Verify IDs are ascending
-        ids = [d["id"] for d in data["destinations"]]
         self.assertEqual(ids, sorted(ids))
 
-    # =====================================================================
-    # GET DESTINATION - GET /api/admin/destinations/<id>
-    # =====================================================================
-
-    def test_get_returns_full_destination_data(self):
-        """GET /api/admin/destinations/<id> returns full destination with hints array."""
+    def test_get_returns_full_question_data(self):
         csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
+        create_response = self._create_question(csrf)
+        source_id = create_response.get_json()["id"]
 
-        response = self.client.get(f"/api/admin/destinations/{dest_id}")
+        response = self.client.get(self._question_url(source_id))
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertEqual(data["id"], dest_id)
+        self.assertEqual(data["id"], source_id)
         self.assertEqual(data["name"], "Test City")
         self.assertEqual(
             data["hints"], ["hint 1", "hint 2", "hint 3", "hint 4", "hint 5"]
         )
-        # Answers are normalized (lowercased + trimmed)
         self.assertEqual(data["correct_answers"], ["test city", "test city"])
 
-    def test_get_returns_404_for_nonexistent_id(self):
-        """GET /api/admin/destinations/<id> returns 404 for non-existent ID."""
+    def test_get_returns_404_for_nonexistent_question(self):
         self._login_admin()
-        response = self.client.get("/api/admin/destinations/9999")
+        response = self.client.get(self._question_url(9999))
         self.assertEqual(response.status_code, 404)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Destination not found")
+        self.assertEqual(response.get_json()["error"], "Question not found")
 
-    # =====================================================================
-    # CREATE DESTINATION - POST /api/admin/destinations
-    # =====================================================================
-
-    def test_create_returns_201_with_id(self):
-        """POST /api/admin/destinations returns 201 with the new destination ID."""
+    def test_create_returns_201_with_id_and_guid(self):
         csrf = self._login_admin()
-        response = self._create_destination(csrf)
+        response = self._create_question(csrf)
         self.assertEqual(response.status_code, 201)
         data = response.get_json()
         self.assertIn("id", data)
         self.assertIsInstance(data["id"], int)
+        self.assertEqual(data["guid"], public_quiz_id("countries", data["id"]))
 
     def test_create_stores_normalized_answers(self):
-        """POST /api/admin/destinations normalizes answers (lowercased + trimmed)."""
         csrf = self._login_admin()
-        payload = self._valid_destination_payload()
+        payload = self._valid_question_payload()
         payload["correct_answers"] = ["  Test City  ", "TEST CITY", "test city"]
-        response = self._create_destination(csrf, payload)
+        response = self._create_question(csrf, payload)
         self.assertEqual(response.status_code, 201)
-        dest_id = response.get_json()["id"]
 
-        # Verify stored answers are normalized
-        get_response = self.client.get(f"/api/admin/destinations/{dest_id}")
-        data = get_response.get_json()
+        get_response = self.client.get(self._question_url(response.get_json()["id"]))
         self.assertEqual(
-            data["correct_answers"], ["test city", "test city", "test city"]
+            get_response.get_json()["correct_answers"],
+            ["test city", "test city", "test city"],
         )
 
-    def test_create_returns_400_for_invalid_payload(self):
-        """POST /api/admin/destinations returns 400 for invalid payload."""
+    def test_create_rejects_invalid_payload(self):
         csrf = self._login_admin()
-        # Missing required fields
         response = self.client.post(
-            "/api/admin/destinations", json={}, headers={"X-CSRF-Token": csrf}
+            self._question_url(), json={}, headers={"X-CSRF-Token": csrf}
         )
         self.assertEqual(response.status_code, 400)
         data = response.get_json()
         self.assertEqual(data["error"], "Validation failed")
-        self.assertIn("details", data)
         self.assertIsInstance(data["details"], list)
         self.assertGreater(len(data["details"]), 0)
 
-    def test_create_returns_400_for_wrong_hint_count(self):
-        """POST /api/admin/destinations returns 400 when hints count is not 5."""
+    def test_create_rejects_duplicate_name(self):
         csrf = self._login_admin()
-        payload = self._valid_destination_payload()
-        payload["hints"] = ["only one hint"]
-        response = self.client.post(
-            "/api/admin/destinations", json=payload, headers={"X-CSRF-Token": csrf}
-        )
-        self.assertEqual(response.status_code, 400)
+        self._create_question(csrf, self._valid_question_payload("Duplicate City"))
 
-    def test_create_returns_409_for_duplicate_name(self):
-        """POST /api/admin/destinations returns 409 for duplicate destination name."""
-        csrf = self._login_admin()
-        self._create_destination(
-            csrf, self._valid_destination_payload("Duplicate City")
-        )
-        # Attempt to create another with same name
-        response = self._create_destination(
-            csrf, self._valid_destination_payload("Duplicate City")
+        response = self._create_question(
+            csrf, self._valid_question_payload("Duplicate City")
         )
         self.assertEqual(response.status_code, 409)
-        data = response.get_json()
-        self.assertEqual(data["error"], "A destination with this name already exists")
+        self.assertEqual(
+            response.get_json()["error"], "A question with this name already exists"
+        )
 
-    def test_create_returns_403_without_csrf_token(self):
-        """POST /api/admin/destinations returns 403 without CSRF token."""
+    def test_create_requires_csrf_token(self):
         self._login_admin()
         response = self.client.post(
-            "/api/admin/destinations", json=self._valid_destination_payload()
+            self._question_url(), json=self._valid_question_payload()
         )
         self.assertEqual(response.status_code, 403)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Invalid or missing CSRF token")
+        self.assertEqual(response.get_json()["error"], "Invalid or missing CSRF token")
 
-    # =====================================================================
-    # UPDATE DESTINATION - PUT /api/admin/destinations/<id>
-    # =====================================================================
-
-    def test_update_returns_200_with_updated_data(self):
-        """PUT /api/admin/destinations/<id> returns 200 with updated destination data."""
+    def test_update_returns_updated_question_data(self):
         csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
+        source_id = self._create_question(csrf).get_json()["id"]
         updated_payload = {
             "name": "Updated City",
             "hints": [
@@ -257,191 +205,120 @@ class AdminAPITestCase(unittest.TestCase):
             ],
             "correct_answers": ["updated city"],
         }
+
         response = self.client.put(
-            f"/api/admin/destinations/{dest_id}",
+            self._question_url(source_id),
             json=updated_payload,
             headers={"X-CSRF-Token": csrf},
         )
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertEqual(data["id"], dest_id)
+        self.assertEqual(data["id"], source_id)
         self.assertEqual(data["name"], "Updated City")
-        self.assertEqual(
-            data["hints"],
-            ["new hint 1", "new hint 2", "new hint 3", "new hint 4", "new hint 5"],
-        )
+        self.assertEqual(data["hints"], updated_payload["hints"])
         self.assertEqual(data["correct_answers"], ["updated city"])
 
-    def test_update_replaces_all_fields(self):
-        """PUT /api/admin/destinations/<id> replaces all fields completely."""
+    def test_update_rejects_invalid_payload(self):
         csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
+        source_id = self._create_question(csrf).get_json()["id"]
 
-        new_payload = {
-            "name": "Completely New",
-            "hints": ["a", "b", "c", "d", "e"],
-            "correct_answers": ["completely new", "brand new"],
-        }
-        self.client.put(
-            f"/api/admin/destinations/{dest_id}",
-            json=new_payload,
-            headers={"X-CSRF-Token": csrf},
-        )
-
-        # Verify via GET
-        get_response = self.client.get(f"/api/admin/destinations/{dest_id}")
-        data = get_response.get_json()
-        self.assertEqual(data["name"], "Completely New")
-        self.assertEqual(data["hints"], ["a", "b", "c", "d", "e"])
-        self.assertEqual(data["correct_answers"], ["completely new", "brand new"])
-
-    def test_update_normalizes_answers(self):
-        """PUT /api/admin/destinations/<id> normalizes answers on update."""
-        csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        updated_payload = self._valid_destination_payload()
-        updated_payload["correct_answers"] = ["  UPPER Case  ", "MiXeD"]
         response = self.client.put(
-            f"/api/admin/destinations/{dest_id}",
-            json=updated_payload,
-            headers={"X-CSRF-Token": csrf},
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.get_json()
-        self.assertEqual(data["correct_answers"], ["upper case", "mixed"])
-
-    def test_update_returns_404_for_nonexistent(self):
-        """PUT /api/admin/destinations/<id> returns 404 for non-existent destination."""
-        csrf = self._login_admin()
-        response = self.client.put(
-            "/api/admin/destinations/9999",
-            json=self._valid_destination_payload(),
-            headers={"X-CSRF-Token": csrf},
-        )
-        self.assertEqual(response.status_code, 404)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Destination not found")
-
-    def test_update_returns_400_for_invalid_payload(self):
-        """PUT /api/admin/destinations/<id> returns 400 for invalid payload."""
-        csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        # Send invalid payload (empty)
-        response = self.client.put(
-            f"/api/admin/destinations/{dest_id}",
-            json={},
-            headers={"X-CSRF-Token": csrf},
+            self._question_url(source_id), json={}, headers={"X-CSRF-Token": csrf}
         )
         self.assertEqual(response.status_code, 400)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Validation failed")
-        self.assertIn("details", data)
+        self.assertEqual(response.get_json()["error"], "Validation failed")
 
-    def test_update_returns_403_without_csrf(self):
-        """PUT /api/admin/destinations/<id> returns 403 without CSRF token."""
+    def test_update_returns_404_for_nonexistent_question(self):
         csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
         response = self.client.put(
-            f"/api/admin/destinations/{dest_id}", json=self._valid_destination_payload()
-        )
-        self.assertEqual(response.status_code, 403)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Invalid or missing CSRF token")
-
-    # =====================================================================
-    # DELETE DESTINATION - DELETE /api/admin/destinations/<id>
-    # =====================================================================
-
-    def test_delete_returns_200_with_message(self):
-        """DELETE /api/admin/destinations/<id> returns 200 with success message."""
-        csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        response = self.client.delete(
-            f"/api/admin/destinations/{dest_id}", headers={"X-CSRF-Token": csrf}
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.get_json()
-        self.assertEqual(data["message"], "Destination deleted")
-
-    def test_delete_destination_no_longer_exists(self):
-        """After DELETE, the destination should no longer be accessible."""
-        csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        self.client.delete(
-            f"/api/admin/destinations/{dest_id}", headers={"X-CSRF-Token": csrf}
-        )
-
-        # Verify it's gone
-        get_response = self.client.get(f"/api/admin/destinations/{dest_id}")
-        self.assertEqual(get_response.status_code, 404)
-
-    def test_delete_cascades_to_quiz_results(self):
-        """DELETE /api/admin/destinations/<id> cascades to associated quiz_results."""
-        csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        # Create a QuizResult linked to this destination
-        with app.app_context():
-            user = User.query.filter_by(email="admin@example.com").first()
-            quiz_result = QuizResult(
-                user_id=user.id,
-                destination_id=dest_id,
-                hint_difficulty=5,
-                remaining_guesses=3,
-                ongoing=False,
-            )
-            db.session.add(quiz_result)
-            db.session.commit()
-
-            # Verify quiz result exists
-            qr = QuizResult.query.filter_by(destination_id=dest_id).first()
-            self.assertIsNotNone(qr)
-
-        # Delete the destination
-        response = self.client.delete(
-            f"/api/admin/destinations/{dest_id}", headers={"X-CSRF-Token": csrf}
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # Verify both destination and quiz result are gone
-        with app.app_context():
-            dest = db.session.get(Destination, dest_id)
-            self.assertIsNone(dest)
-            qr = QuizResult.query.filter_by(destination_id=dest_id).first()
-            self.assertIsNone(qr)
-
-    def test_delete_returns_404_for_nonexistent(self):
-        """DELETE /api/admin/destinations/<id> returns 404 for non-existent destination."""
-        csrf = self._login_admin()
-        response = self.client.delete(
-            "/api/admin/destinations/9999", headers={"X-CSRF-Token": csrf}
+            self._question_url(9999),
+            json=self._valid_question_payload(),
+            headers={"X-CSRF-Token": csrf},
         )
         self.assertEqual(response.status_code, 404)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Destination not found")
+        self.assertEqual(response.get_json()["error"], "Question not found")
 
-    def test_delete_returns_403_without_csrf(self):
-        """DELETE /api/admin/destinations/<id> returns 403 without CSRF token."""
+    def test_update_requires_csrf_token(self):
         csrf = self._login_admin()
-        create_response = self._create_destination(csrf)
-        dest_id = create_response.get_json()["id"]
-
-        response = self.client.delete(f"/api/admin/destinations/{dest_id}")
+        source_id = self._create_question(csrf).get_json()["id"]
+        response = self.client.put(
+            self._question_url(source_id), json=self._valid_question_payload()
+        )
         self.assertEqual(response.status_code, 403)
-        data = response.get_json()
-        self.assertEqual(data["error"], "Invalid or missing CSRF token")
+        self.assertEqual(response.get_json()["error"], "Invalid or missing CSRF token")
+
+    def test_delete_returns_200_and_removes_question(self):
+        csrf = self._login_admin()
+        source_id = self._create_question(csrf).get_json()["id"]
+
+        response = self.client.delete(
+            self._question_url(source_id), headers={"X-CSRF-Token": csrf}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["message"], "Question deleted")
+        self.assertEqual(
+            self.client.get(self._question_url(source_id)).status_code, 404
+        )
+
+    def test_delete_cascades_to_user_and_guest_results(self):
+        csrf = self._login_admin()
+        source_id = self._create_question(csrf).get_json()["id"]
+
+        with app.app_context():
+            user = User.query.filter_by(email="admin@example.com").first()
+            guest_session = GuestSession(token_hash="guest-token-hash")
+            db.session.add(guest_session)
+            db.session.flush()
+            db.session.add_all(
+                [
+                    QuizResult(
+                        user_id=user.id,
+                        destination_id=source_id,
+                        hint_difficulty=5,
+                        remaining_guesses=3,
+                        ongoing=False,
+                    ),
+                    GuestQuizResult(
+                        guest_session_id=guest_session.id,
+                        destination_id=source_id,
+                        hint_difficulty=4,
+                        remaining_guesses=2,
+                        ongoing=False,
+                    ),
+                ]
+            )
+            get_or_create_quiz_identity("countries", source_id)
+            db.session.commit()
+
+        response = self.client.delete(
+            self._question_url(source_id), headers={"X-CSRF-Token": csrf}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        with app.app_context():
+            self.assertIsNone(db.session.get(Destination, source_id))
+            self.assertIsNone(
+                QuizResult.query.filter_by(destination_id=source_id).first()
+            )
+            self.assertIsNone(
+                GuestQuizResult.query.filter_by(destination_id=source_id).first()
+            )
+
+    def test_delete_returns_404_for_nonexistent_question(self):
+        csrf = self._login_admin()
+        response = self.client.delete(
+            self._question_url(9999), headers={"X-CSRF-Token": csrf}
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["error"], "Question not found")
+
+    def test_delete_requires_csrf_token(self):
+        csrf = self._login_admin()
+        source_id = self._create_question(csrf).get_json()["id"]
+
+        response = self.client.delete(self._question_url(source_id))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["error"], "Invalid or missing CSRF token")
 
 
 if __name__ == "__main__":

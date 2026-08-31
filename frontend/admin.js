@@ -79,9 +79,7 @@ function showAdminSuccess(message) {
 
 function adminQuestionsUrl(sourceId) {
     const apiBase = getAdminApp().api.baseUrl;
-    const baseUrl = currentAdminQuizType === 'countries'
-        ? `${apiBase}/api/admin/destinations`
-        : `${apiBase}/api/admin/quiz-types/${encodeURIComponent(currentAdminQuizType)}/questions`;
+    const baseUrl = `${apiBase}/api/admin/quiz-types/${encodeURIComponent(currentAdminQuizType)}/questions`;
     return sourceId ? `${baseUrl}/${sourceId}` : baseUrl;
 }
 

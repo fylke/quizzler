@@ -586,7 +586,7 @@ class MainAppTestCase(unittest.TestCase):
                 self.client.get("/api/hint")
 
                 with patch(
-                    "backend._active_quiz_result_for_player",
+                    "backend.active_result_for_player",
                     side_effect=RuntimeError("should not run"),
                 ):
                     response = self.client.get(

@@ -3,21 +3,20 @@ import unittest
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-from flask import jsonify
 from werkzeug.security import generate_password_hash
 
-from backend import admin_required, app
+from backend import app
 from backend.models import User, db
 
 
 class AdminAuthTestCase(unittest.TestCase):
     """Tests for the admin authorization system (is_admin field, admin_required decorator, isAdmin in responses)."""
 
-    # The admin_required decorator is tested against the real
-    # GET /api/admin/destinations endpoint rather than a test-only route,
+    # The admin_required decorator is tested against a real admin endpoint
+    # rather than a test-only route,
     # which avoids Flask's "setup already finished" error when tests run
     # after other modules have already made requests.
-    ADMIN_ENDPOINT = "/api/admin/destinations"
+    ADMIN_ENDPOINT = "/api/admin/quiz-types/countries/questions"
 
     def setUp(self):
         app.testing = True

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import sqlalchemy.exc
-from flask import Flask, jsonify, render_template, request, send_from_directory, session
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -21,6 +21,7 @@ from .auth import (  # noqa: F401 — re-exported for backward compatibility
 from .models import Destination, GuestQuizResult, QuizResult, User, db
 from .quiz_adapters import get_quiz_adapter_by_media_namespace, get_quiz_adapters
 from .quiz_catalog import synchronize_quiz_identities
+from .quiz_session import active_result_for_player, get_media_access_state
 from .quiz_types import IDENTIFIER_PATTERN, get_registry, validate_registry
 from .routes_admin import admin_bp
 from .routes_auth import auth_bp
@@ -132,40 +133,6 @@ _ZERO_PREFIX_MEDIA_PATH_RE = re.compile(
     r"^(?P<namespace>[a-z0-9_-]+)/(?P<source_id>\d+)/(?P<filename>0[^/]+)$",
     re.IGNORECASE,
 )
-MEDIA_ACCESS_SESSION_KEY = "media_access_state"
-
-
-def _active_quiz_result_for_player(player):
-    for adapter in get_quiz_adapters():
-        result = adapter.active_result(player)
-        if result is not None:
-            return adapter, result
-    return None, None
-
-
-def _media_access_state_from_session() -> dict | None:
-    state = session.get(MEDIA_ACCESS_SESSION_KEY)
-    if not isinstance(state, dict):
-        return None
-
-    required_keys = {"quiz_type", "source_id", "hint_difficulty"}
-    if not required_keys.issubset(state.keys()):
-        return None
-
-    try:
-        source_id = int(state["source_id"])
-        hint_difficulty = int(state["hint_difficulty"])
-    except (TypeError, ValueError):
-        return None
-
-    if hint_difficulty < 1:
-        return None
-
-    return {
-        "quiz_type": str(state["quiz_type"]),
-        "source_id": source_id,
-        "hint_difficulty": hint_difficulty,
-    }
 
 
 def _can_access_media_path(filename: str) -> bool:
@@ -184,7 +151,7 @@ def _can_access_media_path(filename: str) -> bool:
         requested_adapter = get_quiz_adapter_by_media_namespace(
             zero_prefixed_match.group("namespace")
         )
-        active_adapter, quiz_result = _active_quiz_result_for_player(player)
+        active_adapter, quiz_result = active_result_for_player(player)
         if quiz_result is None:
             return True
 
@@ -206,7 +173,7 @@ def _can_access_media_path(filename: str) -> bool:
     if requested_adapter is None:
         return False
 
-    session_state = _media_access_state_from_session()
+    session_state = get_media_access_state()
     if session_state is not None:
         if session_state["quiz_type"] != requested_adapter.identifier:
             return False
@@ -215,7 +182,7 @@ def _can_access_media_path(filename: str) -> bool:
         # Unlocked hints are the current live hint and all previously revealed harder hints.
         return requested_hint_difficulty >= session_state["hint_difficulty"]
 
-    active_adapter, quiz_result = _active_quiz_result_for_player(player)
+    active_adapter, quiz_result = active_result_for_player(player)
     if quiz_result is None:
         return False
 

@@ -85,6 +85,12 @@ class PropertyTestUpdateRoundTrip(unittest.TestCase):
         )
         return response.get_json()["csrfToken"]
 
+    def _question_url(self, source_id=None):
+        base_url = "/api/admin/quiz-types/countries/questions"
+        if source_id is None:
+            return base_url
+        return f"{base_url}/{source_id}"
+
     @settings(max_examples=8, deadline=5000)
     @given(
         create_data=valid_destination_st,
@@ -99,7 +105,7 @@ class PropertyTestUpdateRoundTrip(unittest.TestCase):
 
         # Create a destination
         create_resp = self.client.post(
-            "/api/admin/destinations",
+            self._question_url(),
             json=create_data,
             headers={"X-CSRF-Token": csrf},
         )
@@ -111,14 +117,14 @@ class PropertyTestUpdateRoundTrip(unittest.TestCase):
 
         # Update the destination with new data
         update_resp = self.client.put(
-            f"/api/admin/destinations/{dest_id}",
+            self._question_url(dest_id),
             json=update_data,
             headers={"X-CSRF-Token": csrf},
         )
         self.assertEqual(update_resp.status_code, 200, update_resp.get_json())
 
         # GET the destination and verify it matches the update
-        get_resp = self.client.get(f"/api/admin/destinations/{dest_id}")
+        get_resp = self.client.get(self._question_url(dest_id))
         self.assertEqual(get_resp.status_code, 200)
         result = get_resp.get_json()
 
@@ -131,7 +137,7 @@ class PropertyTestUpdateRoundTrip(unittest.TestCase):
 
         # Clean up: delete the destination to avoid name conflicts
         self.client.delete(
-            f"/api/admin/destinations/{dest_id}",
+            self._question_url(dest_id),
             headers={"X-CSRF-Token": csrf},
         )
 

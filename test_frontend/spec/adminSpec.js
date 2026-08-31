@@ -34,6 +34,12 @@ describe('Admin Panel', function () {
             expect(adminQuestionsUrl()).toMatch(/\/api\/admin\/quiz-types\/cities\/questions$/);
             expect(adminQuestionsUrl(7)).toMatch(/\/api\/admin\/quiz-types\/cities\/questions\/7$/);
         });
+
+        it('uses generic admin question routes for countries', function () {
+            currentAdminQuizType = 'countries';
+            expect(adminQuestionsUrl()).toMatch(/\/api\/admin\/quiz-types\/countries\/questions$/);
+            expect(adminQuestionsUrl(7)).toMatch(/\/api\/admin\/quiz-types\/countries\/questions\/7$/);
+        });
     });
 
     // ========== escapeAttr ==========
@@ -300,16 +306,16 @@ describe('Admin Panel', function () {
             errorEl.remove();
         });
 
-        it('fetches from /api/admin/destinations', async function () {
+        it('fetches from the generic countries questions endpoint', async function () {
             spyOn(window, 'fetch').and.returnValue(Promise.resolve({
                 ok: true,
                 json: function () {
-                    return Promise.resolve({ destinations: [], count: 0 });
+                    return Promise.resolve({ questions: [], count: 0 });
                 }
             }));
 
             await loadDestinations();
-            expect(window.fetch).toHaveBeenCalledWith(jasmine.stringMatching(/\/api\/admin\/destinations$/));
+            expect(window.fetch).toHaveBeenCalledWith(jasmine.stringMatching(/\/api\/admin\/quiz-types\/countries\/questions$/));
         });
 
         it('renders destination items on success', async function () {

@@ -10,6 +10,11 @@ from .email_service import EmailServiceError, send_hint_complaint_email
 from .models import db
 from .quiz_adapters import get_quiz_adapter, get_quiz_adapters
 from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id, resolve_quiz_id
+from .quiz_session import (
+    active_result_for_player,
+    clear_media_access_state,
+    set_media_access_state,
+)
 from .quiz_types import get_quiz_type
 from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 
@@ -18,15 +23,6 @@ quiz_bp = Blueprint("quiz", __name__)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCORE_LOCK_SESSION_KEY = "quiz_score_lock"
-MEDIA_ACCESS_SESSION_KEY = "media_access_state"
-
-
-def _active_result_for_player(player):
-    for adapter in get_quiz_adapters():
-        result = adapter.active_result(player)
-        if result is not None:
-            return adapter, result
-    return None, None
 
 
 def _get_score_lock() -> dict | None:
@@ -64,37 +60,6 @@ def _clear_score_lock():
     session.pop(SCORE_LOCK_SESSION_KEY, None)
 
 
-def _get_media_access_state() -> dict | None:
-    state = session.get(MEDIA_ACCESS_SESSION_KEY)
-    if not isinstance(state, dict):
-        return None
-
-    required_keys = {"quiz_type", "source_id", "hint_difficulty"}
-    if not required_keys.issubset(state.keys()):
-        return None
-
-    try:
-        return {
-            "quiz_type": str(state["quiz_type"]),
-            "source_id": int(state["source_id"]),
-            "hint_difficulty": int(state["hint_difficulty"]),
-        }
-    except (TypeError, ValueError):
-        return None
-
-
-def _set_media_access_state(quiz_type: str, source_id: int, hint_difficulty: int):
-    session[MEDIA_ACCESS_SESSION_KEY] = {
-        "quiz_type": quiz_type,
-        "source_id": int(source_id),
-        "hint_difficulty": int(hint_difficulty),
-    }
-
-
-def _clear_media_access_state():
-    session.pop(MEDIA_ACCESS_SESSION_KEY, None)
-
-
 def _restore_locked_score_if_needed(adapter, quiz_result) -> int | None:
     """Restore preserved score fields for a rerun result when lock matches."""
     lock = _get_score_lock()
@@ -123,7 +88,7 @@ def _end_active_quizzes_for_player(player):
         db.session.commit()
 
     _clear_score_lock()
-    _clear_media_access_state()
+    clear_media_access_state()
 
 
 def _start_quiz_for_player(player, adapter, question):
@@ -154,7 +119,7 @@ def _start_quiz_for_player(player, adapter, question):
     quiz_result.ongoing = True
     db.session.add(quiz_result)
     db.session.commit()
-    _set_media_access_state(adapter.identifier, source_id, hint_difficulty)
+    set_media_access_state(adapter.identifier, source_id, hint_difficulty)
 
     return {
         "id": source_id,
@@ -207,7 +172,7 @@ def get_specific_quiz(quiz_guid):
 def get_active_quiz():
     """Return the active quiz state for the logged-in user."""
     player = get_current_player()
-    adapter, quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -220,7 +185,7 @@ def get_active_quiz():
     hint_text = adapter.hint_text(question, difficulty)
     identity = get_or_create_quiz_identity(adapter.identifier, source_id)
     db.session.commit()
-    _set_media_access_state(adapter.identifier, source_id, difficulty)
+    set_media_access_state(adapter.identifier, source_id, difficulty)
     return jsonify(
         {
             "id": source_id,
@@ -239,7 +204,7 @@ def get_active_quiz():
 def get_hint():
     """Fetch the next hint for the user's active quiz, decrementing difficulty."""
     player = get_current_player()
-    adapter, quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -255,7 +220,7 @@ def get_hint():
 
     quiz_result.hint_difficulty = new_difficulty
     db.session.commit()
-    _set_media_access_state(adapter.identifier, source_id, new_difficulty)
+    set_media_access_state(adapter.identifier, source_id, new_difficulty)
 
     hint_text = adapter.hint_text(question, new_difficulty)
     return jsonify(
@@ -276,7 +241,7 @@ def check_answer():
     user_answer = (data.get("answer") or "").lower().strip()
 
     player = get_current_player()
-    adapter, quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
@@ -295,7 +260,7 @@ def check_answer():
         db.session.commit()
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
-        _set_media_access_state(adapter.identifier, source_id, 1)
+        set_media_access_state(adapter.identifier, source_id, 1)
         response_payload = {
             "correct": True,
             "answer": adapter.answer_name(question),
@@ -316,7 +281,7 @@ def check_answer():
         db.session.commit()
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
-        _set_media_access_state(adapter.identifier, source_id, 1)
+        set_media_access_state(adapter.identifier, source_id, 1)
         response_payload = {
             "correct": False,
             "answer": adapter.answer_name(question),
@@ -332,7 +297,7 @@ def check_answer():
     # Users progress to the next hint only via the skip-hint flow.
 
     db.session.commit()
-    _set_media_access_state(
+    set_media_access_state(
         adapter.identifier,
         source_id,
         quiz_result.hint_difficulty,
@@ -375,7 +340,7 @@ def submit_hint_complaint():
         return jsonify({"error": "Complaint message is too long."}), 400
 
     player = get_current_player()
-    adapter, quiz_result = _active_result_for_player(player)
+    adapter, quiz_result = active_result_for_player(player)
     if quiz_result is None:
         return jsonify({"error": "No active quiz"}), 404
 
