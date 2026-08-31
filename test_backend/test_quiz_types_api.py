@@ -3,18 +3,14 @@
 Validates Requirements: 1.1, 1.2, 1.4, 3.2, 3.3, 3.5, 5.1, 5.3, 5.4, 5.5
 """
 
-import os
 import unittest
 from unittest.mock import patch
-from uuid import UUID
 
 from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.models import Destination, QuizResult, User, db
 from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 class QuizTypesAPITestCase(unittest.TestCase):

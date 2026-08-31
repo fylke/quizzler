@@ -1,9 +1,6 @@
 """Property-based tests for admin quiz management using Hypothesis."""
 
-import os
 import unittest
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
@@ -11,7 +8,7 @@ from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.admin import normalize_answers, validate_destination_payload
-from backend.models import Destination, User, db
+from backend.models import User, db
 
 # --- Strategies for generating valid destination data ---
 

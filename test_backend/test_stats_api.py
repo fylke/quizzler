@@ -1,13 +1,10 @@
 """Unit tests and property-based tests for the /api/stats endpoint."""
 
-import os
 import unittest
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from werkzeug.security import generate_password_hash
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 from backend import app
 from backend.models import Destination, QuizResult, User, db

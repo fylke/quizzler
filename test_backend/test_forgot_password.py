@@ -1,10 +1,15 @@
+import os
+import smtplib
 import unittest
 from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from backend import app
+from backend.email_service import EmailServiceError, send_password_reset_email
 from backend.models import PasswordResetToken, User, db
 
 
@@ -166,19 +171,6 @@ class TestUserPasswordChangedAt(unittest.TestCase):
         loaded = User.query.filter_by(email="reset@example.com").first()
         self.assertIsNotNone(loaded.password_changed_at)
         self.assertEqual(loaded.password_changed_at, now)
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-import os
-import smtplib
-from unittest.mock import MagicMock, patch
-
-from werkzeug.security import check_password_hash, generate_password_hash
-
-from backend.email_service import EmailServiceError, send_password_reset_email
 
 
 class TestEmailService(unittest.TestCase):
@@ -715,3 +707,7 @@ class TestForgotPasswordAPIRoutes(unittest.TestCase):
         self.assertTrue(
             any("Failed to send reset email" in msg for msg in log_ctx.output)
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
