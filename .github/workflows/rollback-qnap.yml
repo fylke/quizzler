@@ -38,6 +38,8 @@ jobs:
                 return 0
               fi
               for candidate in \
+                /share/CACHEDEV1_DATA/.qpkg/container-station/bin/docker \
+                /share/CACHEDEV1_DATA/.qpkg/ContainerStation/bin/docker \
                 /share/CACHEDEV2_DATA/.qpkg/container-station/bin/docker \
                 /share/CACHEDEV2_DATA/.qpkg/ContainerStation/bin/docker; do
                 if [ -x "$candidate" ]; then
