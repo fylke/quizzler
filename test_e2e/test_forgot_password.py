@@ -15,6 +15,8 @@ from backend.models import PasswordResetToken, User, db
 _RAW_TOKEN = "test-valid-token-for-e2e-abcdef1234567890"
 _TOKEN_HASH = hashlib.sha256(_RAW_TOKEN.encode()).hexdigest()
 
+pytestmark = pytest.mark.usefixtures("clean_db")
+
 
 def _open_login_screen(page: Page, base_url: str) -> None:
     """Start from status page and open login UI via the top-right icon."""
@@ -26,7 +28,7 @@ def _open_login_screen(page: Page, base_url: str) -> None:
 
 
 @pytest.fixture(autouse=True)
-def setup(clean_db):
+def clear_reset_tokens():
     """Ensure a clean database for each test (including reset tokens)."""
     with app.app_context():
         PasswordResetToken.query.delete()

@@ -5,40 +5,34 @@ import unittest
 from werkzeug.security import generate_password_hash
 
 from backend import app
-from backend.models import Destination, GuestSession, QuizResult, User, db
-from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
+from backend.models import GuestSession, QuizResult, User, db
+from test_backend.support import (
+    add_destination,
+    cleanup_database,
+    configure_test_app,
+    ensure_public_quiz_id,
+    reset_database,
+)
 
 
 class GuestTrackingTestCase(unittest.TestCase):
     def setUp(self):
-        app.testing = True
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        self.client = app.test_client()
+        self.client = configure_test_app()
+        reset_database()
 
         with app.app_context():
-            db.drop_all()
-            db.create_all()
-            destination = Destination(
-                id=1,
+            destination = add_destination(
+                destination_id=1,
                 name="paris",
-                hint1="Hint 1",
-                hint2="Hint 2",
-                hint3="Hint 3",
-                hint4="Hint 4",
-                hint5="Hint 5",
+                hints=["Hint 1", "Hint 2", "Hint 3", "Hint 4", "Hint 5"],
                 correct_answers=["paris"],
             )
-            db.session.add(destination)
+            db.session.flush()
+            self.quiz_guid = ensure_public_quiz_id("countries", destination.id)
             db.session.commit()
-            identity = get_or_create_quiz_identity("countries", destination.id)
-            db.session.commit()
-            self.quiz_guid = public_quiz_id(identity.quiz_type, identity.source_id)
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
+        cleanup_database()
 
     def _start_guest_session(self):
         response = self.client.post("/api/guest-session")

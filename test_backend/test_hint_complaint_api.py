@@ -4,40 +4,35 @@ import os
 import unittest
 from unittest.mock import patch
 
-from werkzeug.security import generate_password_hash
-
 from backend import app
-from backend.models import Destination, QuizResult, User, db
+from backend.models import QuizResult, db
+from test_backend.support import (
+    add_destination,
+    add_user,
+    cleanup_database,
+    configure_test_app,
+    login_client_as,
+    reset_database,
+)
 
 
 class HintComplaintAPITestCase(unittest.TestCase):
     def setUp(self):
-        app.testing = True
-        self.client = app.test_client()
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        self.client = configure_test_app()
+        reset_database()
 
         with app.app_context():
-            db.drop_all()
-            db.create_all()
-
-            self.user = User(
+            self.user = add_user(
                 email="complainer@example.com",
-                password_hash=generate_password_hash("password123"),
+                password="password123",
             )
-            db.session.add(self.user)
 
-            self.destination = Destination(
-                id=77,
+            self.destination = add_destination(
+                destination_id=77,
                 name="Lisbon",
-                hint1="Hint 1",
-                hint2="Hint 2",
-                hint3="Hint 3",
-                hint4="Hint 4",
-                hint5="Hint 5",
+                hints=["Hint 1", "Hint 2", "Hint 3", "Hint 4", "Hint 5"],
                 correct_answers=["lisbon"],
             )
-            db.session.add(self.destination)
             db.session.commit()
 
             # Current live hint is 3, so unlocked hints are 3,4,5.
@@ -53,13 +48,10 @@ class HintComplaintAPITestCase(unittest.TestCase):
             self._user_id = self.user.id
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
+        cleanup_database()
 
     def _login(self):
-        with self.client.session_transaction() as sess:
-            sess["user_id"] = self._user_id
+        login_client_as(self.client, self._user_id)
 
     def test_requires_authentication(self):
         response = self.client.post(

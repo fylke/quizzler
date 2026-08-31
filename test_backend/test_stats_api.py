@@ -4,11 +4,18 @@ import unittest
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.models import Destination, QuizResult, User, db
 from backend.stats import compute_stats
+from test_backend.support import (
+    add_destination,
+    add_user,
+    cleanup_database,
+    configure_test_app,
+    login_client_as,
+    reset_database,
+)
 
 # Minimal destination fixture for creating quiz results
 SAMPLE_DESTINATIONS = [
@@ -69,38 +76,31 @@ class StatsAPITestCase(unittest.TestCase):
     """Unit tests for the /api/stats endpoint (Task 2.2)."""
 
     def setUp(self):
-        app.testing = True
-        self.client = app.test_client()
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        self.client = configure_test_app()
+        reset_database()
 
         with app.app_context():
-            db.drop_all()
-            db.create_all()
-
-            # Create destinations
             for d in SAMPLE_DESTINATIONS:
-                dest = Destination(**d)
-                db.session.add(dest)
+                add_destination(
+                    destination_id=d["id"],
+                    name=d["name"],
+                    hints=[d[f"hint{index}"] for index in range(1, 6)],
+                    correct_answers=d["correct_answers"],
+                )
 
-            # Create test user
-            self.user = User(
+            self.user = add_user(
                 email="stats@example.com",
-                password_hash=generate_password_hash("password123"),
+                password="password123",
             )
-            db.session.add(self.user)
             db.session.commit()
             self._user_id = self.user.id
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
+        cleanup_database()
 
     def _login(self, client, user_id):
         """Simulate login by setting user_id in the session."""
-        with client.session_transaction() as sess:
-            sess["user_id"] = user_id
+        login_client_as(client, user_id)
 
     def test_unauthenticated_returns_401(self):
         """Unauthenticated request to /api/stats returns 401."""
@@ -193,12 +193,10 @@ class StatsAPITestCase(unittest.TestCase):
     def test_data_isolation_between_users(self):
         """User A only sees their own stats, not user B's."""
         with app.app_context():
-            # Create user B
-            user_b = User(
+            user_b = add_user(
                 email="userb@example.com",
-                password_hash=generate_password_hash("password123"),
+                password="password123",
             )
-            db.session.add(user_b)
             db.session.commit()
             user_b_id = user_b.id
 
@@ -290,18 +288,11 @@ class PropertyTestDataIsolation(unittest.TestCase):
     """
 
     def setUp(self):
-        app.testing = True
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-        with app.app_context():
-            db.drop_all()
-            db.create_all()
+        configure_test_app()
+        reset_database()
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
+        cleanup_database()
 
     @settings(max_examples=8, deadline=10000)
     @given(
@@ -333,9 +324,7 @@ class PropertyTestDataIsolation(unittest.TestCase):
     def test_user_a_stats_unaffected_by_user_b(self, user_a_results, user_b_results):
         """Stats for user A match computing stats from only user A's records."""
         with app.app_context():
-            # Clean slate for each example
-            db.drop_all()
-            db.create_all()
+            reset_database()
 
             # Create destinations for all destination_ids used
             all_dest_ids = set()
@@ -345,28 +334,15 @@ class PropertyTestDataIsolation(unittest.TestCase):
                 all_dest_ids.add(r["destination_id"])
 
             for did in all_dest_ids:
-                dest = Destination(
-                    id=did,
+                add_destination(
+                    destination_id=did,
                     name=f"dest_{did}",
-                    hint1="H1",
-                    hint2="H2",
-                    hint3="H3",
-                    hint4="H4",
-                    hint5="H5",
+                    hints=["H1", "H2", "H3", "H4", "H5"],
                     correct_answers=["answer"],
                 )
-                db.session.add(dest)
 
-            # Create two users
-            user_a = User(
-                email="usera@test.com",
-                password_hash=generate_password_hash("pass123a"),
-            )
-            user_b = User(
-                email="userb@test.com",
-                password_hash=generate_password_hash("pass123b"),
-            )
-            db.session.add_all([user_a, user_b])
+            user_a = add_user(email="usera@test.com", password="pass123a")
+            user_b = add_user(email="userb@test.com", password="pass123b")
             db.session.commit()
 
             # Insert quiz results for user A (all completed)
@@ -395,8 +371,7 @@ class PropertyTestDataIsolation(unittest.TestCase):
 
             # Call the API as user A
             client = app.test_client()
-            with client.session_transaction() as sess:
-                sess["user_id"] = user_a.id
+            login_client_as(client, user_a.id)
 
             response = client.get("/api/stats")
             self.assertEqual(response.status_code, 200)

@@ -5,13 +5,18 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-from werkzeug.security import generate_password_hash
-
 from backend import app
-from backend.models import Destination, User, db
-from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
+from backend.models import db
+from test_backend.support import (
+    add_destination_from_sample,
+    add_user,
+    cleanup_database,
+    configure_test_app,
+    ensure_public_quiz_id,
+    reset_database,
+)
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Small fixture used by tests so they don't rely on the removed JSON file
 SAMPLE_DATA = [
@@ -162,38 +167,20 @@ class MainAppTestCase(unittest.TestCase):
         )
 
     def setUp(self):
-        app.testing = True
-        self.client = app.test_client()
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        self.client = configure_test_app()
+        reset_database()
 
-        # Initialize and populate the test database with SAMPLE_DATA
         with app.app_context():
-            db.drop_all()
-            db.create_all()
             for item in SAMPLE_DATA:
-                q = Destination(
-                    id=item["id"],
-                    name=item["destination"],
-                    hint1=item["hints"]["1"],
-                    hint2=item["hints"]["2"],
-                    hint3=item["hints"]["3"],
-                    hint4=item["hints"]["4"],
-                    hint5=item["hints"]["5"],
-                    correct_answers=item["correct_answers"],
-                )
-                db.session.add(q)
+                add_destination_from_sample(item)
 
-            self.test_user = User(
+            self.test_user = add_user(
                 email="test@example.com",
-                password_hash=generate_password_hash("password123"),
+                password="password123",
             )
-            db.session.add(self.test_user)
-            db.session.commit()
             quiz_guids = {}
             for item in SAMPLE_DATA:
-                get_or_create_quiz_identity("countries", item["id"])
-                quiz_guids[item["id"]] = public_quiz_id("countries", item["id"])
+                quiz_guids[item["id"]] = ensure_public_quiz_id("countries", item["id"])
             db.session.commit()
 
         login_response = self.client.post(
@@ -205,9 +192,7 @@ class MainAppTestCase(unittest.TestCase):
         ]
 
     def tearDown(self):
-        with app.app_context():
-            db.session.remove()
-            db.drop_all()
+        cleanup_database()
 
     def test_quiz_endpoint_returns_first_hint_of_random_destination(self):
         response = self.client.get("/api/quiz")

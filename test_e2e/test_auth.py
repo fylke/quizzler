@@ -3,10 +3,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
-
-@pytest.fixture(autouse=True)
-def setup(clean_db):
-    """Ensure a clean database for each test."""
+pytestmark = pytest.mark.usefixtures("clean_db")
 
 
 def _open_login_screen(page: Page, base_url: str) -> None:
