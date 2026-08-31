@@ -6,10 +6,10 @@ the test session, and tears it down afterward.
 
 import os
 import shutil
+import socket
 import tempfile
 import threading
 import time
-import socket
 from pathlib import Path
 
 import pytest
@@ -34,9 +34,11 @@ for i in range(1, 13):
 (_dest_media / "README.txt").write_bytes(b"not-an-image")
 
 from backend import app  # noqa: E402
-from backend.models import db, Destination  # noqa: E402
-from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id  # noqa: E402
-
+from backend.models import Destination, db  # noqa: E402
+from backend.quiz_catalog import (  # noqa: E402
+    get_or_create_quiz_identity,
+    public_quiz_id,
+)
 
 COOKIE_CONSENT_STORAGE_KEY = "quizzler_cookie_consent_acknowledged_v1"
 

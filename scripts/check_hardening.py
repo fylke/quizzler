@@ -119,6 +119,7 @@ def main() -> int:
     )
 
     for workflow in [
+        ".github/workflows/check-countries.yml",
         ".github/workflows/ci.yml",
         ".github/workflows/deploy-qnap.yml",
         ".github/workflows/e2e-nightly.yml",

@@ -17,7 +17,6 @@ from pathlib import Path
 
 from PIL import Image
 
-
 SUPPORTED_SOURCE_SUFFIXES = frozenset(Image.registered_extensions())
 
 
@@ -104,7 +103,9 @@ def _is_supported_source_image(path: Path) -> bool:
     return (
         path.is_file()
         and path.suffix.lower() in SUPPORTED_SOURCE_SUFFIXES
-        and not (path.suffix.lower() == ".webp" and path.stem.lower().endswith("_small"))
+        and not (
+            path.suffix.lower() == ".webp" and path.stem.lower().endswith("_small")
+        )
     )
 
 
@@ -121,7 +122,9 @@ def _iter_hint_source_images(root: Path) -> list[Path]:
     return sorted(images)
 
 
-def _target_size(width: int, height: int, max_width: int, max_height: int) -> tuple[int, int]:
+def _target_size(
+    width: int, height: int, max_width: int, max_height: int
+) -> tuple[int, int]:
     scale_w = max_width / width if width > max_width else 1.0
     scale_h = max_height / height if height > max_height else 1.0
     scale = min(scale_w, scale_h)
@@ -130,7 +133,9 @@ def _target_size(width: int, height: int, max_width: int, max_height: int) -> tu
     return max(1, int(width * scale)), max(1, int(height * scale))
 
 
-def _convert_image(source_path: Path, *, max_width: int, max_height: int, quality: int) -> Path:
+def _convert_image(
+    source_path: Path, *, max_width: int, max_height: int, quality: int
+) -> Path:
     if not _is_supported_source_image(source_path):
         raise ValueError(f"Unsupported hint image filename: {source_path.name}")
 
@@ -139,9 +144,13 @@ def _convert_image(source_path: Path, *, max_width: int, max_height: int, qualit
     with Image.open(source_path) as image:
         image = image.convert("RGB")
         width, height = image.size
-        resized_width, resized_height = _target_size(width, height, max_width, max_height)
+        resized_width, resized_height = _target_size(
+            width, height, max_width, max_height
+        )
         if (resized_width, resized_height) != (width, height):
-            image = image.resize((resized_width, resized_height), Image.Resampling.LANCZOS)
+            image = image.resize(
+                (resized_width, resized_height), Image.Resampling.LANCZOS
+            )
         image.save(target_path, format="WEBP", quality=quality, method=6)
 
     return target_path

@@ -32,10 +32,8 @@ def test_register_new_user(page: Page, base_url: str):
 
     # Switch to register mode
     page.click("#switchToRegister a")
-    expect(page.locator("#name")).to_be_visible()
 
     # Fill in registration form
-    page.fill("#name", "Test User")
     page.fill("#email", "test@example.com")
     page.fill("#password", "password123")
     page.click("#authButton")
@@ -68,9 +66,7 @@ def test_guest_upgrade_to_registered_user_hides_guest_banner(page: Page, base_ur
     page.click("#guestRestrictionsStatus a")
     expect(page.locator("#welcomeScreen")).not_to_have_class(".*\\bhidden\\b.*")
 
-    expect(page.locator("#name")).to_be_visible()
     expect(page.locator("#authButton")).to_have_text("Create Account")
-    page.fill("#name", "Guest Upgrade User")
     page.fill("#email", "guest-upgrade@example.com")
     page.fill("#password", "password123")
     page.click("#authButton")
@@ -98,15 +94,16 @@ def test_toggle_between_login_and_register(page: Page, base_url: str):
     """User can switch between login and register modes."""
     _open_login_screen(page, base_url)
 
-    # Initially in login mode - name field has .hidden class
-    expect(page.locator("#name")).to_have_class("hidden")
+    # Initially in login mode
     expect(page.locator("#switchToRegister")).to_be_visible()
+    expect(page.locator("#authButton")).to_have_text("Log In")
 
     # Switch to register
     page.click("#switchToRegister a")
-    expect(page.locator("#name")).not_to_have_class("hidden")
     expect(page.locator("#switchToLogin")).to_be_visible()
+    expect(page.locator("#authButton")).to_have_text("Create Account")
 
     # Switch back to login
     page.click("#switchToLogin a")
-    expect(page.locator("#name")).to_have_class("hidden")
+    expect(page.locator("#switchToRegister")).to_be_visible()
+    expect(page.locator("#authButton")).to_have_text("Log In")

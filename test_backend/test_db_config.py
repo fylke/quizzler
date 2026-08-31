@@ -59,8 +59,8 @@ class TestMissingDatabaseDirectory(unittest.TestCase):
 
     def _run_app_in_temp_dir(self, env_overrides=None):
         """Run the app import from a temp directory where database/ doesn't exist."""
-        import tempfile
         import shutil
+        import tempfile
 
         env = os.environ.copy()
         env.pop("QUIZ_DATABASE_URL", None)

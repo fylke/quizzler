@@ -14,8 +14,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from backend import app
-from backend.models import db, Destination
-
+from backend.models import Destination, db
 
 # Strategy: lists of arbitrary text (unicode, empty strings, special characters)
 json_string_list_st = st.lists(

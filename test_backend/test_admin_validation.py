@@ -2,10 +2,10 @@
 
 from backend.admin import normalize_answers, validate_destination_payload
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _valid_payload(**overrides) -> dict:
     """Return a minimal valid destination payload, with optional overrides."""
@@ -93,9 +93,7 @@ class TestValidateHintsField:
         assert any("hints" in e and "5" in e for e in errors)
 
     def test_more_than_5_hints_returns_error(self):
-        is_valid, errors = validate_destination_payload(
-            _valid_payload(hints=["h"] * 6)
-        )
+        is_valid, errors = validate_destination_payload(_valid_payload(hints=["h"] * 6))
         assert is_valid is False
         assert any("hints" in e and "5" in e for e in errors)
 

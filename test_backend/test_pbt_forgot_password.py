@@ -19,11 +19,11 @@ from hypothesis import strategies as st
 
 from backend import app
 from backend.email_service import send_password_reset_email
-from backend.models import PasswordResetToken, db, User
+from backend.models import PasswordResetToken, User, db
 from backend.reset_tokens import consume_token, generate_token, validate_token
 
 # URL-safe base64 alphabet: A-Z, a-z, 0-9, '-', '_'
-_URL_SAFE_RE = re.compile(r'^[A-Za-z0-9\-_]+$')
+_URL_SAFE_RE = re.compile(r"^[A-Za-z0-9\-_]+$")
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,6 @@ class PropertyTestTokenUniquenessAndEntropy(unittest.TestCase):
         db.create_all()
 
         user = User(
-            name="Test User",
             email="testtoken@example.com",
             password_hash="placeholder_hash",
         )
@@ -110,7 +109,6 @@ class PropertyTestTokenUniquenessAndEntropy(unittest.TestCase):
 def _make_user(suffix: str = "") -> User:
     """Create and persist a test user, returning the committed User instance."""
     user = User(
-        name=f"Test User{suffix}",
         email=f"testuser{suffix}@example.com",
         password_hash="placeholder_hash",
     )
@@ -152,9 +150,9 @@ def test_new_token_invalidates_prior_tokens(k: int) -> None:
         prior_tokens = raw_tokens[:-1]
 
         # The last token must pass validation (return a non-None record)
-        assert validate_token(last_token) is not None, (
-            f"Expected the last of {k} tokens to be valid, but validate_token() returned None"
-        )
+        assert (
+            validate_token(last_token) is not None
+        ), f"Expected the last of {k} tokens to be valid, but validate_token() returned None"
 
         # All prior tokens must be invalidated (return None)
         for i, raw in enumerate(prior_tokens):
@@ -194,9 +192,9 @@ def test_consumed_token_rejected_on_reuse(new_password: str) -> None:
 
         # Step 2: Validate it — must succeed
         record = validate_token(raw_token)
-        assert record is not None, (
-            "Expected freshly generated token to be valid, but validate_token() returned None"
-        )
+        assert (
+            record is not None
+        ), "Expected freshly generated token to be valid, but validate_token() returned None"
 
         # Step 3: Consume the token with a new password
         consume_token(record, new_password)
@@ -239,14 +237,14 @@ def test_token_hash_stored_not_plaintext(_dummy: int) -> None:
 
         # Query the stored record from the database
         record = PasswordResetToken.query.filter_by(user_id=user.id).first()
-        assert record is not None, (
-            "Expected a PasswordResetToken record to be stored for the user"
-        )
+        assert (
+            record is not None
+        ), "Expected a PasswordResetToken record to be stored for the user"
 
         # The stored token_hash must NOT be the plaintext raw token
-        assert record.token_hash != raw, (
-            "token_hash must not equal the raw token — plaintext must never be stored"
-        )
+        assert (
+            record.token_hash != raw
+        ), "token_hash must not equal the raw token — plaintext must never be stored"
 
         # The stored token_hash must equal sha256(raw).hexdigest()
         expected_hash = hashlib.sha256(raw.encode()).hexdigest()
@@ -256,6 +254,7 @@ def test_token_hash_stored_not_plaintext(_dummy: int) -> None:
         )
 
         db.session.remove()
+
 
 # ---------------------------------------------------------------------------
 # Property 7: Email body contains required elements
@@ -322,9 +321,9 @@ def test_email_body_contains_required_elements(token: str, base_url: str) -> Non
             body = msg.get_payload(decode=True).decode("utf-8")
 
             # Subject must contain "password reset" (case-insensitive)
-            assert "password reset" in subject.lower(), (
-                f"Expected subject to contain 'password reset', got: {subject!r}"
-            )
+            assert (
+                "password reset" in subject.lower()
+            ), f"Expected subject to contain 'password reset', got: {subject!r}"
 
             # Body must contain the reset URL (which includes the token)
             assert reset_url in body, (
@@ -333,9 +332,9 @@ def test_email_body_contains_required_elements(token: str, base_url: str) -> Non
             )
 
             # Body must contain "15 minutes"
-            assert "15 minutes" in body, (
-                f"Expected body to contain '15 minutes', got body:\n{body}"
-            )
+            assert (
+                "15 minutes" in body
+            ), f"Expected body to contain '15 minutes', got body:\n{body}"
 
 
 # ---------------------------------------------------------------------------
@@ -346,7 +345,6 @@ def test_email_body_contains_required_elements(token: str, base_url: str) -> Non
 
 
 from werkzeug.security import check_password_hash
-
 
 # ---------------------------------------------------------------------------
 # Property 5: Password length boundary enforcement
@@ -466,9 +464,9 @@ def test_password_reset_hash_correctness(new_password: str) -> None:
 
         # Step 3: Validate the token to get the record
         record = validate_token(raw_token)
-        assert record is not None, (
-            "Expected freshly generated token to be valid, but validate_token() returned None"
-        )
+        assert (
+            record is not None
+        ), "Expected freshly generated token to be valid, but validate_token() returned None"
 
         # Step 4: Consume the token with the hypothesis-generated password
         consume_token(record, new_password)

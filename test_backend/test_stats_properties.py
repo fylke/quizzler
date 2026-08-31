@@ -7,14 +7,15 @@ from hypothesis import strategies as st
 
 from backend.stats import compute_stats
 
-
 # --- Strategies for generating quiz result dicts ---
 
-quiz_result_st = st.fixed_dictionaries({
-    "hint_difficulty": st.integers(min_value=1, max_value=5),
-    "remaining_guesses": st.integers(min_value=0, max_value=3),
-    "destination_id": st.integers(min_value=1, max_value=10000),
-})
+quiz_result_st = st.fixed_dictionaries(
+    {
+        "hint_difficulty": st.integers(min_value=1, max_value=5),
+        "remaining_guesses": st.integers(min_value=0, max_value=3),
+        "destination_id": st.integers(min_value=1, max_value=10000),
+    }
+)
 
 
 # Feature: status-screen-stats, Property 1: Score computation correctness
@@ -136,7 +137,9 @@ class PropertyTestCurrentStreak(unittest.TestCase):
         """Current streak counts consecutive successes from front of desc-sorted list."""
         stats = compute_stats(results)
 
-        sorted_results = sorted(results, key=lambda r: r["destination_id"], reverse=True)
+        sorted_results = sorted(
+            results, key=lambda r: r["destination_id"], reverse=True
+        )
         expected_streak = 0
         for r in sorted_results:
             if r["remaining_guesses"] > 0:
@@ -212,7 +215,9 @@ class PropertyTestOngoingExcluded(unittest.TestCase):
             expected_count = len(completed_for_stats)
             expected_average = round(expected_cumulative / expected_count, 1)
             expected_best = max(scores)
-            successful = sum(1 for r in completed_for_stats if r["remaining_guesses"] > 0)
+            successful = sum(
+                1 for r in completed_for_stats if r["remaining_guesses"] > 0
+            )
             expected_accuracy = round(successful / expected_count * 100)
 
             # Current streak: sort by descending destination_id, count consecutive successes

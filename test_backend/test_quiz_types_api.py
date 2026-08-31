@@ -5,13 +5,13 @@ Validates Requirements: 1.1, 1.2, 1.4, 3.2, 3.3, 3.5, 5.1, 5.3, 5.4, 5.5
 
 import os
 import unittest
-from uuid import UUID
 from unittest.mock import patch
+from uuid import UUID
 
 from werkzeug.security import generate_password_hash
 
 from backend import app
-from backend.models import db, Destination, QuizResult, User
+from backend.models import Destination, QuizResult, User, db
 from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -32,7 +32,6 @@ class QuizTypesAPITestCase(unittest.TestCase):
 
             # Create test user
             self.user = User(
-                name="Test User",
                 email="test@example.com",
                 password_hash=generate_password_hash("password123"),
             )
@@ -240,7 +239,6 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
 
             # Create a test user
             user = User(
-                name="Compat User",
                 email="compat@example.com",
                 password_hash=generate_password_hash("password123"),
             )
@@ -326,9 +324,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_unknown_quiz_guid_returns_not_found(self):
-        response = self.client.get(
-            "/api/quiz/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
-        )
+        response = self.client.get("/api/quiz/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json(), {"error": "Quiz not found"})
 
@@ -341,8 +337,14 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         images = data["images"]
 
         self.assertEqual(len(images), 2)
-        self.assertIn(images[0], ["/media/countries/42/5a.jpg", "/media/countries/42/5a_small.webp"])
-        self.assertIn(images[1], ["/media/countries/42/5b.jpg", "/media/countries/42/5b_small.webp"])
+        self.assertIn(
+            images[0],
+            ["/media/countries/42/5a.jpg", "/media/countries/42/5a_small.webp"],
+        )
+        self.assertIn(
+            images[1],
+            ["/media/countries/42/5b.jpg", "/media/countries/42/5b_small.webp"],
+        )
 
     def test_correct_answer_stores_score_with_formula(self):
         """Requirement 5.4: Score = hint_difficulty × remaining_guesses."""
@@ -376,18 +378,14 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         self.client.get(f"/api/quiz/{self.quiz_guid}")
 
         # Wrong answer: remaining_guesses goes from 3 to 2, hint_difficulty stays at 5
-        resp1 = self.client.post(
-            "/api/check-answer", json={"answer": "wrong answer"}
-        )
+        resp1 = self.client.post("/api/check-answer", json={"answer": "wrong answer"})
         self.assertEqual(resp1.status_code, 200)
         data1 = resp1.get_json()
         self.assertFalse(data1["correct"])
         self.assertEqual(data1["remainingGuesses"], 2)
 
         # Now answer correctly: score = current hint_difficulty * remaining_guesses
-        resp2 = self.client.post(
-            "/api/check-answer", json={"answer": "tokyo, japan"}
-        )
+        resp2 = self.client.post("/api/check-answer", json={"answer": "tokyo, japan"})
         self.assertEqual(resp2.status_code, 200)
         data2 = resp2.get_json()
         self.assertTrue(data2["correct"])
@@ -446,6 +444,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
             self.assertIsNotNone(result)
             self.assertEqual(result.user_id, self.test_user_id)
             self.assertEqual(result.destination_id, 42)
+
 
 if __name__ == "__main__":
     unittest.main()

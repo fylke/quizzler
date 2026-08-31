@@ -82,8 +82,7 @@ def migrate_guest_session_to_user(user: User, guest_session: GuestSession) -> No
 
     adapters = get_quiz_adapters()
     guest_results_by_adapter = [
-        (adapter, adapter.guest_results(guest_session.id))
-        for adapter in adapters
+        (adapter, adapter.guest_results(guest_session.id)) for adapter in adapters
     ]
     guest_results = [
         result

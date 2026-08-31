@@ -20,7 +20,6 @@ def _register_and_start(page: Page, base_url: str):
     page.click("#statusLoginLink")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.click("#switchToRegister a")
-    page.fill("#name", "Tester")
     page.fill("#email", "tester@test.com")
     page.fill("#password", "password123")
     page.click("#authButton")
@@ -83,7 +82,9 @@ def test_animation_ends_classes_removed_input_usable(page: Page, base_url: str):
     page.wait_for_timeout(1500)
 
     # Classes should be removed after animation ends
-    expect(quiz_screen).not_to_have_class(re.compile(r"wrong-guess-shake"), timeout=3000)
+    expect(quiz_screen).not_to_have_class(
+        re.compile(r"wrong-guess-shake"), timeout=3000
+    )
     expect(quiz_screen).not_to_have_class(re.compile(r"wrong-guess-glow"), timeout=3000)
 
     # Input should still be usable

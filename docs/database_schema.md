@@ -20,7 +20,6 @@ erDiagram
     user {
         number id PK
         varchar2 password_hash
-        varchar2 name
         varchar2 email
         boolean is_admin
     }

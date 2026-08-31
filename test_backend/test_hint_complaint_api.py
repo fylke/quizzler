@@ -22,7 +22,6 @@ class HintComplaintAPITestCase(unittest.TestCase):
             db.create_all()
 
             self.user = User(
-                name="Complainer",
                 email="complainer@example.com",
                 password_hash=generate_password_hash("password123"),
             )

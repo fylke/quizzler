@@ -190,9 +190,10 @@ class PropertyTestRulesContentRoundTrip(unittest.TestCase):
     """
 
     def setUp(self):
-        from backend import app
-        from backend.models import db, User
         from werkzeug.security import generate_password_hash
+
+        from backend import app
+        from backend.models import User, db
 
         app.testing = True
         self.app = app
@@ -204,7 +205,6 @@ class PropertyTestRulesContentRoundTrip(unittest.TestCase):
             db.drop_all()
             db.create_all()
             user = User(
-                name="Test User",
                 email="pbt@example.com",
                 password_hash=generate_password_hash("password123"),
             )
@@ -222,7 +222,13 @@ class PropertyTestRulesContentRoundTrip(unittest.TestCase):
         pass
 
     @settings(max_examples=8, deadline=5000)
-    @given(content=st.text(alphabet=st.characters(categories=("L", "M", "N", "P", "S", "Z")), min_size=0, max_size=500))
+    @given(
+        content=st.text(
+            alphabet=st.characters(categories=("L", "M", "N", "P", "S", "Z")),
+            min_size=0,
+            max_size=500,
+        )
+    )
     def test_rules_content_round_trip_preservation(self, content: str) -> None:
         """For any text content written to a rules file, fetching via the API
         SHALL return byte-for-byte identical content.
@@ -248,9 +254,11 @@ class PropertyTestRulesContentRoundTrip(unittest.TestCase):
             fake_rules_path = RealPath(tmp_path)
             mock_parent = MagicMock()
             mock_parent.__truediv__ = lambda self_, x: (
-                MagicMock(__truediv__=lambda self2_, y: (
-                    MagicMock(__truediv__=lambda self3_, z: fake_rules_path)
-                ))
+                MagicMock(
+                    __truediv__=lambda self2_, y: (
+                        MagicMock(__truediv__=lambda self3_, z: fake_rules_path)
+                    )
+                )
             )
 
             with patch("backend.Path") as mock_path:

@@ -12,7 +12,6 @@ from hypothesis import strategies as st
 
 from backend import resolve_database_uri
 
-
 # --- Strategies ---
 # Each env var can be: None (unset), empty string, or a non-empty URI string.
 uri_state_st = st.one_of(st.none(), st.just(""), st.text(min_size=1))

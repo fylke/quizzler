@@ -42,21 +42,21 @@ app.config["MEDIA_DIR"] = MEDIA_DIR
 logging.getLogger(__name__).debug("Configured MEDIA_DIR=%s", app.config["MEDIA_DIR"])
 
 # Restrict CORS to the app's own origin in production; allow all in dev.
-_env = os.environ.get('FLASK_ENV', 'development')
-_cors_origins_raw = os.environ.get('CORS_ALLOWED_ORIGINS', '*').strip()
-if _env == 'production' and (_cors_origins_raw == '*' or not _cors_origins_raw):
+_env = os.environ.get("FLASK_ENV", "development")
+_cors_origins_raw = os.environ.get("CORS_ALLOWED_ORIGINS", "*").strip()
+if _env == "production" and (_cors_origins_raw == "*" or not _cors_origins_raw):
     raise RuntimeError(
         "CORS_ALLOWED_ORIGINS must be explicitly set in production and cannot be '*'."
     )
-_cors_origins = [o.strip() for o in _cors_origins_raw.split(',') if o.strip()]
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 if not _cors_origins:
-    _cors_origins = ['*']
+    _cors_origins = ["*"]
 CORS(app, origins=_cors_origins, supports_credentials=True)
-_secret_key = os.environ.get('SECRET_KEY')
+_secret_key = os.environ.get("SECRET_KEY")
 if not _secret_key:
     import logging as _logging
 
-    if _env == 'production':
+    if _env == "production":
         raise RuntimeError(
             "SECRET_KEY environment variable must be set in production. "
             "Refusing to start with an insecure default."
@@ -76,27 +76,32 @@ app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 )
 
-_csp = "; ".join([
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-])
+_csp = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'",
+    ]
+)
 
 
 @app.after_request
 def add_security_headers(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-    response.headers['Content-Security-Policy'] = _csp
-    if app.config.get('SESSION_COOKIE_SECURE'):
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = _csp
+    if app.config.get("SESSION_COOKIE_SECURE"):
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     return response
+
 
 # Rate limiter (uses in-memory storage by default; set RATELIMIT_STORAGE_URI for Redis)
 limiter = Limiter(

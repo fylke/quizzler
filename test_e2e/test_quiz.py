@@ -9,14 +9,13 @@ def setup(clean_db):
     """Ensure a clean database for each test."""
 
 
-def _register_and_start(page: Page, base_url: str, name: str = "Quizzer"):
+def _register_and_start(page: Page, base_url: str, email_prefix: str = "quizzer"):
     """Helper to register a user and land on the quiz screen via status."""
     page.goto(base_url)
     page.click("#statusLoginLink")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
     page.click("#switchToRegister a")
-    page.fill("#name", name)
-    page.fill("#email", f"{name.lower().replace(' ', '')}@test.com")
+    page.fill("#email", f"{email_prefix.lower().replace(' ', '')}@test.com")
     page.fill("#password", "password123")
     page.click("#authButton")
     expect(page.locator("#statusScreen")).to_be_visible(timeout=5000)
@@ -101,7 +100,9 @@ def test_next_hint_button(page: Page, base_url: str):
     expect(page.locator("#quizScreen")).to_be_visible()
 
 
-def test_results_screen_shows_all_images_in_destination_directory(page: Page, base_url: str):
+def test_results_screen_shows_all_images_in_destination_directory(
+    page: Page, base_url: str
+):
     """Completed quiz shows discovered result images plus unlocked hint images."""
     _register_and_start(page, base_url)
 
@@ -110,7 +111,9 @@ def test_results_screen_shows_all_images_in_destination_directory(page: Page, ba
     expect(page.locator("#resultsScreen")).to_be_visible(timeout=5000)
 
     expect(page.locator("#resultsImages")).to_be_visible(timeout=5000)
-    result_images = page.locator('#resultsImages img[aria-label^="Additional destination image"]')
+    result_images = page.locator(
+        '#resultsImages img[aria-label^="Additional destination image"]'
+    )
     expect(result_images.first).to_be_visible(timeout=5000)
 
     image_count = result_images.count()
@@ -208,9 +211,7 @@ def test_guest_register_migrates_completed_score(page: Page, base_url: str):
     page.click("#guestRestrictionsStatus a")
     expect(page.locator("#welcomeScreen")).to_be_visible(timeout=5000)
 
-    expect(page.locator("#name")).to_be_visible()
     expect(page.locator("#authButton")).to_have_text("Create Account")
-    page.fill("#name", "Migrated Guest")
     page.fill("#email", "migrated-guest@test.com")
     page.fill("#password", "password123")
     page.click("#authButton")

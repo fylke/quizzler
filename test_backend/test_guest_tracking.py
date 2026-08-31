@@ -2,10 +2,11 @@
 
 import unittest
 
+from werkzeug.security import generate_password_hash
+
 from backend import app
 from backend.models import Destination, GuestSession, QuizResult, User, db
 from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
-from werkzeug.security import generate_password_hash
 
 
 class GuestTrackingTestCase(unittest.TestCase):
@@ -115,7 +116,9 @@ class GuestTrackingTestCase(unittest.TestCase):
         with app.app_context():
             user = User.query.filter_by(email="migrated@example.com").first()
             self.assertIsNotNone(user)
-            result = QuizResult.query.filter_by(user_id=user.id, destination_id=1).first()
+            result = QuizResult.query.filter_by(
+                user_id=user.id, destination_id=1
+            ).first()
             self.assertIsNotNone(result)
             self.assertFalse(result.ongoing)
             self.assertEqual(result.hint_difficulty, 5)
@@ -125,7 +128,6 @@ class GuestTrackingTestCase(unittest.TestCase):
     def test_login_migrates_guest_results_into_existing_account(self):
         with app.app_context():
             user = User(
-                name="Existing User",
                 email="existing@example.com",
                 password_hash=generate_password_hash("password123"),
             )

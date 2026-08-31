@@ -74,10 +74,15 @@ def create_question(quiz_type):
     db.session.flush()
     identity = get_or_create_quiz_identity(quiz_type, adapter.question_id(question))
     db.session.commit()
-    return jsonify({
-        "id": adapter.question_id(question),
-        "guid": public_quiz_id(identity.quiz_type, identity.source_id),
-    }), 201
+    return (
+        jsonify(
+            {
+                "id": adapter.question_id(question),
+                "guid": public_quiz_id(identity.quiz_type, identity.source_id),
+            }
+        ),
+        201,
+    )
 
 
 @admin_bp.route(
@@ -189,10 +194,15 @@ def create_destination():
     identity = get_or_create_quiz_identity("countries", destination.id)
     db.session.commit()
 
-    return jsonify({
-        "id": destination.id,
-        "guid": public_quiz_id(identity.quiz_type, identity.source_id),
-    }), 201
+    return (
+        jsonify(
+            {
+                "id": destination.id,
+                "guid": public_quiz_id(identity.quiz_type, identity.source_id),
+            }
+        ),
+        201,
+    )
 
 
 @admin_bp.route("/api/admin/destinations/<int:destination_id>", methods=["DELETE"])

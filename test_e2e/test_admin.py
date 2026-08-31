@@ -14,12 +14,11 @@ def setup(clean_db):
 def admin_page(clean_db, page: Page, base_url: str):
     """Register a user, make them admin, log in as admin."""
     from backend import app
-    from backend.models import db, User
+    from backend.models import User, db
 
     # Create admin user directly in DB
     with app.app_context():
         user = User(
-            name="Admin User",
             email="admin@test.com",
             password_hash=generate_password_hash("adminpass123"),
             is_admin=True,
@@ -43,11 +42,10 @@ def admin_page(clean_db, page: Page, base_url: str):
 def regular_page(clean_db, page: Page, base_url: str):
     """Register a regular (non-admin) user and log in."""
     from backend import app
-    from backend.models import db, User
+    from backend.models import User, db
 
     with app.app_context():
         user = User(
-            name="Regular User",
             email="regular@test.com",
             password_hash=generate_password_hash("password123"),
             is_admin=False,
@@ -83,7 +81,9 @@ def test_navigate_to_admin_screen(admin_page: Page):
     """Clicking admin link shows admin screen with header and destination list."""
     admin_page.click("#adminLink")
     expect(admin_page.locator("#adminScreen")).to_be_visible(timeout=3000)
-    expect(admin_page.locator("#adminScreen h1")).to_have_text("🔧 Admin: Quiz Management")
+    expect(admin_page.locator("#adminScreen h1")).to_have_text(
+        "🔧 Admin: Quiz Management"
+    )
 
 
 def test_admin_screen_shows_destination_list(admin_page: Page):
@@ -164,18 +164,26 @@ def test_create_destination(admin_page: Page):
 
     # Verify success message
     expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
-    expect(admin_page.locator("#adminSuccess")).to_have_text("Destination created successfully")
+    expect(admin_page.locator("#adminSuccess")).to_have_text(
+        "Destination created successfully"
+    )
 
     # Verify new destination appears in list
-    expect(admin_page.locator("#adminDestCount")).to_have_text("Total destinations: 2", timeout=3000)
+    expect(admin_page.locator("#adminDestCount")).to_have_text(
+        "Total destinations: 2", timeout=3000
+    )
     dest_names = admin_page.locator(".admin-dest-name")
     expect(dest_names.nth(1)).to_have_text("Tokyo")
 
     # Clean up: delete the created destination so it doesn't affect other tests
-    admin_page.locator(".admin-dest-item").nth(1).locator("button", has_text="Delete").click()
+    admin_page.locator(".admin-dest-item").nth(1).locator(
+        "button", has_text="Delete"
+    ).click()
     expect(admin_page.locator("#adminDeleteDialog")).to_be_visible()
     admin_page.locator("#adminDeleteConfirmBtn").click()
-    expect(admin_page.locator("#adminDestCount")).to_have_text("Total destinations: 1", timeout=3000)
+    expect(admin_page.locator("#adminDestCount")).to_have_text(
+        "Total destinations: 1", timeout=3000
+    )
 
 
 def test_edit_destination(admin_page: Page):
@@ -187,7 +195,9 @@ def test_edit_destination(admin_page: Page):
     expect(admin_page.locator(".admin-dest-item").first).to_be_visible(timeout=3000)
 
     # Click Edit on Paris
-    admin_page.locator(".admin-dest-item").first.locator("button", has_text="Edit").click()
+    admin_page.locator(".admin-dest-item").first.locator(
+        "button", has_text="Edit"
+    ).click()
     expect(admin_page.locator("#adminForm")).to_be_visible(timeout=3000)
     expect(admin_page.locator("#adminFormTitle")).to_have_text("Edit Destination")
 
@@ -205,14 +215,18 @@ def test_edit_destination(admin_page: Page):
 
     # Verify success message
     expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
-    expect(admin_page.locator("#adminSuccess")).to_have_text("Destination updated successfully")
+    expect(admin_page.locator("#adminSuccess")).to_have_text(
+        "Destination updated successfully"
+    )
 
     # Verify updated destination in list
     dest_names = admin_page.locator(".admin-dest-name")
     expect(dest_names.first).to_have_text("Paris Updated", timeout=3000)
 
     # Restore original name so other tests are not affected
-    admin_page.locator(".admin-dest-item").first.locator("button", has_text="Edit").click()
+    admin_page.locator(".admin-dest-item").first.locator(
+        "button", has_text="Edit"
+    ).click()
     expect(admin_page.locator("#adminForm")).to_be_visible(timeout=3000)
     admin_page.fill("#adminDestName", "Paris")
     image_inputs = admin_page.locator("#adminImagesContainer input")
@@ -225,7 +239,8 @@ def test_edit_destination(admin_page: Page):
 def test_delete_destination_with_confirmation(admin_page: Page):
     """Click Delete, confirmation dialog appears with name, confirm deletes it."""
     from backend import app as flask_app
-    from backend.models import db as flask_db, Destination
+    from backend.models import Destination
+    from backend.models import db as flask_db
 
     admin_page.click("#adminLink")
     expect(admin_page.locator("#adminScreen")).to_be_visible(timeout=3000)
@@ -239,7 +254,9 @@ def test_delete_destination_with_confirmation(admin_page: Page):
     initial_count = int(count_text.split(": ")[1])
 
     # Click Delete on the first destination
-    admin_page.locator(".admin-dest-item").first.locator("button", has_text="Delete").click()
+    admin_page.locator(".admin-dest-item").first.locator(
+        "button", has_text="Delete"
+    ).click()
 
     # Verify confirmation dialog shows the destination name
     dialog = admin_page.locator("#adminDeleteDialog")
@@ -251,7 +268,9 @@ def test_delete_destination_with_confirmation(admin_page: Page):
 
     # Verify destination is removed
     expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
-    expect(admin_page.locator("#adminSuccess")).to_have_text("Destination deleted successfully")
+    expect(admin_page.locator("#adminSuccess")).to_have_text(
+        "Destination deleted successfully"
+    )
     expected_count = initial_count - 1
     expect(admin_page.locator("#adminDestCount")).to_have_text(
         f"Total destinations: {expected_count}", timeout=3000
@@ -286,7 +305,9 @@ def test_delete_destination_cancel(admin_page: Page):
     dest_name = admin_page.locator(".admin-dest-name").first.inner_text()
 
     # Click Delete on the first destination
-    admin_page.locator(".admin-dest-item").first.locator("button", has_text="Delete").click()
+    admin_page.locator(".admin-dest-item").first.locator(
+        "button", has_text="Delete"
+    ).click()
 
     # Verify confirmation dialog
     dialog = admin_page.locator("#adminDeleteDialog")

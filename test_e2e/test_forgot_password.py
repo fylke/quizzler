@@ -6,11 +6,10 @@ from unittest.mock import patch
 
 import pytest
 from playwright.sync_api import Page, expect
+from werkzeug.security import generate_password_hash
 
 from backend import app
 from backend.models import PasswordResetToken, User, db
-from werkzeug.security import generate_password_hash
-
 
 # A known raw token we'll seed into the DB for valid-token tests
 _RAW_TOKEN = "test-valid-token-for-e2e-abcdef1234567890"
@@ -47,7 +46,6 @@ def seeded_user():
     """Create a test user and return their info."""
     with app.app_context():
         user = User(
-            name="Reset User",
             email="resetuser@example.com",
             password_hash=generate_password_hash("oldpassword123"),
         )
@@ -104,7 +102,12 @@ def test_submit_empty_email_shows_inline_error(page: Page, base_url: str):
 
     # Track network requests to /api/forgot-password
     requests_made = []
-    page.on("request", lambda req: requests_made.append(req.url) if "forgot-password" in req.url else None)
+    page.on(
+        "request",
+        lambda req: (
+            requests_made.append(req.url) if "forgot-password" in req.url else None
+        ),
+    )
 
     # Submit with empty email
     page.click("#forgotPasswordSubmitBtn")
@@ -202,7 +205,9 @@ def test_valid_token_shows_password_form(page: Page, base_url: str, seeded_valid
     expect(page.locator("#confirmPassword")).to_be_visible()
 
 
-def test_mismatched_passwords_shows_inline_error(page: Page, base_url: str, seeded_valid_token):
+def test_mismatched_passwords_shows_inline_error(
+    page: Page, base_url: str, seeded_valid_token
+):
     """Submitting mismatched passwords on the reset form shows the inline error."""
     page.goto(f"{base_url}/reset-password?token={seeded_valid_token}")
 

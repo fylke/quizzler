@@ -9,11 +9,7 @@ from .auth import get_current_player, player_required
 from .email_service import EmailServiceError, send_hint_complaint_email
 from .models import db
 from .quiz_adapters import get_quiz_adapter, get_quiz_adapters
-from .quiz_catalog import (
-    get_or_create_quiz_identity,
-    public_quiz_id,
-    resolve_quiz_id,
-)
+from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id, resolve_quiz_id
 from .quiz_types import get_quiz_type
 from .validation_rules import HINT_COUNT, MAX_GUESSES, STARTING_HINT_DIFFICULTY
 
@@ -53,7 +49,9 @@ def _get_score_lock() -> dict | None:
         return None
 
 
-def _set_score_lock(quiz_type: str, source_id: int, hint_difficulty: int, remaining_guesses: int):
+def _set_score_lock(
+    quiz_type: str, source_id: int, hint_difficulty: int, remaining_guesses: int
+):
     session[SCORE_LOCK_SESSION_KEY] = {
         "quiz_type": quiz_type,
         "source_id": int(source_id),
@@ -307,9 +305,7 @@ def check_answer():
         }
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
-        return jsonify(
-            response_payload
-        )
+        return jsonify(response_payload)
 
     # Wrong answer — decrement remaining guesses
     quiz_result.remaining_guesses -= 1
@@ -330,9 +326,7 @@ def check_answer():
         }
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
-        return jsonify(
-            response_payload
-        )
+        return jsonify(response_payload)
 
     # Still has guesses left — keep same hint difficulty.
     # Users progress to the next hint only via the skip-hint flow.
@@ -401,9 +395,7 @@ def submit_hint_complaint():
         return jsonify({"error": "Question not found"}), 404
 
     admin_email = (
-        os.environ.get("ADMIN_EMAIL")
-        or os.environ.get("SMTP_FROM_ADDRESS")
-        or ""
+        os.environ.get("ADMIN_EMAIL") or os.environ.get("SMTP_FROM_ADDRESS") or ""
     ).strip()
 
     hint_text = adapter.hint_text(question, hint_difficulty)
@@ -412,7 +404,9 @@ def submit_hint_complaint():
             admin_address=admin_email,
             reporter_email=complainer_email,
             reporter_name=(
-                player.user.name if player.is_user else f"Guest #{player.guest_session_id}"
+                player.user.email
+                if player.is_user
+                else f"Guest #{player.guest_session_id}"
             ),
             quiz_id=quiz_id,
             hint_difficulty=hint_difficulty,

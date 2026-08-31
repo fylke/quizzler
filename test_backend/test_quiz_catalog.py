@@ -55,7 +55,10 @@ class QuizCatalogTestCase(unittest.TestCase):
             identities = QuizIdentity.query.order_by(QuizIdentity.source_id).all()
             self.assertEqual(len(identities), 2)
             self.assertEqual(
-                [public_quiz_id("countries", identity.source_id) for identity in identities],
+                [
+                    public_quiz_id("countries", identity.source_id)
+                    for identity in identities
+                ],
                 ["c1", "c2"],
             )
 

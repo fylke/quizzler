@@ -5,7 +5,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from backend import app
-from backend.models import db, User, PasswordResetToken
+from backend.models import PasswordResetToken, User, db
 
 
 class TestPasswordResetTokenSchema(unittest.TestCase):
@@ -32,12 +32,19 @@ class TestPasswordResetTokenSchema(unittest.TestCase):
         """PasswordResetToken table has columns: id, user_id, token_hash, created_at, expires_at, consumed."""
         inspector = inspect(db.engine)
         columns = {col["name"] for col in inspector.get_columns("password_reset_token")}
-        expected = {"id", "user_id", "token_hash", "created_at", "expires_at", "consumed"}
+        expected = {
+            "id",
+            "user_id",
+            "token_hash",
+            "created_at",
+            "expires_at",
+            "consumed",
+        }
         self.assertEqual(expected, columns)
 
     def test_token_hash_has_uniqueness_constraint(self):
         """Inserting two tokens with the same token_hash raises IntegrityError."""
-        user = User(name="Test User", email="test@example.com", password_hash="hash123")
+        user = User(email="test@example.com", password_hash="hash123")
         db.session.add(user)
         db.session.commit()
 
@@ -67,7 +74,7 @@ class TestPasswordResetTokenSchema(unittest.TestCase):
 
     def test_user_id_foreign_key_relationship(self):
         """Can access token.user via the FK relationship."""
-        user = User(name="FK User", email="fk@example.com", password_hash="hash123")
+        user = User(email="fk@example.com", password_hash="hash123")
         db.session.add(user)
         db.session.commit()
 
@@ -89,7 +96,7 @@ class TestPasswordResetTokenSchema(unittest.TestCase):
 
     def test_reset_tokens_cascade_delete_with_user(self):
         """Deleting a user cascades to delete their reset tokens."""
-        user = User(name="Cascade User", email="cascade@example.com", password_hash="hash123")
+        user = User(email="cascade@example.com", password_hash="hash123")
         db.session.add(user)
         db.session.commit()
 
@@ -139,7 +146,7 @@ class TestUserPasswordChangedAt(unittest.TestCase):
 
     def test_password_changed_at_is_nullable_and_defaults_to_none(self):
         """password_changed_at defaults to None for new users."""
-        user = User(name="New User", email="new@example.com", password_hash="hash123")
+        user = User(email="new@example.com", password_hash="hash123")
         db.session.add(user)
         db.session.commit()
 
@@ -148,7 +155,7 @@ class TestUserPasswordChangedAt(unittest.TestCase):
 
     def test_password_changed_at_can_be_set(self):
         """password_changed_at can be updated to a datetime value."""
-        user = User(name="Reset User", email="reset@example.com", password_hash="hash123")
+        user = User(email="reset@example.com", password_hash="hash123")
         db.session.add(user)
         db.session.commit()
 
@@ -167,11 +174,11 @@ if __name__ == "__main__":
 
 import os
 import smtplib
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from backend.email_service import send_password_reset_email, EmailServiceError
+from backend.email_service import EmailServiceError, send_password_reset_email
 
 
 class TestEmailService(unittest.TestCase):
@@ -208,35 +215,51 @@ class TestEmailService(unittest.TestCase):
         self.assertIn(reset_url, body)
         self.assertIn("15 minutes", body)
 
-    @patch.dict(os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_HOST"}, clear=True)
+    @patch.dict(
+        os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_HOST"}, clear=True
+    )
     def test_missing_smtp_host_raises_error(self):
         """Missing SMTP_HOST raises EmailServiceError with 'SMTP_HOST' in reason."""
         with self.assertRaises(EmailServiceError) as ctx:
             send_password_reset_email("user@example.com", "http://example.com/reset")
         self.assertIn("SMTP_HOST", ctx.exception.reason)
 
-    @patch.dict(os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_PORT"}, clear=True)
+    @patch.dict(
+        os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_PORT"}, clear=True
+    )
     def test_missing_smtp_port_raises_error(self):
         """Missing SMTP_PORT raises EmailServiceError with 'SMTP_PORT' in reason."""
         with self.assertRaises(EmailServiceError) as ctx:
             send_password_reset_email("user@example.com", "http://example.com/reset")
         self.assertIn("SMTP_PORT", ctx.exception.reason)
 
-    @patch.dict(os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_USERNAME"}, clear=True)
+    @patch.dict(
+        os.environ,
+        {k: v for k, v in SMTP_ENV.items() if k != "SMTP_USERNAME"},
+        clear=True,
+    )
     def test_missing_smtp_username_raises_error(self):
         """Missing SMTP_USERNAME raises EmailServiceError with 'SMTP_USERNAME' in reason."""
         with self.assertRaises(EmailServiceError) as ctx:
             send_password_reset_email("user@example.com", "http://example.com/reset")
         self.assertIn("SMTP_USERNAME", ctx.exception.reason)
 
-    @patch.dict(os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_PASSWORD"}, clear=True)
+    @patch.dict(
+        os.environ,
+        {k: v for k, v in SMTP_ENV.items() if k != "SMTP_PASSWORD"},
+        clear=True,
+    )
     def test_missing_smtp_password_raises_error(self):
         """Missing SMTP_PASSWORD raises EmailServiceError with 'SMTP_PASSWORD' in reason."""
         with self.assertRaises(EmailServiceError) as ctx:
             send_password_reset_email("user@example.com", "http://example.com/reset")
         self.assertIn("SMTP_PASSWORD", ctx.exception.reason)
 
-    @patch.dict(os.environ, {k: v for k, v in SMTP_ENV.items() if k != "SMTP_FROM_ADDRESS"}, clear=True)
+    @patch.dict(
+        os.environ,
+        {k: v for k, v in SMTP_ENV.items() if k != "SMTP_FROM_ADDRESS"},
+        clear=True,
+    )
     def test_missing_smtp_from_address_raises_error(self):
         """Missing SMTP_FROM_ADDRESS raises EmailServiceError with 'SMTP_FROM_ADDRESS' in reason."""
         with self.assertRaises(EmailServiceError) as ctx:
@@ -265,7 +288,9 @@ class TestEmailService(unittest.TestCase):
         mock_smtp_ssl_class.return_value.__enter__ = MagicMock(return_value=mock_conn)
         mock_smtp_ssl_class.return_value.__exit__ = MagicMock(return_value=False)
 
-        send_password_reset_email("user@example.com", "http://example.com/reset?token=xyz")
+        send_password_reset_email(
+            "user@example.com", "http://example.com/reset?token=xyz"
+        )
 
         mock_smtp_ssl_class.assert_called_once_with("mail.example.com", 587)
         mock_smtp_class.assert_not_called()
@@ -299,7 +324,6 @@ class TestForgotPasswordAPIRoutes(unittest.TestCase):
         self.test_email = "testuser@example.com"
         self.test_password = "oldpassword123"
         self.user = User(
-            name="Test User",
             email=self.test_email,
             password_hash=generate_password_hash(self.test_password),
         )
@@ -688,4 +712,6 @@ class TestForgotPasswordAPIRoutes(unittest.TestCase):
         self.assertIn("Failed to send reset email", data["error"])
 
         # Verify error was logged
-        self.assertTrue(any("Failed to send reset email" in msg for msg in log_ctx.output))
+        self.assertTrue(
+            any("Failed to send reset email" in msg for msg in log_ctx.output)
+        )

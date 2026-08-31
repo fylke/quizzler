@@ -8,7 +8,7 @@ You will be shown a textual hint accompanied by two pictures. There are a total 
 
 The countries are limited to the current UN member states - so Taiwan is for instance not among the valid guesses, neither is Scotland, or territories that belong to other countries like Azores (Portugal), or Greenland (Denmark - for now at least...)
 
-This all works on the honor system - you could of course search online for the answers to the textual hints (which is why there is no global scoreboard). Most common spelling (or name) variations on the country names are accepted, but it's the English name we're looking for, and you are responsible for spelling them correctly (capitalization does not matter). Historical names are typically accepted - for instance Burma for Myanmar, Swaziland for Eswatini, or Turkey for Türkie.
+This all works on the honor system - you could of course search online for the answers to the textual hints (which is why there is no global scoreboard). Most common spelling (or name) variations on the country names are accepted, but it's the English name we're looking for. The game will offer up autocomplete for all valid guesses, so there's no reason to misspell.
 
 ## Scoring
 

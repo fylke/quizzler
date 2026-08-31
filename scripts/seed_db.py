@@ -11,8 +11,8 @@ See data/countries.example.json for the expected format.
 """
 
 import json
-import sys
 import os
+import sys
 
 # Ensure the project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,7 +22,7 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash
 
 from backend import app
-from backend.models import db, User
+from backend.models import User, db
 from backend.quiz_adapters import get_quiz_adapter
 from backend.quiz_catalog import synchronize_quiz_identities
 from backend.quiz_types import get_registry
@@ -152,7 +152,6 @@ def seed(destinations=None, quiz_data=None):
                     print(f"  Updated admin user: {admin_email}")
                 else:
                     admin = User(
-                        name="Admin",
                         email=admin_email,
                         password_hash=generate_password_hash(admin_password),
                         is_admin=True,

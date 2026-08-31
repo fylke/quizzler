@@ -23,7 +23,9 @@ class TestGenerateSmallWebp(unittest.TestCase):
 
             Image.new("RGB", (32, 32), color="red").save(source_paths[0], format="JPEG")
             Image.new("RGB", (32, 32), color="blue").save(source_paths[1], format="PNG")
-            Image.new("RGB", (32, 32), color="green").save(source_paths[2], format="WEBP")
+            Image.new("RGB", (32, 32), color="green").save(
+                source_paths[2], format="WEBP"
+            )
             Image.new("RGB", (32, 32), color="black").save(
                 root / "already_small.webp",
                 format="WEBP",

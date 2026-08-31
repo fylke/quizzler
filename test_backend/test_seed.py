@@ -8,6 +8,7 @@ Validates:
 import os
 import unittest
 from unittest.mock import patch
+
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash
 
@@ -15,7 +16,7 @@ from werkzeug.security import generate_password_hash
 os.environ["QUIZ_DATABASE_URL"] = "sqlite:///:memory:"
 
 from backend import app
-from backend.models import db, Destination, User  # noqa: F401 - User used in seed
+from backend.models import Destination, User, db  # noqa: F401 - User used in seed
 
 # Test fixture — minimal destination data for unit tests
 TEST_DESTINATIONS = [
@@ -99,7 +100,6 @@ class TestSeedEmptyDatabase(unittest.TestCase):
                     CREATE TABLE user (
                         id INTEGER NOT NULL PRIMARY KEY,
                         password_hash VARCHAR(256) NOT NULL,
-                        name VARCHAR(128) NOT NULL,
                         email VARCHAR(128) NOT NULL UNIQUE,
                         is_admin BOOLEAN NOT NULL DEFAULT 0
                     )
@@ -112,7 +112,8 @@ class TestSeedEmptyDatabase(unittest.TestCase):
 
         with app.app_context():
             columns = {
-                row[1] for row in db.session.execute(text('PRAGMA table_info("user")')).all()
+                row[1]
+                for row in db.session.execute(text('PRAGMA table_info("user")')).all()
             }
             self.assertIn("password_changed_at", columns)
             self.assertGreaterEqual(User.query.filter_by(is_admin=True).count(), 1)
@@ -124,7 +125,6 @@ class TestSeedEmptyDatabase(unittest.TestCase):
         with app.app_context():
             db.session.add(
                 User(
-                    name="Existing Admin",
                     email="admin@example.com",
                     password_hash=generate_password_hash("already-set-password"),
                     is_admin=True,

@@ -1,9 +1,6 @@
 """Authentication blueprint — register, login, logout, password reset."""
 
-import os
-import random
 import re
-from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -12,8 +9,8 @@ from .auth import (
     GUEST_TOKEN_COOKIE,
     GUEST_TOKEN_MAX_AGE_SECONDS,
     check_csrf_token,
-    csrf_protected,
     create_guest_session,
+    csrf_protected,
     delete_guest_session,
     generate_csrf_token,
     get_current_guest_session,
@@ -31,9 +28,6 @@ auth_bp = Blueprint("auth", __name__)
 
 # Basic email format check — intentionally lenient but catches obvious junk
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-_FUNNY_NAMES = (Path(__file__).parent / "assets" / "names.txt").read_text().splitlines()
-_FUNNY_NAMES = [n for n in _FUNNY_NAMES if n.strip()]
 
 
 def _guest_payload(guest_session):
@@ -60,8 +54,6 @@ def register():
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
-    name = random.choice(_FUNNY_NAMES)
-
     if not _EMAIL_RE.match(email):
         return jsonify({"error": "Invalid email format"}), 400
 
@@ -76,7 +68,7 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 400
 
-    user = User(name=name, email=email, password_hash=generate_password_hash(password))
+    user = User(email=email, password_hash=generate_password_hash(password))
     db.session.add(user)
     db.session.commit()
 

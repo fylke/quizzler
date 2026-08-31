@@ -1,5 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import UTC, datetime
+
+from flask_sqlalchemy import SQLAlchemy
 
 # Shared SQLAlchemy instance used by the app and tests
 # Flask-SQLAlchemy will bind this to the Flask app in src/main/__init__.py
@@ -8,12 +9,12 @@ db = SQLAlchemy()
 
 
 class QuizIdentity(db.Model):
-    __tablename__ = 'quiz_identity'
+    __tablename__ = "quiz_identity"
     __table_args__ = (
         db.UniqueConstraint(
-            'quiz_type',
-            'source_id',
-            name='uq_quiz_identity_source',
+            "quiz_type",
+            "source_id",
+            name="uq_quiz_identity_source",
         ),
     )
 
@@ -23,7 +24,7 @@ class QuizIdentity(db.Model):
 
 
 class Destination(db.Model):
-    __tablename__ = 'countries'
+    __tablename__ = "countries"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
@@ -39,31 +40,38 @@ class Destination(db.Model):
     hint5_source = db.Column(db.String(512), nullable=True)
     correct_answers = db.Column(db.JSON, nullable=False)
 
-    results = db.relationship('QuizResult', back_populates='country', cascade='all, delete-orphan')
+    results = db.relationship(
+        "QuizResult", back_populates="country", cascade="all, delete-orphan"
+    )
+
 
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    name = db.Column(db.String(128), nullable=False)
     email = db.Column(db.String(128), nullable=False, unique=True)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     password_changed_at = db.Column(db.DateTime, nullable=True, default=None)
 
-    results = db.relationship('QuizResult', back_populates='user', cascade='all, delete-orphan')
+    results = db.relationship(
+        "QuizResult", back_populates="user", cascade="all, delete-orphan"
+    )
+
 
 class QuizResult(db.Model):
-    __tablename__ = 'quiz_result'
+    __tablename__ = "quiz_result"
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    destination_id = db.Column(db.Integer, db.ForeignKey('countries.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    destination_id = db.Column(
+        db.Integer, db.ForeignKey("countries.id"), primary_key=True
+    )
     hint_difficulty = db.Column(db.Integer, nullable=False, default=5)
     remaining_guesses = db.Column(db.Integer, nullable=False, default=3)
     ongoing = db.Column(db.Boolean, nullable=False, default=True)
 
-    user = db.relationship('User', back_populates='results')
-    country = db.relationship('Destination', back_populates='results')
+    user = db.relationship("User", back_populates="results")
+    country = db.relationship("Destination", back_populates="results")
 
 
 def _utcnow_naive() -> datetime:
@@ -72,44 +80,48 @@ def _utcnow_naive() -> datetime:
 
 
 class GuestSession(db.Model):
-    __tablename__ = 'guest_session'
+    __tablename__ = "guest_session"
 
     id = db.Column(db.Integer, primary_key=True)
     token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
 
     results = db.relationship(
-        'GuestQuizResult',
-        back_populates='guest_session',
-        cascade='all, delete-orphan'
+        "GuestQuizResult", back_populates="guest_session", cascade="all, delete-orphan"
     )
 
 
 class GuestQuizResult(db.Model):
-    __tablename__ = 'guest_quiz_result'
+    __tablename__ = "guest_quiz_result"
 
     guest_session_id = db.Column(
         db.Integer,
-        db.ForeignKey('guest_session.id'),
+        db.ForeignKey("guest_session.id"),
         primary_key=True,
     )
-    destination_id = db.Column(db.Integer, db.ForeignKey('countries.id'), primary_key=True)
+    destination_id = db.Column(
+        db.Integer, db.ForeignKey("countries.id"), primary_key=True
+    )
     hint_difficulty = db.Column(db.Integer, nullable=False, default=5)
     remaining_guesses = db.Column(db.Integer, nullable=False, default=3)
     ongoing = db.Column(db.Boolean, nullable=False, default=True)
 
-    guest_session = db.relationship('GuestSession', back_populates='results')
-    country = db.relationship('Destination')
+    guest_session = db.relationship("GuestSession", back_populates="results")
+    country = db.relationship("Destination")
 
 
 class PasswordResetToken(db.Model):
-    __tablename__ = 'password_reset_token'
+    __tablename__ = "password_reset_token"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
     token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     consumed = db.Column(db.Boolean, nullable=False, default=False)
 
-    user = db.relationship('User', backref=db.backref('reset_tokens', cascade='all, delete-orphan'))
+    user = db.relationship(
+        "User", backref=db.backref("reset_tokens", cascade="all, delete-orphan")
+    )

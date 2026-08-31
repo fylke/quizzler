@@ -6,7 +6,7 @@ from uuid import uuid4
 from sqlalchemy import select
 
 from .models import QuizIdentity, db
-from .quiz_types import QuizType, get_registry, get_quiz_type
+from .quiz_types import QuizType, get_quiz_type, get_registry
 
 PUBLIC_ID_PATTERN = r"^[a-z][0-9]+$"
 

@@ -1,19 +1,19 @@
 import os
 import unittest
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 from sqlalchemy.exc import IntegrityError
 
 from backend import app
-from backend.models import db, Destination, User, QuizResult
+from backend.models import Destination, QuizResult, User, db
 
 
 class DatabaseModelTestCase(unittest.TestCase):
     def setUp(self):
         app.testing = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
         with app.app_context():
             db.drop_all()
@@ -27,35 +27,35 @@ class DatabaseModelTestCase(unittest.TestCase):
     def test_destination_model_can_be_created_and_retrieved(self):
         with app.app_context():
             destination = Destination(
-                name='Testopolis',
-                hint1='Hint 1',
-                hint2='Hint 2',
-                hint3='Hint 3',
-                hint4='Hint 4',
-                hint5='Hint 5',
-                correct_answers=['testopolis']
+                name="Testopolis",
+                hint1="Hint 1",
+                hint2="Hint 2",
+                hint3="Hint 3",
+                hint4="Hint 4",
+                hint5="Hint 5",
+                correct_answers=["testopolis"],
             )
             db.session.add(destination)
             db.session.commit()
 
             self.assertIsNotNone(destination.id)
 
-            loaded = Destination.query.filter_by(name='Testopolis').first()
+            loaded = Destination.query.filter_by(name="Testopolis").first()
             self.assertIsNotNone(loaded)
-            self.assertEqual(loaded.hint1, 'Hint 1')
-            self.assertEqual(loaded.correct_answers, ['testopolis'])
+            self.assertEqual(loaded.hint1, "Hint 1")
+            self.assertEqual(loaded.correct_answers, ["testopolis"])
 
     def test_quiz_result_links_user_and_destination(self):
         with app.app_context():
-            user = User(name='Quiz User', email='quiz@user.test', password_hash='hash123')
+            user = User(email="quiz@user.test", password_hash="hash123")
             destination = Destination(
-                name='Relationville',
-                hint1='H1',
-                hint2='H2',
-                hint3='H3',
-                hint4='H4',
-                hint5='H5',
-                correct_answers=['relationville']
+                name="Relationville",
+                hint1="H1",
+                hint2="H2",
+                hint3="H3",
+                hint4="H4",
+                hint5="H5",
+                correct_answers=["relationville"],
             )
             db.session.add_all([user, destination])
             db.session.commit()
@@ -65,7 +65,7 @@ class DatabaseModelTestCase(unittest.TestCase):
                 destination_id=destination.id,
                 hint_difficulty=4,
                 remaining_guesses=2,
-                ongoing=True
+                ongoing=True,
             )
             db.session.add(quiz_result)
             db.session.commit()
@@ -74,22 +74,22 @@ class DatabaseModelTestCase(unittest.TestCase):
             self.assertIsNotNone(loaded_result)
             self.assertEqual(loaded_result.user.id, user.id)
             self.assertEqual(loaded_result.country.id, destination.id)
-            self.assertEqual(loaded_result.user.name, 'Quiz User')
-            self.assertEqual(loaded_result.country.name, 'Relationville')
-            self.assertEqual(user.results[0].country.name, 'Relationville')
-            self.assertEqual(destination.results[0].user.email, 'quiz@user.test')
+            self.assertEqual(loaded_result.user.email, "quiz@user.test")
+            self.assertEqual(loaded_result.country.name, "Relationville")
+            self.assertEqual(user.results[0].country.name, "Relationville")
+            self.assertEqual(destination.results[0].user.email, "quiz@user.test")
 
     def test_quiz_result_is_removed_when_user_is_deleted(self):
         with app.app_context():
-            user = User(name='Cascade User', email='cascade@user.test', password_hash='hash123')
+            user = User(email="cascade@user.test", password_hash="hash123")
             destination = Destination(
-                name='Cascade City',
-                hint1='H1',
-                hint2='H2',
-                hint3='H3',
-                hint4='H4',
-                hint5='H5',
-                correct_answers=['cascade city']
+                name="Cascade City",
+                hint1="H1",
+                hint2="H2",
+                hint3="H3",
+                hint4="H4",
+                hint5="H5",
+                correct_answers=["cascade city"],
             )
             db.session.add_all([user, destination])
             db.session.commit()
@@ -99,7 +99,7 @@ class DatabaseModelTestCase(unittest.TestCase):
                 country=destination,
                 hint_difficulty=5,
                 remaining_guesses=1,
-                ongoing=False
+                ongoing=False,
             )
             db.session.add(quiz_result)
             db.session.commit()
@@ -114,8 +114,8 @@ class DatabaseModelTestCase(unittest.TestCase):
 
     def test_user_email_must_be_unique(self):
         with app.app_context():
-            user1 = User(name='Unique User', email='unique@example.test', password_hash='hash123')
-            user2 = User(name='Duplicate User', email='unique@example.test', password_hash='hash456')
+            user1 = User(email="unique@example.test", password_hash="hash123")
+            user2 = User(email="unique@example.test", password_hash="hash456")
             db.session.add(user1)
             db.session.commit()
 
@@ -125,5 +125,5 @@ class DatabaseModelTestCase(unittest.TestCase):
             db.session.rollback()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
