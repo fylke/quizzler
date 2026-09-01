@@ -22,7 +22,8 @@ jobs:
 
       - name: Lint SSH workflow scripts with bash -n
         shell: bash
-        run: bash scripts/run_in_devcontainer.sh python3 - <<'PY'
+        run: |
+          bash scripts/run_in_devcontainer.sh python3 - <<'PY'
           import re
           import subprocess
           import tempfile
