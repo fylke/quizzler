@@ -273,8 +273,11 @@ describe('Quiz Type Buttons - Property Tests', function () {
 
                 for (var i = 0; i < infoButtons.length; i++) {
                     var icon = infoButtons[i].querySelector('.rules-icon');
+                    expect(infoButtons[i].classList.contains('btn')).toBeFalse();
+                    expect(infoButtons[i].classList.contains('btn-secondary')).toBeFalse();
                     expect(icon).not.toBeNull();
                     expect(icon.getAttribute('aria-hidden')).toBe('true');
+                    expect(infoButtons[i].title).toBe(infoButtons[i].getAttribute('aria-label'));
                 }
                 done();
             }).catch(function (err) {

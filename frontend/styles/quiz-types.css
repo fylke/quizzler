@@ -27,22 +27,44 @@
 
 .quiz-type-info-btn {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
     padding: 0;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2em;
-    border-radius: 8px;
+    color: #4d64c9;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.quiz-type-info-btn:hover,
+.quiz-type-info-btn:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(74, 98, 196, 0.18);
+}
+
+.quiz-type-info-btn:focus-visible {
+    outline: 2px solid #4d64c9;
+    outline-offset: 2px;
 }
 
 .rules-icon {
-    width: 24px;
-    height: 24px;
+    width: 100%;
+    height: 100%;
     display: block;
     background: url('/static/assets/icon-rules.svg') no-repeat center;
-    background-size: contain;
+    background-size: 100% 100%;
+}
+
+@media (max-width: 600px) {
+    .quiz-type-info-btn {
+        width: 42px;
+        height: 42px;
+    }
 }
 
 .quiz-type-empty-message {
