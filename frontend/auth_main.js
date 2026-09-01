@@ -86,6 +86,7 @@ function applyGuestSession(data) {
     quizState.user = data.guest || null;
     quizState.isGuest = true;
     csrfToken = null;
+    updateGuestUpgradeVisibility();
 }
 
 async function continueAsGuest(isAutoStart = false) {
