@@ -45,3 +45,41 @@
     margin-bottom: var(--space-6);
 }
 
+.results-hint-review {
+    margin: var(--space-6) auto;
+    max-width: 720px;
+    text-align: left;
+}
+
+.results-hint-review h3 {
+    margin: 0 0 var(--space-4);
+    text-align: center;
+}
+
+.results-hints-list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.results-hints-list li {
+    padding: var(--space-4);
+    border: 1px solid rgba(102, 126, 234, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.results-hint-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: #667eea;
+    font-weight: 700;
+}
+
+.results-hints-list p {
+    margin: 0;
+    line-height: 1.5;
+}
+

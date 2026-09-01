@@ -25,6 +25,7 @@ describe('Image Enlargement', function () {
                 '<div id="resultsDetails"></div>' +
                 '<h3 id="resultsImagesHeading" class="hidden"></h3>' +
                 '<div id="resultsImages" class="images-section hidden"></div>' +
+                '<section id="resultsHintReview" class="results-hint-review hidden"></section>' +
             '</div>' +
             '<div id="imageModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Enlarged image">' +
                 '<div class="modal-card image-modal-card">' +
@@ -137,6 +138,26 @@ describe('Image Enlargement', function () {
             .toBe('Here are all the pictures from Bhutan, as well as some bonus pictures');
         expect(document.getElementById('resultsImagesHeading').classList.contains('hidden')).toBeFalse();
         expect(document.querySelector('#resultsDetails .points-earned').textContent).toBe('15 Points!');
+    });
+
+    it('renders all destination hints on the results screen', function () {
+        showResults(true, 15, 'Bhutan', [], {
+            destinationHints: [
+                { difficulty: 5, text: 'Highest level hint' },
+                { difficulty: 4, text: 'Next level hint' },
+                { difficulty: 3, text: '<script>not markup</script>' }
+            ]
+        });
+
+        var review = document.getElementById('resultsHintReview');
+        var items = document.querySelectorAll('#resultsHintReview li');
+
+        expect(review.classList.contains('hidden')).toBeFalse();
+        expect(items.length).toBe(3);
+        expect(items[0].querySelector('.results-hint-label').textContent).toBe('First hint');
+        expect(items[0].querySelector('p').textContent).toBe('Highest level hint');
+        expect(items[2].querySelector('p').textContent).toBe('<script>not markup</script>');
+        expect(review.querySelector('script')).toBeNull();
     });
 
     it('marks hint images as portrait when natural dimensions are portrait', function () {

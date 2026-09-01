@@ -9,6 +9,7 @@ from flask import current_app
 
 from .admin import normalize_answers
 from .models import Destination, GuestQuizResult, QuizResult, db
+from .validation_rules import HINT_COUNT
 
 
 class QuizAdapter(Protocol):
@@ -28,6 +29,8 @@ class QuizAdapter(Protocol):
     def correct_answers(self, question) -> list[str]: ...
 
     def hint_text(self, question, difficulty: int) -> str: ...
+
+    def all_hint_texts(self, question) -> list[dict]: ...
 
     def hint_images(self, question, difficulty: int) -> list[str]: ...
 
@@ -101,6 +104,12 @@ class StandardQuizAdapter:
 
     def hint_text(self, question, difficulty: int) -> str:
         return getattr(question, f"hint{difficulty}", "")
+
+    def all_hint_texts(self, question) -> list[dict]:
+        return [
+            {"difficulty": difficulty, "text": self.hint_text(question, difficulty)}
+            for difficulty in range(HINT_COUNT, 0, -1)
+        ]
 
     def _question_media_dir(self, question) -> Path:
         media_root = os.environ.get("MEDIA_DIR") or current_app.config["MEDIA_DIR"]

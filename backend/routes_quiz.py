@@ -60,6 +60,17 @@ def _clear_score_lock():
     session.pop(SCORE_LOCK_SESSION_KEY, None)
 
 
+def _completion_payload(adapter, question, *, correct: bool, points: int) -> dict:
+    return {
+        "correct": correct,
+        "answer": adapter.answer_name(question),
+        "points": points,
+        "scorePreserved": False,
+        "resultImages": adapter.result_images(question),
+        "destinationHints": adapter.all_hint_texts(question),
+    }
+
+
 def _restore_locked_score_if_needed(adapter, quiz_result) -> int | None:
     """Restore preserved score fields for a rerun result when lock matches."""
     lock = _get_score_lock()
@@ -261,13 +272,13 @@ def check_answer():
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
         set_media_access_state(adapter.identifier, source_id, 1)
-        response_payload = {
-            "correct": True,
-            "answer": adapter.answer_name(question),
-            "points": attempt_points,
-            "scorePreserved": score_preserved,
-            "resultImages": adapter.result_images(question),
-        }
+        response_payload = _completion_payload(
+            adapter,
+            question,
+            correct=True,
+            points=attempt_points,
+        )
+        response_payload["scorePreserved"] = score_preserved
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
         return jsonify(response_payload)
@@ -282,13 +293,13 @@ def check_answer():
         _clear_score_lock()
         # Keep result-gallery images readable after completion.
         set_media_access_state(adapter.identifier, source_id, 1)
-        response_payload = {
-            "correct": False,
-            "answer": adapter.answer_name(question),
-            "points": 0,
-            "scorePreserved": score_preserved,
-            "resultImages": adapter.result_images(question),
-        }
+        response_payload = _completion_payload(
+            adapter,
+            question,
+            correct=False,
+            points=0,
+        )
+        response_payload["scorePreserved"] = score_preserved
         if score_preserved:
             response_payload["preservedScore"] = preserved_score
         return jsonify(response_payload)

@@ -3,6 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "runArgs": ["--privileged"],
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "userEnvProbe": "none",
@@ -10,10 +11,14 @@
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venvs/quizzler"
   },
   "postCreateCommand": "uv sync --all-groups --frozen && uv run --group test playwright install --with-deps chromium",
-  "forwardPorts": [5000],
+  "forwardPorts": [5000, 9696],
   "portsAttributes": {
     "5000": {
       "label": "Quizzler",
+      "onAutoForward": "openBrowser"
+    },
+    "9696": {
+      "label": "Quizzler (Podman)",
       "onAutoForward": "openBrowser"
     }
   },

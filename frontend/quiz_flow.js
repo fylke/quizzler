@@ -552,7 +552,8 @@ async function submitAnswer() {
                 scorePreserved: Boolean(result.scorePreserved),
                 preservedScore: Number.isFinite(Number(result.preservedScore))
                     ? Number(result.preservedScore)
-                    : null
+                    : null,
+                destinationHints: result.destinationHints || []
             });
         } else if (result.remainingGuesses !== undefined && result.remainingGuesses > 0) {
             await animateWrongGuess(answerInput);
@@ -572,7 +573,8 @@ async function submitAnswer() {
                 scorePreserved: Boolean(result.scorePreserved),
                 preservedScore: Number.isFinite(Number(result.preservedScore))
                     ? Number(result.preservedScore)
-                    : null
+                    : null,
+                destinationHints: result.destinationHints || []
             });
         }
     } catch (error) {

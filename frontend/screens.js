@@ -121,8 +121,60 @@ const resultsScreenController = {
             }
         }
         renderImageGallery(resultsImagesContainer, resultImages, 'hint');
+        renderDestinationHintReview(options.destinationHints);
     }
 };
+
+function getResultHintLabel(index) {
+    const labels = ['First', 'Second', 'Third', 'Fourth', 'Fifth'];
+    return labels[index] || `Hint ${index + 1}`;
+}
+
+function renderDestinationHintReview(destinationHints) {
+    const reviewEl = document.getElementById('resultsHintReview');
+    if (!reviewEl) {
+        return;
+    }
+
+    reviewEl.innerHTML = '';
+    if (!Array.isArray(destinationHints) || destinationHints.length === 0) {
+        reviewEl.classList.add('hidden');
+        return;
+    }
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'All hints';
+    reviewEl.appendChild(heading);
+
+    const list = document.createElement('ol');
+    list.className = 'results-hints-list';
+    destinationHints.forEach((hint, index) => {
+        const text = typeof hint === 'string' ? hint : hint && hint.text;
+        if (typeof text !== 'string' || text.trim() === '') {
+            return;
+        }
+
+        const item = document.createElement('li');
+        const label = document.createElement('span');
+        label.className = 'results-hint-label';
+        label.textContent = `${getResultHintLabel(index)} hint`;
+
+        const copy = document.createElement('p');
+        copy.textContent = text;
+
+        item.appendChild(label);
+        item.appendChild(copy);
+        list.appendChild(item);
+    });
+
+    if (!list.hasChildNodes()) {
+        reviewEl.classList.add('hidden');
+        return;
+    }
+
+    reviewEl.appendChild(list);
+    reviewEl.classList.remove('hidden');
+}
 
 registerScreenController('auth', authScreenController);
 registerScreenController('main', mainScreenController);

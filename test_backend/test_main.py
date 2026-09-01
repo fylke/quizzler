@@ -257,6 +257,13 @@ class MainAppTestCase(unittest.TestCase):
             data["points"], 15
         )  # Hint difficulty (5) * Remaining guesses (3)
         self.assertEqual(data["answer"], question["destination"])
+        self.assertEqual(
+            data["destinationHints"],
+            [
+                {"difficulty": index, "text": question["hints"][str(index)]}
+                for index in range(5, 0, -1)
+            ],
+        )
 
     def test_check_answer_returns_all_image_files_in_destination_directory(self):
         question = self.quiz_data[0]
@@ -391,6 +398,27 @@ class MainAppTestCase(unittest.TestCase):
         # Still has guesses left, so we get updated remainingGuesses
         self.assertIn("remainingGuesses", data)
         self.assertEqual(data["remainingGuesses"], 2)
+
+    def test_check_answer_returns_all_hints_after_final_incorrect_answer(self):
+        question = self.quiz_data[0]
+        self.client.get(f'/api/quiz/{question["guid"]}')
+
+        for _ in range(3):
+            response = self.client.post(
+                "/api/check-answer", json={"answer": "not a valid place"}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertFalse(data["correct"])
+        self.assertEqual(data["points"], 0)
+        self.assertEqual(
+            data["destinationHints"],
+            [
+                {"difficulty": index, "text": question["hints"][str(index)]}
+                for index in range(5, 0, -1)
+            ],
+        )
 
     def test_get_hint_returns_updated_images_for_new_difficulty(self):
         question = self.quiz_data[0]

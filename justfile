@@ -1,6 +1,6 @@
 default: test
 
-podman_compose := "CONTAINERS_CONF=$PWD/.podman/rootless-compat.conf podman-compose -p quizzler -f podman-compose.yml"
+podman_compose := "POSTGRES_USER=\"${POSTGRES_USER:-quizzer}\" POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD:-quizzer_pass}\" POSTGRES_DB=\"${POSTGRES_DB:-quizzler}\" CONTAINERS_CONF=$PWD/.podman/rootless-compat.conf podman-compose -p quizzler -f podman-compose.yml"
 
 sync:
     #!/usr/bin/env bash
@@ -81,6 +81,20 @@ generate-small-webp root='' width='960' height='960' quality='72' overwrite='fal
 podman-preflight:
     #!/usr/bin/env bash
     set -euo pipefail
+    if ! command -v podman >/dev/null 2>&1; then
+        echo "Podman is required for this recipe, but 'podman' was not found on PATH." >&2
+        echo "Install Podman in this environment, or run the Flask app locally with: uv run python -m backend" >&2
+        exit 127
+    fi
+    if ! command -v podman-compose >/dev/null 2>&1; then
+        echo "podman-compose is required for this recipe, but 'podman-compose' was not found on PATH." >&2
+        echo "Install podman-compose in this environment, or run the Flask app locally with: uv run python -m backend" >&2
+        exit 127
+    fi
+    if podman info >/dev/null 2>&1; then
+        exit 0
+    fi
+
     runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
     if [[ ! -S "$runtime_dir/bus" ]]; then
         echo "Rootless Podman requires a running systemd user session; no D-Bus socket was found at $runtime_dir/bus." >&2
