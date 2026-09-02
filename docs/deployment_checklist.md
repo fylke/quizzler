@@ -30,10 +30,15 @@ For GitHub-side deployment setup and workflow prerequisites, see [deployment_aut
 
 ## 2) Content You Must Place on QNAP
 
-- [ ] Upload seed data file to QNAP:
+- [ ] Upload the seed data file to QNAP. The checked-in development fixture is
+  `data/destinations.json`; production deployments normally use the
+  gitignored `data/countries.json` file or set `SEED_DATA_PATH` explicitly:
   ```bash
   scp data/countries.json <user>@<qnap>:/share/CACHEDEV2_DATA/Container/quizzler/data/countries.json
   ```
+  If using the checked-in fixture instead, replace both file names in the
+  command with `destinations.json`. The seed script prefers
+  `data/countries.json` and falls back to `data/destinations.json`.
 - [ ] Upload media files using this structure:
   ```text
   /share/CACHEDEV2_DATA/Container/quizzler/media/countries/<id>/<level>a.jpg

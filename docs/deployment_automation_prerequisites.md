@@ -20,7 +20,7 @@ Configure these in repository settings under Settings -> Secrets and variables -
 
 | Secret | Purpose |
 | --- | --- |
-| `FLASK_SECRET_KEY` | Flask session signing key used at runtime |
+| `FLASK_SECRET_KEY` | GitHub secret containing the Flask session signing key; the workflow passes it to the container as runtime `SECRET_KEY` |
 | `QNAP_HOST` | QNAP hostname or IP address |
 | `QNAP_SSH_PORT` | SSH port for QNAP |
 | `QNAP_USER` | SSH username on QNAP |
@@ -30,7 +30,9 @@ Configure these in repository settings under Settings -> Secrets and variables -
 | `ADMIN_BOOTSTRAP_EMAIL` | Optional bootstrap admin email (defaults to `admin@example.com`) |
 
 Notes:
-- Use a long random value for `FLASK_SECRET_KEY` (32+ characters).
+- Use a long random value for `FLASK_SECRET_KEY` (32+ characters). Do not
+	confuse this GitHub secret name with the runtime environment variable,
+	which is `SECRET_KEY`.
 - `ADMIN_BOOTSTRAP_PASSWORD` should be at least 12 characters.
 
 ---

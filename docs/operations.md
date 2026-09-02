@@ -7,7 +7,10 @@ This guide summarizes runtime configuration, container workflows, backups, and r
 | Variable | Description | Example |
 | --- | --- | --- |
 | SECRET_KEY | Flask session signing key (required in production) | change-me-in-production |
-| QUIZ_DATABASE_URL | SQLAlchemy database URI | sqlite:///database/quiz_data.db |
+| QUIZ_DATABASE_URL | SQLAlchemy database URI; takes precedence over `DATABASE_URL` | sqlite:///database/quiz_data.db |
+| DATABASE_URL | Fallback SQLAlchemy database URI when `QUIZ_DATABASE_URL` is not set | sqlite:///database/quiz_data.db |
+| CORS_ALLOWED_ORIGINS | Comma-separated allowed origins; must be explicit in production | https://quizzler.example.com |
+| SESSION_COOKIE_SECURE | Set to `true` when served over HTTPS | true |
 | SMTP_HOST | SMTP server hostname | smtp.gmail.com |
 | SMTP_PORT | SMTP server port (1-65535) | 587 |
 | SMTP_USERNAME | SMTP auth username | user@gmail.com |
@@ -15,6 +18,15 @@ This guide summarizes runtime configuration, container workflows, backups, and r
 | SMTP_FROM_ADDRESS | Sender address | noreply@quizzler.com |
 | SMTP_USE_TLS | Use TLS if set to true | true |
 | ADMIN_EMAIL | Hint complaint destination email | (none) |
+
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and
+`SMTP_FROM_ADDRESS` are required when sending password-reset or complaint
+email. `SMTP_USE_TLS=true` enables STARTTLS for the SMTP connection.
+
+In production, set `SECRET_KEY` and an explicit `CORS_ALLOWED_ORIGINS`; the
+application rejects the insecure defaults. The deployment workflow stores the
+secret as `FLASK_SECRET_KEY` in GitHub and passes it to the container as
+`SECRET_KEY`.
 
 ## Podman Workflows
 
@@ -53,8 +65,13 @@ Automated weekly backup is defined in:
 
 What it backs up:
 
-- /share/Container/quizzler/database/quiz_data.db
-- /share/Container/quizzler/media
+- The SQLite database at `/share/CACHEDEV2_DATA/Container/quizzler/database/quiz_data.db`
+- The media directory at `/share/CACHEDEV2_DATA/Container/quizzler/media`
+
+The backup workflow writes timestamped `db_*.tar.gz` and `media_*.tar.gz`
+archives under `/share/CACHEDEV2_DATA/Container/quizzler/backups` by default.
+Set the `QNAP_BACKUP_DIR` repository variable to use another absolute QNAP
+path.
 
 The database backup includes the `quiz_identity` table and therefore preserves
 existing shared quiz links. On startup and during seeding, Quizzler
