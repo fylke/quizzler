@@ -11,6 +11,7 @@ RUN apt-get update \
         libatk-bridge2.0-0t64 \
         libatk1.0-0t64 \
         libxcomposite1 \
+        libxdamage1 \
         netavark \
         nftables \
         openssh-client \
