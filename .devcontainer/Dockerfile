@@ -8,6 +8,7 @@ RUN apt-get update \
         dbus-user-session \
         fuse-overlayfs \
         just \
+        libatk1.0-0t64 \
         netavark \
         nftables \
         openssh-client \
