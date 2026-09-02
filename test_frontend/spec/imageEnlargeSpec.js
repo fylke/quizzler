@@ -67,6 +67,19 @@ describe('Image Enlargement', function () {
         expect(document.getElementById('imageModal').style.display).toBe('none');
     });
 
+    it('preloads the full-resolution image when wiring a thumbnail', function () {
+        var preloadedImage = { src: '' };
+        spyOn(window, 'Image').and.returnValue(preloadedImage);
+
+        wireZoomableImage(
+            document.getElementById('image1'),
+            'https://example.com/quiz-1_small.webp',
+            'Destination image 1'
+        );
+
+        expect(preloadedImage.src).toBe('https://example.com/quiz-1.jpg');
+    });
+
     it('opens a result image in a modal when clicked', function () {
         renderImageGallery(
             document.getElementById('resultsImages'),

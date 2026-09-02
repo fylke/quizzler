@@ -76,6 +76,8 @@ function wireZoomableImage(imageEl, imageUrl, altText, lightboxOptions = null) {
     }
 
     imageEl.src = imageUrl;
+    const lightboxImage = new Image();
+    lightboxImage.src = _toLightboxImageUrl(imageUrl);
     imageEl.alt = altText;
     imageEl.tabIndex = 0;
     imageEl.setAttribute('role', 'button');
