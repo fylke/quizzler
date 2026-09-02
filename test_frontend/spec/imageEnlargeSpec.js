@@ -259,4 +259,34 @@ describe('Image Enlargement', function () {
         expect(media.classList.contains('is-magnified')).toBeTrue();
         expect(image.style.getPropertyValue('--image-magnification')).toBe('2');
     });
+
+    it('pans a magnified image with one touch pointer', function () {
+        openImageModal('https://example.com/modal.jpg', 'Modal image');
+
+        var media = document.getElementById('imageModalMedia');
+        var image = document.getElementById('imageModalImage');
+        Object.defineProperty(image, 'offsetWidth', { configurable: true, value: 400 });
+        Object.defineProperty(image, 'offsetHeight', { configurable: true, value: 300 });
+        spyOn(media, 'setPointerCapture');
+
+        function dispatchTouchPointer(type, pointerId, clientX, clientY) {
+            var event = new Event(type);
+            Object.defineProperties(event, {
+                pointerId: { value: pointerId },
+                pointerType: { value: 'touch' },
+                clientX: { value: clientX },
+                clientY: { value: clientY }
+            });
+            media.dispatchEvent(event);
+        }
+
+        dispatchTouchPointer('pointerdown', 1, 100, 150);
+        dispatchTouchPointer('pointerdown', 2, 200, 150);
+        dispatchTouchPointer('pointermove', 2, 300, 150);
+        dispatchTouchPointer('pointerup', 2, 300, 150);
+        dispatchTouchPointer('pointermove', 1, 180, 190);
+
+        expect(image.style.getPropertyValue('--image-pan-x')).toBe('80px');
+        expect(image.style.getPropertyValue('--image-pan-y')).toBe('40px');
+    });
 });
