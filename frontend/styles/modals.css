@@ -134,7 +134,7 @@
     max-height: calc(92vh - 88px);
     object-fit: contain;
     background: #111827;
-    transform: scale(var(--image-magnification, 1));
+    transform: translate(var(--image-pan-x, 0px), var(--image-pan-y, 0px)) scale(var(--image-magnification, 1));
     transform-origin: var(--image-magnification-origin, center);
     transition: transform 0.1s ease-out;
 }

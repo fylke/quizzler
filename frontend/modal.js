@@ -482,7 +482,18 @@ function _resetImageMagnification() {
     if (imageEl) {
         imageEl.style.removeProperty('--image-magnification');
         imageEl.style.removeProperty('--image-magnification-origin');
+        imageEl.style.removeProperty('--image-pan-x');
+        imageEl.style.removeProperty('--image-pan-y');
     }
+}
+
+function _setImagePan(imageEl, mediaEl, scale, panX, panY) {
+    const maxPanX = Math.max((imageEl.offsetWidth * (scale - 1)) / 2, 0);
+    const maxPanY = Math.max((imageEl.offsetHeight * (scale - 1)) / 2, 0);
+
+    imageEl.style.setProperty('--image-pan-x', `${Math.min(Math.max(panX, -maxPanX), maxPanX)}px`);
+    imageEl.style.setProperty('--image-pan-y', `${Math.min(Math.max(panY, -maxPanY), maxPanY)}px`);
+    mediaEl.classList.toggle('is-magnified', scale > 1);
 }
 
 function _setImageMagnification(imageEl, mediaEl, scale, clientX, clientY) {
@@ -506,6 +517,10 @@ function _setupImageMagnifier(modal, imageEl) {
     const activePointers = new Map();
     let pinchStartDistance = 0;
     let pinchStartScale = 1;
+    let panStartX = 0;
+    let panStartY = 0;
+    let panStartOffsetX = 0;
+    let panStartOffsetY = 0;
 
     const getTouchPointers = () => Array.from(activePointers.values())
         .filter(pointer => pointer.pointerType === 'touch');
@@ -552,6 +567,11 @@ function _setupImageMagnifier(modal, imageEl) {
                 touches[1].clientY - touches[0].clientY
             );
             pinchStartScale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+        } else if (touches.length === 1 && (Number(imageEl.style.getPropertyValue('--image-magnification')) || 1) > 1) {
+            panStartX = touches[0].clientX;
+            panStartY = touches[0].clientY;
+            panStartOffsetX = parseFloat(imageEl.style.getPropertyValue('--image-pan-x')) || 0;
+            panStartOffsetY = parseFloat(imageEl.style.getPropertyValue('--image-pan-y')) || 0;
         }
     });
 
@@ -564,7 +584,21 @@ function _setupImageMagnifier(modal, imageEl) {
         if (event.pointerType === 'mouse') {
             _setImageMagnification(imageEl, mediaEl, 2.25, event.clientX, event.clientY);
         } else {
-            updatePinch();
+            const touches = getTouchPointers();
+            if (touches.length === 2) {
+                updatePinch();
+            } else if (touches.length === 1) {
+                const scale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+                if (scale > 1) {
+                    _setImagePan(
+                        imageEl,
+                        mediaEl,
+                        scale,
+                        panStartOffsetX + touches[0].clientX - panStartX,
+                        panStartOffsetY + touches[0].clientY - panStartY
+                    );
+                }
+            }
         }
     });
 
@@ -572,6 +606,16 @@ function _setupImageMagnifier(modal, imageEl) {
         activePointers.delete(event.pointerId);
         if (event.pointerType === 'mouse') {
             _resetImageMagnification();
+            return;
+        }
+
+        const touches = getTouchPointers();
+        const scale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+        if (touches.length === 1 && scale > 1) {
+            panStartX = touches[0].clientX;
+            panStartY = touches[0].clientY;
+            panStartOffsetX = parseFloat(imageEl.style.getPropertyValue('--image-pan-x')) || 0;
+            panStartOffsetY = parseFloat(imageEl.style.getPropertyValue('--image-pan-y')) || 0;
         }
     };
 
