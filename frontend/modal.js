@@ -516,6 +516,11 @@ function _setupImageMagnifier(modal, imageEl) {
         return;
     }
 
+    imageEl.draggable = false;
+    imageEl.addEventListener('dragstart', event => {
+        event.preventDefault();
+    });
+
     const activePointers = new Map();
     let pinchStartDistance = 0;
     let pinchStartScale = 1;

@@ -251,6 +251,18 @@ describe('Image Enlargement', function () {
         expect(image.style.getPropertyValue('--image-magnification')).toBe('');
     });
 
+    it('disables native browser dragging for the enlarged image', function () {
+        openImageModal('https://example.com/modal.jpg', 'Modal image');
+
+        var image = document.getElementById('imageModalImage');
+        var dragEvent = new Event('dragstart', { cancelable: true });
+
+        image.dispatchEvent(dragEvent);
+
+        expect(image.draggable).toBeFalse();
+        expect(dragEvent.defaultPrevented).toBeTrue();
+    });
+
     it('pans a magnified image by dragging with the mouse', function () {
         openImageModal('https://example.com/modal.jpg', 'Modal image');
 
