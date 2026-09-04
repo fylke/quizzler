@@ -202,7 +202,7 @@ describe('Image Enlargement', function () {
         expect(card.classList.contains('is-landscape')).toBeFalse();
     });
 
-    it('magnifies while the primary mouse button is dragged over the modal image', function () {
+    it('keeps desktop magnification active until a second click disables it', function () {
         openImageModal('https://example.com/modal.jpg', 'Modal image');
 
         var media = document.getElementById('imageModalMedia');
@@ -224,7 +224,7 @@ describe('Image Enlargement', function () {
         }));
 
         expect(media.classList.contains('is-magnified')).toBeTrue();
-        expect(image.style.getPropertyValue('--image-magnification')).toBe('2.25');
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('6');
         expect(image.style.getPropertyValue('--image-magnification-origin')).toBe('25% 50%');
 
         media.dispatchEvent(new PointerEvent('pointerup', {
@@ -232,8 +232,73 @@ describe('Image Enlargement', function () {
             pointerType: 'mouse'
         }));
 
+        expect(media.classList.contains('is-magnified')).toBeTrue();
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('6');
+
+        media.dispatchEvent(new PointerEvent('pointerdown', {
+            pointerId: 2,
+            pointerType: 'mouse',
+            button: 0,
+            clientX: 100,
+            clientY: 150
+        }));
+        media.dispatchEvent(new PointerEvent('pointerup', {
+            pointerId: 2,
+            pointerType: 'mouse'
+        }));
+
         expect(media.classList.contains('is-magnified')).toBeFalse();
         expect(image.style.getPropertyValue('--image-magnification')).toBe('');
+    });
+
+    it('pans a magnified image by dragging with the mouse', function () {
+        openImageModal('https://example.com/modal.jpg', 'Modal image');
+
+        var media = document.getElementById('imageModalMedia');
+        var image = document.getElementById('imageModalImage');
+        Object.defineProperty(image, 'offsetWidth', { configurable: true, value: 400 });
+        Object.defineProperty(image, 'offsetHeight', { configurable: true, value: 300 });
+        spyOn(media, 'getBoundingClientRect').and.returnValue({
+            left: 0,
+            top: 0,
+            width: 400,
+            height: 300
+        });
+        spyOn(media, 'setPointerCapture');
+
+        media.dispatchEvent(new PointerEvent('pointerdown', {
+            pointerId: 1,
+            pointerType: 'mouse',
+            button: 0,
+            clientX: 100,
+            clientY: 150
+        }));
+        media.dispatchEvent(new PointerEvent('pointerup', {
+            pointerId: 1,
+            pointerType: 'mouse'
+        }));
+        media.dispatchEvent(new PointerEvent('pointerdown', {
+            pointerId: 2,
+            pointerType: 'mouse',
+            button: 0,
+            clientX: 100,
+            clientY: 150
+        }));
+        media.dispatchEvent(new PointerEvent('pointermove', {
+            pointerId: 2,
+            pointerType: 'mouse',
+            clientX: 180,
+            clientY: 190
+        }));
+        media.dispatchEvent(new PointerEvent('pointerup', {
+            pointerId: 2,
+            pointerType: 'mouse'
+        }));
+
+        expect(image.style.getPropertyValue('--image-pan-x')).toBe('80px');
+        expect(image.style.getPropertyValue('--image-pan-y')).toBe('40px');
+        expect(image.style.getPropertyValue('--image-magnification')).toBe('6');
+        expect(media.classList.contains('is-magnified')).toBeTrue();
     });
 
     it('preserves pinch magnification after touch pointers are released', function () {

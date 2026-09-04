@@ -523,6 +523,8 @@ function _setupImageMagnifier(modal, imageEl) {
     let panStartY = 0;
     let panStartOffsetX = 0;
     let panStartOffsetY = 0;
+    let mouseStartedMagnified = false;
+    let mouseHasPanned = false;
 
     const getTouchPointers = () => Array.from(activePointers.values())
         .filter(pointer => pointer.pointerType === 'touch');
@@ -558,7 +560,23 @@ function _setupImageMagnifier(modal, imageEl) {
         }
 
         if (event.pointerType === 'mouse') {
-            _setImageMagnification(imageEl, mediaEl, 2.25, event.clientX, event.clientY);
+            const scale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+            mouseStartedMagnified = scale > 1;
+            mouseHasPanned = false;
+            if (mouseStartedMagnified) {
+                panStartX = event.clientX;
+                panStartY = event.clientY;
+                panStartOffsetX = parseFloat(imageEl.style.getPropertyValue('--image-pan-x')) || 0;
+                panStartOffsetY = parseFloat(imageEl.style.getPropertyValue('--image-pan-y')) || 0;
+            } else {
+                _setImageMagnification(
+                    imageEl,
+                    mediaEl,
+                    IMAGE_MAX_MAGNIFICATION,
+                    event.clientX,
+                    event.clientY
+                );
+            }
             return;
         }
 
@@ -584,7 +602,21 @@ function _setupImageMagnifier(modal, imageEl) {
 
         activePointers.set(event.pointerId, event);
         if (event.pointerType === 'mouse') {
-            _setImageMagnification(imageEl, mediaEl, 2.25, event.clientX, event.clientY);
+            if (!mouseStartedMagnified) {
+                return;
+            }
+            mouseHasPanned = mouseHasPanned || Math.hypot(
+                event.clientX - panStartX,
+                event.clientY - panStartY
+            ) > 3;
+            const scale = Number(imageEl.style.getPropertyValue('--image-magnification')) || 1;
+            _setImagePan(
+                imageEl,
+                mediaEl,
+                scale,
+                panStartOffsetX + event.clientX - panStartX,
+                panStartOffsetY + event.clientY - panStartY
+            );
         } else {
             const touches = getTouchPointers();
             if (touches.length === 2) {
@@ -607,7 +639,11 @@ function _setupImageMagnifier(modal, imageEl) {
     const releasePointer = event => {
         activePointers.delete(event.pointerId);
         if (event.pointerType === 'mouse') {
-            _resetImageMagnification();
+            if (event.type === 'pointerup' && mouseStartedMagnified && !mouseHasPanned) {
+                _resetImageMagnification();
+            }
+            mouseStartedMagnified = false;
+            mouseHasPanned = false;
             return;
         }
 
