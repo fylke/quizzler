@@ -10,7 +10,8 @@
   "containerEnv": {
     "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venvs/quizzler"
   },
-  "postCreateCommand": "uv sync --all-groups --frozen && uv run --group test playwright install --with-deps chromium",
+  "postCreateCommand": "uv sync --all-groups --frozen",
+  "postStartCommand": "sh -c 'nohup uv run python -m backend >/tmp/quizzler-dev.log 2>&1 </dev/null &'",
   "forwardPorts": [5000, 9696],
   "portsAttributes": {
     "5000": {

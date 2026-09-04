@@ -13,10 +13,26 @@ Optional for container workflows:
 - Podman
 - podman-compose
 
+### Dev Containers
+
+Use Podman Compose commands from the host workspace, before opening the
+repository in a devcontainer. Running `just podman-up` or
+`just podman-up-local` inside the devcontainer requires nested Podman support,
+which is not provided by the standard development container runtime.
+
+Inside the devcontainer, run the application directly:
+
+```bash
+uv run python -m backend
+```
+
+The devcontainer starts this command automatically after it starts. The app is
+available at http://localhost:5000.
+
 ### Rootless Podman on WSL
 
 Rootless Podman bridge networking requires a running systemd user session. Enable
-systemd in `/etc/wsl.conf`:
+systemd in the host WSL distribution's `/etc/wsl.conf`:
 
 ```ini
 [boot]
@@ -29,7 +45,7 @@ From Windows PowerShell, restart WSL after saving the file:
 wsl --shutdown
 ```
 
-Reopen the distribution and verify that the user D-Bus socket exists before
+Reopen the host distribution and verify that the user D-Bus socket exists before
 running a Podman command:
 
 ```bash

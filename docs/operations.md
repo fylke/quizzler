@@ -35,6 +35,10 @@ Prerequisites:
 - Podman installed
 - podman-compose installed
 
+Run these commands from the host workspace, not from within the development
+container. The devcontainer is for direct application development; nested
+Podman requires host capabilities that are not available in the standard setup.
+
 Run stack:
 
 ```bash

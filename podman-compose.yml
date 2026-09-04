@@ -38,7 +38,6 @@ services:
       nofile:
         soft: 1024
         hard: 2048
-      nproc: 256
     networks:
       - quizzler-net
     restart: unless-stopped
