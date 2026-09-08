@@ -19,6 +19,14 @@ uv run python -m backend
 
 Open http://localhost:5000
 
+Install the Git hooks after syncing the development dependencies:
+
+```bash
+uv run pre-commit install
+```
+
+Run the spellchecker manually with `uv run codespell`.
+
 ## Dev Containers and Podman
 
 Inside a devcontainer, run the application directly with `uv run python -m backend`.
