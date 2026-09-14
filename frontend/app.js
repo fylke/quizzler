@@ -192,6 +192,15 @@ function bindAuthAndMainScreenActions() {
     bindClick('guestButton', () => {
         continueAsGuest();
     });
+    bindClick('googleLoginBtn', () => {
+        handleOAuthLogin('google');
+    });
+    bindClick('githubLoginBtn', () => {
+        handleOAuthLogin('github');
+    });
+    bindClick('oidcLoginBtn', () => {
+        handleOAuthLogin('oidc');
+    });
     bindClick('switchToRegisterLink', () => {
         toggleAuthMode('register');
     }, { preventDefault: true });

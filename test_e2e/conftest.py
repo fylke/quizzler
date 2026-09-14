@@ -131,8 +131,7 @@ def clean_db(app_server):
 @pytest.fixture(autouse=True)
 def acknowledge_cookie_banner(context):
     """Pre-acknowledge cookie consent so the banner does not intercept test clicks."""
-    context.add_init_script(
-        f"""
+    context.add_init_script(f"""
         (() => {{
             try {{
                 window.localStorage.setItem("{COOKIE_CONSENT_STORAGE_KEY}", "true");
@@ -140,5 +139,4 @@ def acknowledge_cookie_banner(context):
                 // Ignore storage errors in constrained browser contexts.
             }}
         }})();
-        """
-    )
+        """)

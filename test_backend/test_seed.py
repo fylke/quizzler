@@ -94,18 +94,14 @@ class TestSeedEmptyDatabase(unittest.TestCase):
 
         with app.app_context():
             db.drop_all()
-            db.session.execute(
-                text(
-                    """
+            db.session.execute(text("""
                     CREATE TABLE user (
                         id INTEGER NOT NULL PRIMARY KEY,
                         password_hash VARCHAR(256) NOT NULL,
                         email VARCHAR(128) NOT NULL UNIQUE,
                         is_admin BOOLEAN NOT NULL DEFAULT 0
                     )
-                    """
-                )
-            )
+                    """))
             db.session.commit()
 
         seed(destinations=TEST_DESTINATIONS)

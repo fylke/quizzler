@@ -25,6 +25,7 @@ from .quiz_session import active_result_for_player, get_media_access_state
 from .quiz_types import IDENTIFIER_PATTERN, get_registry, validate_registry
 from .routes_admin import admin_bp
 from .routes_auth import auth_bp
+from .routes_oauth import oauth_bp
 from .routes_quiz import quiz_bp
 from .stats import compute_stats
 from .validation_rules import as_dict as validation_rules_dict
@@ -259,6 +260,7 @@ with app.app_context():
 # ---------------------------------------------------------------------------
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(oauth_bp)
 app.register_blueprint(quiz_bp)
 app.register_blueprint(admin_bp)
 
