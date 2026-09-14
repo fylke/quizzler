@@ -40,6 +40,12 @@ describe('Admin Panel', function () {
             expect(adminQuestionsUrl()).toMatch(/\/api\/admin\/quiz-types\/countries\/questions$/);
             expect(adminQuestionsUrl(7)).toMatch(/\/api\/admin\/quiz-types\/countries\/questions\/7$/);
         });
+
+        it('uses the generic hint source review route', function () {
+            currentAdminQuizType = 'countries';
+            expect(adminHintSourcesUrl()).toMatch(/\/api\/admin\/quiz-types\/countries\/hint-sources$/);
+            expect(adminHintSourcesUrl(7, 3)).toMatch(/\/api\/admin\/quiz-types\/countries\/hint-sources\/7\/3$/);
+        });
     });
 
     // ========== escapeAttr ==========

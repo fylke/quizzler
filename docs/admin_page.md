@@ -11,6 +11,7 @@ flowchart TD
     Admin -->|"← Back to Main"| Main
 
     Admin --> List[Destinations List]
+    Admin --> Review[Review Tab]
     Admin --> Form[Destination Form]
     Admin --> Dialog[Delete Confirmation]
 
@@ -25,6 +26,7 @@ flowchart TD
 
     API_Write -->|"Success"| List
     API_Delete -->|"Success"| List
+    Review --> ReviewAPI[Hint source review API]
 ```
 
 ## API Endpoints
@@ -43,6 +45,8 @@ flowchart LR
         POST["POST /api/admin/quiz-types/countries/questions"]
         PUT["PUT /api/admin/quiz-types/countries/questions/:id"]
         DELETE["DELETE /api/admin/quiz-types/countries/questions/:id"]
+        REVIEW_LIST["GET /api/admin/quiz-types/:type/hint-sources"]
+        REVIEW_WRITE["PATCH /api/admin/quiz-types/:type/hint-sources/:id/:difficulty"]
     end
 
     GET_LIST -.->|"auth only"| A2
@@ -50,6 +54,8 @@ flowchart LR
     POST -.->|"auth + CSRF"| A3
     PUT -.->|"auth + CSRF"| A3
     DELETE -.->|"auth + CSRF"| A3
+    REVIEW_LIST -.->|"auth only"| A2
+    REVIEW_WRITE -.->|"auth + CSRF"| A3
 ```
 
 | Method | Endpoint | Auth | CSRF | Description |
@@ -59,6 +65,14 @@ flowchart LR
 | POST | `/api/admin/quiz-types/countries/questions` | admin | Yes | Create a new country question |
 | PUT | `/api/admin/quiz-types/countries/questions/:id` | admin | Yes | Replace all fields of a country question |
 | DELETE | `/api/admin/quiz-types/countries/questions/:id` | admin | Yes | Delete country question + cascade results |
+| GET | `/api/admin/quiz-types/:type/hint-sources` | admin | No | List hint sources by review status |
+| PATCH | `/api/admin/quiz-types/:type/hint-sources/:id/:difficulty` | admin | Yes | Mark or unmark one hint source as reviewed |
+
+The review list accepts `status=unreviewed` (the default), `status=reviewed`,
+or `status=all`, plus `offset` and `limit` pagination parameters. Results are
+ordered by question ID and hint difficulty. Empty hint sources are excluded.
+Each result includes the question name, hint text, source, difficulty, and
+reviewer/timestamp metadata when reviewed.
 
 ## Screen Layout
 
@@ -67,6 +81,7 @@ flowchart LR
 │  🔧 Admin: Quiz Management          [← Back to Main]│
 ├─────────────────────────────────────────────────────┤
 │  Total destinations: 3                               │
+│  [Destinations] [Review]                             │
 │  [Add New Destination]                               │
 │                                                      │
 │  ┌─────────────────────────────────────────────────┐ │
@@ -78,6 +93,11 @@ flowchart LR
 │  └─────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
 ```
+
+The Review tab defaults to **Needs review** and shows populated hint sources
+that have not been verified by an administrator. The **Reviewed** filter lets
+an administrator inspect completed items and undo a review. Editing a source
+returns that hint source to the review queue.
 
 ## Destination Form
 
@@ -93,10 +113,10 @@ flowchart LR
 │  Hint 4:    [________________________]               │
 │  Hint 5:    [________________________]               │
 │                                                      │
-│  Image URLs (2–10):                                  │
-│    [https://example.com/img1.jpg        ] [✕]        │
-│    [https://example.com/img2.jpg        ] [✕]        │
-│    [+ Add Image URL]                                 │
+│  Image files (2–10):                                 │
+│    [Choose file                         ] [✕]        │
+│    [Choose file                         ] [✕]        │
+│    [+ Add Image File]                                │
 │                                                      │
 │  Correct Answers (1–20):                             │
 │    [paris                               ] [✕]        │
@@ -113,7 +133,7 @@ flowchart LR
 |-------|-------------|
 | Name | 1–128 characters, not blank |
 | Hints | Exactly 5, each 1–256 characters, not blank |
-| Images | 2–10 URLs, each must start with `http://` or `https://` |
+| Images | 2–10 image files selected from the local device |
 | Correct Answers | 1–20 items, each 1–128 characters |
 
 Answers are normalized (lowercased + trimmed) before storage.

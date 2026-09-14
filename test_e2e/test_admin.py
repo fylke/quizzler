@@ -7,6 +7,17 @@ from werkzeug.security import generate_password_hash
 pytestmark = pytest.mark.usefixtures("clean_db")
 
 
+def set_image_files(image_inputs, names):
+    for index, name in enumerate(names):
+        image_inputs.nth(index).set_input_files(
+            {
+                "name": name,
+                "mimeType": "image/jpeg",
+                "buffer": b"test image",
+            }
+        )
+
+
 @pytest.fixture()
 def admin_page(clean_db, page: Page, base_url: str):
     """Register a user, make them admin, log in as admin."""
@@ -147,10 +158,9 @@ def test_create_destination(admin_page: Page):
     admin_page.fill("#adminHint4", "Has a famous crossing in Shibuya")
     admin_page.fill("#adminHint5", "Known for sushi and ramen")
 
-    # Fill in image URLs (2 already exist by default)
+    # Fill in image files (2 already exist by default)
     image_inputs = admin_page.locator("#adminImagesContainer input")
-    image_inputs.nth(0).fill("https://example.com/tokyo1.jpg")
-    image_inputs.nth(1).fill("https://example.com/tokyo2.jpg")
+    set_image_files(image_inputs, ["tokyo1.jpg", "tokyo2.jpg"])
 
     # Fill in correct answer
     answer_inputs = admin_page.locator("#adminAnswersContainer input")
@@ -204,8 +214,7 @@ def test_edit_destination(admin_page: Page):
     # Change the name
     admin_page.fill("#adminDestName", "Paris Updated")
     image_inputs = admin_page.locator("#adminImagesContainer input")
-    image_inputs.nth(0).fill("https://example.com/paris1.jpg")
-    image_inputs.nth(1).fill("https://example.com/paris2.jpg")
+    set_image_files(image_inputs, ["paris1.jpg", "paris2.jpg"])
 
     # Submit
     admin_page.locator("#adminForm button", has_text="Save").click()
@@ -227,8 +236,7 @@ def test_edit_destination(admin_page: Page):
     expect(admin_page.locator("#adminForm")).to_be_visible(timeout=3000)
     admin_page.fill("#adminDestName", "Paris")
     image_inputs = admin_page.locator("#adminImagesContainer input")
-    image_inputs.nth(0).fill("https://example.com/paris1.jpg")
-    image_inputs.nth(1).fill("https://example.com/paris2.jpg")
+    set_image_files(image_inputs, ["paris1.jpg", "paris2.jpg"])
     admin_page.locator("#adminForm button", has_text="Save").click()
     expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
 
@@ -280,7 +288,9 @@ def test_delete_destination_with_confirmation(admin_page: Page):
                 id=1,
                 name="Paris",
                 hint1="This city is famous for a tower built in 1889.",
+                hint1_source="https://example.com/paris-hint-1",
                 hint2="It's the capital of France.",
+                hint2_source="https://example.com/paris-hint-2",
                 hint3="Known as the City of Light.",
                 hint4="Home to the Louvre museum.",
                 hint5="Located on the Seine river.",
@@ -288,6 +298,33 @@ def test_delete_destination_with_confirmation(admin_page: Page):
             )
             flask_db.session.add(dest)
             flask_db.session.commit()
+
+
+def test_admin_can_review_and_undo_hint_source(admin_page: Page):
+    """Admin can review a source and return it to the review queue."""
+    admin_page.click("#adminLink")
+    expect(admin_page.locator("#adminScreen")).to_be_visible(timeout=3000)
+
+    admin_page.click("#adminReviewTab")
+    expect(admin_page.locator("#adminReviewPanel")).to_be_visible()
+    expect(admin_page.locator(".admin-review-item").first).to_contain_text("Paris")
+
+    admin_page.locator(".admin-review-item", has_text="Hint 1").locator(
+        "button", has_text="Mark reviewed"
+    ).click()
+    expect(admin_page.locator("#adminSuccess")).to_have_text(
+        "Hint source marked reviewed", timeout=3000
+    )
+    expect(admin_page.locator(".admin-review-item", has_text="Hint 1")).to_have_count(0)
+
+    admin_page.select_option("#adminReviewStatus", "reviewed")
+    expect(admin_page.locator(".admin-review-item", has_text="Hint 1")).to_have_count(1)
+    admin_page.locator(".admin-review-item", has_text="Hint 1").locator(
+        "button", has_text="Undo review"
+    ).click()
+    expect(admin_page.locator("#adminSuccess")).to_have_text(
+        "Hint source returned to review", timeout=3000
+    )
 
 
 def test_delete_destination_cancel(admin_page: Page):

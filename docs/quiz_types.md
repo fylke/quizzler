@@ -71,6 +71,11 @@ that has an `id` column. Standard types also receive shared data management:
     form for create, update, and delete operations.
 - Generic admin endpoints are available under
     `/api/admin/quiz-types/<identifier>/questions`.
+- Standard types also participate in the generic hint-source review workflow
+    under `/api/admin/quiz-types/<identifier>/hint-sources`. A standard
+    question's non-empty `hint1_source` through `hint5_source` values are
+    independently reviewable. Review state is stored by quiz type, source ID,
+    and hint difficulty rather than on the question model.
 
 Custom adapters with a different data shape should provide their own import
 and admin interface because the standard validation contract does not apply.

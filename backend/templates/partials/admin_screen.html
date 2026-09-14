@@ -3,6 +3,10 @@
                 <h1>🔧 Admin: Quiz Management</h1>
                 <button class="btn btn-secondary" id="backToMainFromAdminBtn">← Back to Main</button>
             </div>
+            <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+                <button type="button" class="admin-tab active" id="adminDestinationsTab" role="tab" aria-selected="true">Destinations</button>
+                <button type="button" class="admin-tab" id="adminReviewTab" role="tab" aria-selected="false">Review</button>
+            </div>
             <p id="adminDestCount"></p>
             <div class="admin-actions">
                 <button class="btn btn-primary" id="addDestinationBtn">Add New Destination</button>
@@ -13,6 +17,24 @@
             <div id="adminSuccess" class="admin-success" style="display:none;"></div>
             <p id="adminEmptyState" class="admin-empty-state" style="display:none;">The quiz database is empty. Add a destination to get started.</p>
             <div id="adminDestList"></div>
+
+            <div id="adminReviewPanel" class="admin-review-panel" style="display:none;">
+                <div class="admin-review-toolbar">
+                    <label for="adminReviewStatus">Show</label>
+                    <select id="adminReviewStatus">
+                        <option value="unreviewed">Needs review</option>
+                        <option value="reviewed">Reviewed</option>
+                    </select>
+                    <span id="adminReviewCount"></span>
+                </div>
+                <p id="adminReviewEmptyState" class="admin-empty-state" style="display:none;">All hint sources have been reviewed.</p>
+                <div id="adminReviewList" class="admin-review-list"></div>
+                <div class="admin-review-pagination">
+                    <button type="button" class="btn btn-secondary btn-small" id="adminReviewPreviousBtn">Previous</button>
+                    <span id="adminReviewPage"></span>
+                    <button type="button" class="btn btn-secondary btn-small" id="adminReviewNextBtn">Next</button>
+                </div>
+            </div>
 
             <div id="adminForm" class="admin-form-section" style="display:none;">
                 <h3 id="adminFormTitle">Add New Destination</h3>

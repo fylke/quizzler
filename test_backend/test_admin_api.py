@@ -14,6 +14,7 @@ from backend.models import (
 from backend.quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 
 ADMIN_QUESTIONS_URL = "/api/admin/quiz-types/countries/questions"
+ADMIN_HINT_SOURCES_URL = "/api/admin/quiz-types/countries/hint-sources"
 
 
 class AdminAPITestCase(unittest.TestCase):
@@ -52,6 +53,9 @@ class AdminAPITestCase(unittest.TestCase):
         if source_id is None:
             return ADMIN_QUESTIONS_URL
         return f"{ADMIN_QUESTIONS_URL}/{source_id}"
+
+    def _hint_source_url(self, source_id, difficulty):
+        return f"{ADMIN_HINT_SOURCES_URL}/{source_id}/{difficulty}"
 
     def _login_admin(self):
         response = self.client.post(
@@ -185,6 +189,87 @@ class AdminAPITestCase(unittest.TestCase):
                 "Source 5",
             ],
         )
+
+    def test_hint_source_review_queue_and_unreview_lifecycle(self):
+        csrf = self._login_admin()
+        payload = self._valid_question_payload()
+        payload["hint_sources"] = ["Source 1", None, "Source 3", "", "Source 5"]
+        source_id = self._create_question(csrf, payload).get_json()["id"]
+
+        response = self.client.get(ADMIN_HINT_SOURCES_URL)
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["count"], 3)
+        self.assertEqual([item["hint_difficulty"] for item in data["items"]], [1, 3, 5])
+        self.assertFalse(data["items"][0]["reviewed"])
+
+        response = self.client.patch(
+            self._hint_source_url(source_id, 1),
+            json={"reviewed": True},
+            headers={"X-CSRF-Token": csrf},
+        )
+        self.assertEqual(response.status_code, 200)
+        reviewed = response.get_json()
+        self.assertTrue(reviewed["reviewed"])
+        self.assertEqual(reviewed["reviewed_by"], "admin@example.com")
+        self.assertIsNotNone(reviewed["reviewed_at"])
+
+        response = self.client.get(ADMIN_HINT_SOURCES_URL)
+        self.assertEqual(response.get_json()["count"], 2)
+
+        response = self.client.patch(
+            self._hint_source_url(source_id, 1),
+            json={"reviewed": False},
+            headers={"X-CSRF-Token": csrf},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.get_json()["reviewed"])
+        self.assertEqual(self.client.get(ADMIN_HINT_SOURCES_URL).get_json()["count"], 3)
+
+    def test_hint_source_review_requires_admin_and_csrf(self):
+        csrf = self._login_admin()
+        payload = self._valid_question_payload()
+        payload["hint_sources"] = ["Source 1", None, None, None, None]
+        source_id = self._create_question(csrf, payload).get_json()["id"]
+
+        self.client.post("/api/logout")
+        self._login_regular()
+        self.assertEqual(self.client.get(ADMIN_HINT_SOURCES_URL).status_code, 403)
+
+        self.client.post("/api/logout")
+        csrf = self._login_admin()
+        response = self.client.patch(
+            self._hint_source_url(source_id, 1), json={"reviewed": True}
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["error"], "Invalid or missing CSRF token")
+
+    def test_hint_source_review_resets_when_source_changes_and_on_delete(self):
+        csrf = self._login_admin()
+        payload = self._valid_question_payload()
+        payload["hint_sources"] = ["Original source", None, None, None, None]
+        source_id = self._create_question(csrf, payload).get_json()["id"]
+        self.client.patch(
+            self._hint_source_url(source_id, 1),
+            json={"reviewed": True},
+            headers={"X-CSRF-Token": csrf},
+        )
+
+        payload["name"] = "Updated City"
+        payload["hint_sources"][0] = "Changed source"
+        self.client.put(
+            self._question_url(source_id),
+            json=payload,
+            headers={"X-CSRF-Token": csrf},
+        )
+        queue = self.client.get(ADMIN_HINT_SOURCES_URL).get_json()
+        self.assertEqual(queue["count"], 1)
+        self.assertFalse(queue["items"][0]["reviewed"])
+
+        self.client.delete(
+            self._question_url(source_id), headers={"X-CSRF-Token": csrf}
+        )
+        self.assertEqual(self.client.get(ADMIN_HINT_SOURCES_URL).get_json()["count"], 0)
 
     def test_create_rejects_invalid_payload(self):
         csrf = self._login_admin()

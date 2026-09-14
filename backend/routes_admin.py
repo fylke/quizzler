@@ -6,8 +6,8 @@ from flask import Blueprint, current_app, jsonify, request
 from werkzeug.utils import secure_filename
 
 from .admin import validate_destination_payload
-from .auth import admin_required, csrf_protected
-from .models import QuizIdentity, db
+from .auth import admin_required, csrf_protected, get_current_user
+from .models import HintSourceReview, QuizIdentity, _utcnow_naive, db
 from .quiz_adapters import get_quiz_adapter
 from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from .quiz_types import get_quiz_type
@@ -15,6 +15,9 @@ from .quiz_types import get_quiz_type
 admin_bp = Blueprint("admin", __name__)
 
 _IMAGE_EXTENSIONS = {".gif", ".jpeg", ".jpg", ".png", ".webp"}
+_HINT_COUNT = 5
+_REVIEW_PAGE_SIZE = 20
+_REVIEW_MAX_PAGE_SIZE = 100
 
 
 def _standard_adapter(quiz_type_identifier):
@@ -32,6 +35,47 @@ def _standard_adapter(quiz_type_identifier):
     ):
         return None
     return adapter
+
+
+def _hint_source_values(question):
+    return [
+        getattr(question, f"hint{difficulty}_source", "") or ""
+        for difficulty in range(1, _HINT_COUNT + 1)
+    ]
+
+
+def _review_item_payload(adapter, question, difficulty, review=None):
+    source = _hint_source_values(question)[difficulty - 1]
+    reviewer = review.reviewed_by if review is not None else None
+    return {
+        "quiz_type": adapter.identifier,
+        "source_id": adapter.question_id(question),
+        "name": adapter.answer_name(question),
+        "hint_difficulty": difficulty,
+        "hint": adapter.hint_text(question, difficulty),
+        "source": source,
+        "reviewed": bool(review and review.reviewed),
+        "reviewed_at": (
+            review.reviewed_at.isoformat() if review and review.reviewed_at else None
+        ),
+        "reviewed_by": reviewer.email if reviewer else None,
+    }
+
+
+def _clear_changed_source_reviews(quiz_type, source_id, old_sources, new_sources):
+    changed_difficulties = [
+        difficulty
+        for difficulty, (old_source, new_source) in enumerate(
+            zip(old_sources, new_sources), start=1
+        )
+        if (old_source or "") != (new_source or "")
+    ]
+    if changed_difficulties:
+        HintSourceReview.query.filter(
+            HintSourceReview.quiz_type == quiz_type,
+            HintSourceReview.source_id == source_id,
+            HintSourceReview.hint_difficulty.in_(changed_difficulties),
+        ).delete(synchronize_session=False)
 
 
 @admin_bp.route("/api/admin/quiz-types/<quiz_type>/questions", methods=["GET"])
@@ -58,6 +102,106 @@ def get_question(quiz_type, source_id):
     if question is None:
         return jsonify({"error": "Question not found"}), 404
     return jsonify(adapter.serialize_question(question))
+
+
+@admin_bp.route("/api/admin/quiz-types/<quiz_type>/hint-sources", methods=["GET"])
+@admin_required
+def list_hint_source_reviews(quiz_type):
+    adapter = _standard_adapter(quiz_type)
+    if adapter is None:
+        return jsonify({"error": "Quiz type not found"}), 404
+
+    status = request.args.get("status", "unreviewed")
+    if status not in {"unreviewed", "reviewed", "all"}:
+        return jsonify({"error": "status must be unreviewed, reviewed, or all"}), 400
+    try:
+        offset = max(int(request.args.get("offset", 0)), 0)
+        limit = int(request.args.get("limit", _REVIEW_PAGE_SIZE))
+    except (TypeError, ValueError):
+        return jsonify({"error": "offset and limit must be integers"}), 400
+    if not 1 <= limit <= _REVIEW_MAX_PAGE_SIZE:
+        return (
+            jsonify({"error": f"limit must be between 1 and {_REVIEW_MAX_PAGE_SIZE}"}),
+            400,
+        )
+
+    review_rows = {
+        (row.source_id, row.hint_difficulty): row
+        for row in HintSourceReview.query.filter_by(quiz_type=quiz_type).all()
+    }
+    entries = []
+    for question in adapter.list_questions():
+        question_reviews = {
+            difficulty: review_rows.get((adapter.question_id(question), difficulty))
+            for difficulty in range(1, _HINT_COUNT + 1)
+        }
+        for difficulty, source in enumerate(_hint_source_values(question), start=1):
+            if not source.strip():
+                continue
+            review = question_reviews[difficulty]
+            is_reviewed = bool(review and review.reviewed)
+            if status == "unreviewed" and is_reviewed:
+                continue
+            if status == "reviewed" and not is_reviewed:
+                continue
+            entries.append(_review_item_payload(adapter, question, difficulty, review))
+
+    page = entries[offset : offset + limit]
+    return jsonify(
+        {
+            "items": page,
+            "count": len(entries),
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + limit < len(entries),
+        }
+    )
+
+
+@admin_bp.route(
+    "/api/admin/quiz-types/<quiz_type>/hint-sources/<int:source_id>/<int:difficulty>",
+    methods=["PATCH"],
+)
+@admin_required
+@csrf_protected
+def update_hint_source_review(quiz_type, source_id, difficulty):
+    adapter = _standard_adapter(quiz_type)
+    if adapter is None:
+        return jsonify({"error": "Quiz type not found"}), 404
+    if not 1 <= difficulty <= _HINT_COUNT:
+        return jsonify({"error": "Hint difficulty must be between 1 and 5"}), 400
+
+    question = adapter.get_question(source_id)
+    if question is None:
+        return jsonify({"error": "Question not found"}), 404
+    source = _hint_source_values(question)[difficulty - 1]
+    if not source.strip():
+        return jsonify({"error": "Hint source is empty"}), 400
+
+    data = request.json or {}
+    reviewed = data.get("reviewed")
+    if not isinstance(reviewed, bool):
+        return jsonify({"error": "reviewed must be a boolean"}), 400
+
+    review = HintSourceReview.query.filter_by(
+        quiz_type=quiz_type,
+        source_id=source_id,
+        hint_difficulty=difficulty,
+    ).first()
+    if review is None:
+        review = HintSourceReview(
+            quiz_type=quiz_type,
+            source_id=source_id,
+            hint_difficulty=difficulty,
+        )
+        db.session.add(review)
+
+    user = get_current_user()
+    review.reviewed = reviewed
+    review.reviewed_at = _utcnow_naive() if reviewed else None
+    review.reviewed_by_user_id = user.id if reviewed else None
+    db.session.commit()
+    return jsonify(_review_item_payload(adapter, question, difficulty, review))
 
 
 @admin_bp.route("/api/admin/quiz-types/<quiz_type>/questions", methods=["POST"])
@@ -150,7 +294,10 @@ def update_question(quiz_type, source_id):
     is_valid, errors = validate_destination_payload(data)
     if not is_valid:
         return jsonify({"error": "Validation failed", "details": errors}), 400
+    old_sources = _hint_source_values(question)
     adapter.update_question(question, data)
+    new_sources = _hint_source_values(question)
+    _clear_changed_source_reviews(quiz_type, source_id, old_sources, new_sources)
     db.session.commit()
     return jsonify(adapter.serialize_question(question))
 
@@ -167,6 +314,10 @@ def delete_question(quiz_type, source_id):
     if question is None:
         return jsonify({"error": "Question not found"}), 404
     adapter.delete_question(question)
+    HintSourceReview.query.filter_by(
+        quiz_type=quiz_type,
+        source_id=source_id,
+    ).delete(synchronize_session=False)
     identity = QuizIdentity.query.filter_by(
         quiz_type=quiz_type,
         source_id=source_id,
