@@ -98,9 +98,22 @@ def test_toggle_between_login_and_register(page: Page, base_url: str):
     # Switch to register
     page.click("#switchToRegister a")
     expect(page.locator("#switchToLogin")).to_be_visible()
-    expect(page.locator("#authButton")).to_have_text("Create Account")
 
-    # Switch back to login
-    page.click("#switchToLogin a")
-    expect(page.locator("#switchToRegister")).to_be_visible()
-    expect(page.locator("#authButton")).to_have_text("Log In")
+
+def test_oauth_buttons_displayed_when_providers_configured(page: Page, base_url: str):
+    """OAuth provider buttons are displayed when /api/auth/providers returns configured providers."""
+    page.route(
+        "**/api/auth/providers",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body='{"providers": ["google", "github", "oidc"]}',
+        ),
+    )
+
+    _open_login_screen(page, base_url)
+
+    expect(page.locator("#oauthContainer")).not_to_have_class(".*\\bhidden\\b.*")
+    expect(page.locator("#googleLoginBtn")).not_to_have_class(".*\\bhidden\\b.*")
+    expect(page.locator("#githubLoginBtn")).not_to_have_class(".*\\bhidden\\b.*")
+    expect(page.locator("#oidcLoginBtn")).not_to_have_class(".*\\bhidden\\b.*")

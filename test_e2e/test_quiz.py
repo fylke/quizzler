@@ -116,8 +116,7 @@ def test_results_screen_shows_all_images_in_destination_directory(
     image_count = result_images.count()
     assert image_count >= 2
 
-    image_statuses = page.evaluate(
-        """async () => {
+    image_statuses = page.evaluate("""async () => {
             const images = Array.from(document.querySelectorAll('#resultsImages img[aria-label^="Additional destination image"]'));
             const checks = [];
             for (const image of images) {
@@ -129,8 +128,7 @@ def test_results_screen_shows_all_images_in_destination_directory(
                 checks.push({ url: sourceUrl, status: response.status });
             }
             return checks;
-        }"""
-    )
+        }""")
     assert len(image_statuses) == image_count
 
     inaccessible = [item for item in image_statuses if item["status"] != 200]
@@ -141,14 +139,12 @@ def test_hint_screen_restricts_zero_prefixed_result_images(page: Page, base_url:
     """While quiz is active on hint screen, 0-prefixed result images are access restricted."""
     _register_and_start(page, base_url)
 
-    status = page.evaluate(
-        """async () => {
+    status = page.evaluate("""async () => {
             const response = await fetch('/media/countries/1/001.jpg', {
                 credentials: 'same-origin',
             });
             return response.status;
-        }"""
-    )
+        }""")
     assert status == 403
 
 
@@ -170,15 +166,13 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
     quiz_guid: str,
 ):
     """A fresh recipient starts the GUID quiz and copies the same deep link."""
-    context.add_init_script(
-        """
+    context.add_init_script("""
         window.__copiedQuizLink = null;
         Object.defineProperty(navigator, 'clipboard', {
             configurable: true,
             value: { writeText: async value => { window.__copiedQuizLink = value; } },
         });
-        """
-    )
+        """)
 
     page.goto(f"{base_url}/quiz/{quiz_guid}")
 

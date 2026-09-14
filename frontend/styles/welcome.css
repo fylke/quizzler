@@ -198,6 +198,88 @@
     margin-top: 4px;
 }
 
+/* OAuth Container & Social Sign-In */
+.oauth-container {
+    width: 100%;
+    max-width: 360px;
+    margin: var(--space-5) auto 0 auto;
+}
+
+.oauth-container.hidden {
+    display: none;
+}
+
+.oauth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin-bottom: var(--space-4);
+    color: #888;
+    font-size: 0.85em;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.oauth-divider span {
+    padding: 0 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.8em;
+}
+
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.btn-oauth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: #ffffff;
+    color: #333333;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.btn-oauth:hover {
+    background-color: #f7f9fa;
+    border-color: #bbb;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.btn-oauth.hidden {
+    display: none;
+}
+
+.btn-oauth-github {
+    background-color: #24292e;
+    color: #ffffff;
+    border-color: #24292e;
+}
+
+.btn-oauth-github:hover {
+    background-color: #1b1f23;
+    border-color: #1b1f23;
+    color: #ffffff;
+}
+
+.oauth-icon {
+    flex-shrink: 0;
+}
+
 .loading-message {
     margin-top: var(--space-5);
     color: #666;

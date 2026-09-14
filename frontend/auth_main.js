@@ -14,9 +14,50 @@ function clearAuthError() {
     }
 }
 
+// ==================== OAuth ====================
+
+async function initOAuth() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthError = urlParams.get('error');
+    if (oauthError) {
+        showAuthError(decodeURIComponent(oauthError));
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/api/auth/providers`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const providers = data.providers || [];
+
+        if (providers.length === 0) return;
+
+        const container = document.getElementById('oauthContainer');
+        if (!container) return;
+
+        container.classList.remove('hidden');
+
+        providers.forEach((provider) => {
+            const btn = document.getElementById(`${provider}LoginBtn`);
+            if (btn) {
+                btn.classList.remove('hidden');
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching OAuth providers:', error);
+    }
+}
+
+function handleOAuthLogin(provider) {
+    window.location.href = `${API_BASE}/api/auth/oauth/${provider}/login`;
+}
+
 // ==================== Auth ====================
 
 async function loadUser() {
+    await initOAuth();
     try {
         const response = await fetch(`${API_BASE}/api/me`);
         if (response.status === 401) {
