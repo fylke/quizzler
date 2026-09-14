@@ -234,6 +234,10 @@ class StandardQuizAdapter:
             "hints": [
                 self.hint_text(question, difficulty) for difficulty in range(1, 6)
             ],
+            "hint_sources": [
+                getattr(question, f"hint{difficulty}_source", "") or ""
+                for difficulty in range(1, 6)
+            ],
             "correct_answers": question.correct_answers,
         }
 
@@ -241,6 +245,7 @@ class StandardQuizAdapter:
         hints = data.get("hints")
         if hints is None:
             hints = [data[f"hint{difficulty}"] for difficulty in range(1, 6)]
+        hint_sources = data.get("hint_sources")
         values = {
             "name": data["name"],
             "correct_answers": normalize_answers(data["correct_answers"]),
@@ -248,8 +253,11 @@ class StandardQuizAdapter:
         for index, hint in enumerate(hints, start=1):
             values[f"hint{index}"] = hint
             source_key = f"hint{index}_source"
-            if hasattr(self.question_model, source_key) and source_key in data:
-                values[source_key] = data[source_key]
+            if hasattr(self.question_model, source_key):
+                if hint_sources is not None:
+                    values[source_key] = hint_sources[index - 1] or None
+                elif source_key in data:
+                    values[source_key] = data[source_key]
         if data.get("id") is not None:
             values["id"] = int(data["id"])
         return values

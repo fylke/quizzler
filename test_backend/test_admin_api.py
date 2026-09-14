@@ -160,6 +160,32 @@ class AdminAPITestCase(unittest.TestCase):
             ["test city", "test city", "test city"],
         )
 
+    def test_create_stores_hint_sources(self):
+        csrf = self._login_admin()
+        payload = self._valid_question_payload()
+        payload["hint_sources"] = [
+            "https://example.com/hint-1",
+            "https://example.com/hint-2",
+            None,
+            "Source 4",
+            "Source 5",
+        ]
+
+        response = self._create_question(csrf, payload)
+        self.assertEqual(response.status_code, 201)
+
+        get_response = self.client.get(self._question_url(response.get_json()["id"]))
+        self.assertEqual(
+            get_response.get_json()["hint_sources"],
+            [
+                "https://example.com/hint-1",
+                "https://example.com/hint-2",
+                "",
+                "Source 4",
+                "Source 5",
+            ],
+        )
+
     def test_create_rejects_invalid_payload(self):
         csrf = self._login_admin()
         response = self.client.post(
