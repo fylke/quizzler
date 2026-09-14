@@ -172,6 +172,8 @@ async function showDestinationForm(id) {
     document.getElementById('adminDestName').value = '';
     for (let i = 1; i <= 5; i++) {
         document.getElementById(`adminHint${i}`).value = '';
+        const sourceInput = document.getElementById(`adminHintSource${i}`);
+        if (sourceInput) sourceInput.value = '';
     }
     document.getElementById('adminImagesContainer').innerHTML = '';
     document.getElementById('adminAnswersContainer').innerHTML = '';
@@ -191,6 +193,8 @@ async function showDestinationForm(id) {
             document.getElementById('adminDestName').value = dest.name;
             for (let i = 0; i < 5; i++) {
                 document.getElementById(`adminHint${i + 1}`).value = dest.hints[i] || '';
+                const sourceInput = document.getElementById(`adminHintSource${i + 1}`);
+                if (sourceInput) sourceInput.value = dest.hint_sources?.[i] || '';
             }
             (dest.images || []).forEach(url => addImageField(url));
             if (!dest.images || dest.images.length === 0) {
@@ -234,8 +238,11 @@ async function saveDestination() {
     const rules = app.state.validationRules;
     const name = document.getElementById('adminDestName').value.trim();
     const hints = [];
+    const hint_sources = [];
     for (let i = 1; i <= 5; i++) {
         hints.push(document.getElementById(`adminHint${i}`).value.trim());
+        const sourceInput = document.getElementById(`adminHintSource${i}`);
+        hint_sources.push(sourceInput ? sourceInput.value.trim() || null : null);
     }
     const imageInputs = document.querySelectorAll('#adminImagesContainer input');
     const imageFiles = Array.from(imageInputs).flatMap(input => Array.from(input.files || []));
@@ -274,7 +281,7 @@ async function saveDestination() {
         return;
     }
 
-    const payload = { name, hints, correct_answers };
+    const payload = { name, hints, hint_sources, correct_answers };
     const headers = { 'Content-Type': 'application/json' };
     if (app.state.csrfToken) {
         headers['X-CSRF-Token'] = app.state.csrfToken;

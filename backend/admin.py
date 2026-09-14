@@ -59,6 +59,20 @@ def validate_destination_payload(data: dict) -> tuple[bool, list[str]]:
                 )
 
     # --- correct_answers validation ---
+    hint_sources = data.get("hint_sources")
+    if hint_sources is not None:
+        if not isinstance(hint_sources, list):
+            errors.append("hint_sources: must be a list")
+        elif len(hint_sources) != HINT_COUNT:
+            errors.append(f"hint_sources: must contain exactly {HINT_COUNT} items")
+        else:
+            for i, source in enumerate(hint_sources):
+                if source is not None and not isinstance(source, str):
+                    errors.append(f"hint_sources[{i}]: must be a string")
+                elif isinstance(source, str) and len(source) > 512:
+                    errors.append(f"hint_sources[{i}]: must be 512 characters or less")
+
+    # --- correct_answers validation ---
     # Images are currently optional in payloads, but if provided they must be
     # a bounded list of valid HTTP(S) URLs.
     images = data.get("images")
