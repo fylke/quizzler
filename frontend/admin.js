@@ -238,7 +238,7 @@ async function saveDestination() {
         hints.push(document.getElementById(`adminHint${i}`).value.trim());
     }
     const imageInputs = document.querySelectorAll('#adminImagesContainer input');
-    const images = Array.from(imageInputs).map(input => input.value.trim()).filter(v => v);
+    const imageFiles = Array.from(imageInputs).flatMap(input => Array.from(input.files || []));
     const answerInputs = document.querySelectorAll('#adminAnswersContainer input');
     const correct_answers = Array.from(answerInputs).map(input => input.value.trim()).filter(v => v);
 
@@ -261,12 +261,12 @@ async function saveDestination() {
             return;
         }
     }
-    if (images.length < rules.destination.imagesMinCount) {
-        showAdminError(`At least ${rules.destination.imagesMinCount} image URLs are required`);
+    if (imageFiles.length < rules.destination.imagesMinCount) {
+        showAdminError(`At least ${rules.destination.imagesMinCount} images are required`);
         return;
     }
-    if (images.length > rules.destination.imagesMaxCount) {
-        showAdminError(`No more than ${rules.destination.imagesMaxCount} image URLs are allowed`);
+    if (imageFiles.length > rules.destination.imagesMaxCount) {
+        showAdminError(`No more than ${rules.destination.imagesMaxCount} images are allowed`);
         return;
     }
     if (correct_answers.length < rules.destination.answersMinCount || correct_answers.length > rules.destination.answersMaxCount) {
@@ -274,7 +274,7 @@ async function saveDestination() {
         return;
     }
 
-    const payload = { name, hints, images, correct_answers };
+    const payload = { name, hints, correct_answers };
     const headers = { 'Content-Type': 'application/json' };
     if (app.state.csrfToken) {
         headers['X-CSRF-Token'] = app.state.csrfToken;
@@ -282,6 +282,7 @@ async function saveDestination() {
 
     try {
         let response;
+        let savedQuestionId = editingDestId;
         if (editingDestId) {
             response = await fetch(adminQuestionsUrl(editingDestId), {
                 method: 'PUT',
@@ -303,6 +304,26 @@ async function saveDestination() {
             } else {
                 showAdminError(err.error || 'Failed to save destination');
             }
+            return;
+        }
+
+        if (!savedQuestionId) {
+            savedQuestionId = (await response.clone().json()).id;
+        }
+        const imageData = new FormData();
+        imageFiles.forEach(file => imageData.append('images', file));
+        const uploadHeaders = {};
+        if (app.state.csrfToken) {
+            uploadHeaders['X-CSRF-Token'] = app.state.csrfToken;
+        }
+        const imageResponse = await fetch(`${adminQuestionsUrl(savedQuestionId)}/images`, {
+            method: 'POST',
+            headers: uploadHeaders,
+            body: imageData
+        });
+        if (!imageResponse.ok) {
+            const err = await imageResponse.json();
+            showAdminError(err.error || 'Failed to upload images');
             return;
         }
 
@@ -362,7 +383,7 @@ function addImageField(value) {
     const row = document.createElement('div');
     row.className = 'admin-dynamic-field-row';
     row.innerHTML = `
-        <input type="url" value="${escapeAttr(value || '')}" placeholder="https://example.com/image.jpg">
+        <input type="file" accept="image/*"${value ? ` data-existing-image="${escapeAttr(value)}"` : ''}>
         <button type="button" data-action="remove-image-field" class="btn btn-danger btn-small">✕</button>
     `;
     container.appendChild(row);

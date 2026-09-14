@@ -84,10 +84,12 @@ describe('Admin Panel', function () {
             expect(container.querySelectorAll('.admin-dynamic-field-row').length).toBe(1);
         });
 
-        it('sets the input value to the provided value', function () {
+        it('creates an image file picker', function () {
             addImageField('https://example.com/img.jpg');
             var input = container.querySelector('input');
-            expect(input.value).toBe('https://example.com/img.jpg');
+            expect(input.type).toBe('file');
+            expect(input.accept).toBe('image/*');
+            expect(input.dataset.existingImage).toBe('https://example.com/img.jpg');
         });
 
         it('sets empty value when called with empty string', function () {
@@ -452,8 +454,11 @@ describe('Admin Panel', function () {
             nameInput.value = 'Test';
             hintInputs.forEach(function (el) { el.value = 'A hint'; });
             // Add 2 images
-            addImageField('https://example.com/img1.jpg');
-            addImageField('https://example.com/img2.jpg');
+            addImageField('');
+            addImageField('');
+            var imageInputs = document.querySelectorAll('#adminImagesContainer input');
+            Object.defineProperty(imageInputs[0], 'files', { value: [new File(['one'], 'one.jpg', { type: 'image/jpeg' })] });
+            Object.defineProperty(imageInputs[1], 'files', { value: [new File(['two'], 'two.jpg', { type: 'image/jpeg' })] });
             // No answers
 
             await saveDestination();

@@ -1,6 +1,9 @@
 """Admin blueprint — quiz question CRUD endpoints."""
 
-from flask import Blueprint, jsonify, request
+from pathlib import Path
+
+from flask import Blueprint, current_app, jsonify, request
+from werkzeug.utils import secure_filename
 
 from .admin import validate_destination_payload
 from .auth import admin_required, csrf_protected
@@ -10,6 +13,8 @@ from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from .quiz_types import get_quiz_type
 
 admin_bp = Blueprint("admin", __name__)
+
+_IMAGE_EXTENSIONS = {".gif", ".jpeg", ".jpg", ".png", ".webp"}
 
 
 def _standard_adapter(quiz_type_identifier):
@@ -83,6 +88,51 @@ def create_question(quiz_type):
         ),
         201,
     )
+
+
+@admin_bp.route(
+    "/api/admin/quiz-types/<quiz_type>/questions/<int:source_id>/images",
+    methods=["POST"],
+)
+@admin_required
+@csrf_protected
+def upload_question_images(quiz_type, source_id):
+    adapter = _standard_adapter(quiz_type)
+    question = adapter.get_question(source_id) if adapter is not None else None
+    if question is None:
+        return jsonify({"error": "Question not found"}), 404
+
+    files = [file for file in request.files.getlist("images") if file.filename]
+    if not 2 <= len(files) <= 10:
+        return jsonify({"error": "Between 2 and 10 images are required"}), 400
+
+    validated_files = []
+    for image in files:
+        filename = secure_filename(image.filename or "")
+        extension = Path(filename).suffix.lower()
+        if (
+            not filename
+            or extension not in _IMAGE_EXTENSIONS
+            or not image.mimetype.startswith("image/")
+        ):
+            return jsonify({"error": "Only image files are allowed"}), 400
+        validated_files.append((image, extension))
+
+    media_dir = (
+        Path(current_app.config["MEDIA_DIR"]) / adapter.media_namespace / str(source_id)
+    )
+    media_dir.mkdir(parents=True, exist_ok=True)
+    existing_numbers = [
+        int(path.stem[1:])
+        for path in media_dir.iterdir()
+        if path.is_file() and path.stem.startswith("0") and path.stem[1:].isdigit()
+    ]
+    next_number = max(existing_numbers, default=0) + 1
+    for image, extension in validated_files:
+        image.save(media_dir / f"0{next_number:02d}{extension}")
+        next_number += 1
+
+    return jsonify({"message": "Images uploaded", "count": len(files)}), 201
 
 
 @admin_bp.route(
