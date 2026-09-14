@@ -66,7 +66,9 @@ def app_server():
             id=1,
             name="Paris",
             hint1="This city is famous for a tower built in 1889.",
+            hint1_source="https://example.com/paris-hint-1",
             hint2="It's the capital of France.",
+            hint2_source="https://example.com/paris-hint-2",
             hint3="Known as the City of Light.",
             hint4="Home to the Louvre museum.",
             hint5="Located on the Seine river.",
@@ -118,10 +120,17 @@ def quiz_guid(app_server):
 def clean_db(app_server):
     """Reset user data between tests while keeping destinations."""
     with app.app_context():
-        from backend.models import GuestQuizResult, GuestSession, QuizResult, User
+        from backend.models import (
+            GuestQuizResult,
+            GuestSession,
+            HintSourceReview,
+            QuizResult,
+            User,
+        )
 
         GuestQuizResult.query.delete()
         GuestSession.query.delete()
+        HintSourceReview.query.delete()
         QuizResult.query.delete()
         User.query.delete()
         db.session.commit()

@@ -103,6 +103,35 @@ def _utcnow_naive() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+class HintSourceReview(db.Model):
+    __tablename__ = "hint_source_review"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "quiz_type",
+            "source_id",
+            "hint_difficulty",
+            name="uq_hint_source_review_item",
+        ),
+        db.Index(
+            "ix_hint_source_review_queue",
+            "quiz_type",
+            "reviewed",
+            "source_id",
+            "hint_difficulty",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_type = db.Column(db.String(64), nullable=False)
+    source_id = db.Column(db.Integer, nullable=False)
+    hint_difficulty = db.Column(db.Integer, nullable=False)
+    reviewed = db.Column(db.Boolean, nullable=False, default=False)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+
+    reviewed_by = db.relationship("User", backref="hint_source_reviews")
+
+
 class GuestSession(db.Model):
     __tablename__ = "guest_session"
 

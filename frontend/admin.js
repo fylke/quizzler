@@ -3,6 +3,10 @@
 let editingDestId = null;
 let currentAdminQuizType = 'countries';
 let currentAdminQuizTypeName = 'Countries';
+let currentAdminTab = 'destinations';
+let adminReviewStatus = 'unreviewed';
+let adminReviewOffset = 0;
+const adminReviewLimit = 20;
 
 function getAdminApp() {
     return window.QuizzlerApp;
@@ -21,13 +25,34 @@ function setupAdminEventBindings() {
     bindAdminClick('saveDestinationBtn', saveDestination);
     bindAdminClick('cancelDestinationBtn', hideAdminForm);
     bindAdminClick('adminDeleteCancelBtn', hideDeleteDialog);
+    bindAdminClick('adminDestinationsTab', () => setAdminTab('destinations'));
+    bindAdminClick('adminReviewTab', () => setAdminTab('review'));
+
+    document.getElementById('adminReviewStatus')?.addEventListener('change', (event) => {
+        adminReviewStatus = event.target.value;
+        adminReviewOffset = 0;
+        loadHintSourceReviews();
+    });
+    document.getElementById('adminReviewPreviousBtn')?.addEventListener('click', () => {
+        adminReviewOffset = Math.max(0, adminReviewOffset - adminReviewLimit);
+        loadHintSourceReviews();
+    });
+    document.getElementById('adminReviewNextBtn')?.addEventListener('click', () => {
+        adminReviewOffset += adminReviewLimit;
+        loadHintSourceReviews();
+    });
 
     document.getElementById('adminQuizTypeSelect')?.addEventListener('change', (event) => {
         currentAdminQuizType = event.target.value;
         currentAdminQuizTypeName = event.target.selectedOptions[0]?.textContent || currentAdminQuizType;
         hideAdminForm();
         updateAdminTypeLabels();
-        loadDestinations();
+        if (currentAdminTab === 'review') {
+            adminReviewOffset = 0;
+            loadHintSourceReviews();
+        } else {
+            loadDestinations();
+        }
     });
 
     document.getElementById('adminDestList')?.addEventListener('click', (event) => {
@@ -50,11 +75,18 @@ function setupAdminEventBindings() {
         const button = event.target.closest('button[data-action="remove-answer-field"]');
         if (button) removeAnswerField(button);
     });
+
+    document.getElementById('adminReviewList')?.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action="review-hint-source"]');
+        if (!button) return;
+        updateHintSourceReview(Number(button.dataset.sourceId), Number(button.dataset.difficulty), button.dataset.reviewed !== 'true');
+    });
 }
 
 async function showAdminScreen() {
     getAdminApp().ui.showScreen('adminScreen');
     hideAdminForm();
+    setAdminTab('destinations');
     await loadAdminQuizTypes();
     await loadDestinations();
 }
@@ -81,6 +113,28 @@ function adminQuestionsUrl(sourceId) {
     const apiBase = getAdminApp().api.baseUrl;
     const baseUrl = `${apiBase}/api/admin/quiz-types/${encodeURIComponent(currentAdminQuizType)}/questions`;
     return sourceId ? `${baseUrl}/${sourceId}` : baseUrl;
+}
+
+function adminHintSourcesUrl(sourceId, difficulty) {
+    const apiBase = getAdminApp().api.baseUrl;
+    const baseUrl = `${apiBase}/api/admin/quiz-types/${encodeURIComponent(currentAdminQuizType)}/hint-sources`;
+    return sourceId ? `${baseUrl}/${sourceId}/${difficulty}` : baseUrl;
+}
+
+function setAdminTab(tab) {
+    currentAdminTab = tab;
+    const isReview = tab === 'review';
+    if (isReview) hideAdminForm();
+    document.getElementById('adminDestinationsTab')?.classList.toggle('active', !isReview);
+    document.getElementById('adminReviewTab')?.classList.toggle('active', isReview);
+    document.getElementById('adminDestinationsTab')?.setAttribute('aria-selected', String(!isReview));
+    document.getElementById('adminReviewTab')?.setAttribute('aria-selected', String(isReview));
+    document.getElementById('adminDestCount').style.display = isReview ? 'none' : '';
+    document.querySelector('.admin-actions').style.display = isReview ? 'none' : '';
+    document.getElementById('adminDestList').style.display = isReview ? 'none' : '';
+    document.getElementById('adminEmptyState').style.display = isReview ? 'none' : '';
+    document.getElementById('adminReviewPanel').style.display = isReview ? 'block' : 'none';
+    if (isReview) loadHintSourceReviews();
 }
 
 function updateAdminTypeLabels() {
@@ -153,6 +207,82 @@ async function loadDestinations() {
         `).join('');
     } catch (error) {
         console.error('Error loading destinations:', error);
+        showAdminError('Could not connect to server');
+    }
+}
+
+async function loadHintSourceReviews() {
+    const listEl = document.getElementById('adminReviewList');
+    const emptyEl = document.getElementById('adminReviewEmptyState');
+    const countEl = document.getElementById('adminReviewCount');
+    const previousBtn = document.getElementById('adminReviewPreviousBtn');
+    const nextBtn = document.getElementById('adminReviewNextBtn');
+    if (!listEl) return;
+    try {
+        const params = new URLSearchParams({
+            status: adminReviewStatus,
+            offset: String(adminReviewOffset),
+            limit: String(adminReviewLimit),
+        });
+        const response = await fetch(`${adminHintSourcesUrl()}?${params}`);
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || 'Failed to load hint sources');
+            return;
+        }
+        const data = await response.json();
+        countEl.textContent = `${data.count} ${adminReviewStatus} hint source${data.count === 1 ? '' : 's'}`;
+        emptyEl.style.display = data.items.length ? 'none' : 'block';
+        listEl.innerHTML = data.items.map(renderHintSourceReview).join('');
+        previousBtn.disabled = adminReviewOffset === 0;
+        nextBtn.disabled = !data.has_more;
+        document.getElementById('adminReviewPage').textContent = data.count
+            ? `Page ${Math.floor(adminReviewOffset / adminReviewLimit) + 1}`
+            : '';
+    } catch (error) {
+        console.error('Error loading hint sources:', error);
+        showAdminError('Could not connect to server');
+    }
+}
+
+function renderHintSourceReview(item) {
+    const source = /^https?:\/\//i.test(item.source)
+        ? `<a href="${escapeAttr(item.source)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.source)}</a>`
+        : escapeHtml(item.source);
+    const actionLabel = item.reviewed ? 'Undo review' : 'Mark reviewed';
+    return `
+        <article class="admin-review-item">
+            <div class="admin-review-item-header">
+                <strong>${escapeHtml(item.name)}</strong>
+                <span class="admin-dest-id">Hint ${item.hint_difficulty}</span>
+            </div>
+            <p class="admin-review-hint">${escapeHtml(item.hint)}</p>
+            <p class="admin-review-source"><strong>Source:</strong> ${source}</p>
+            ${item.reviewed_at ? `<p class="admin-review-meta">Reviewed by ${escapeHtml(item.reviewed_by || 'admin')} on ${escapeHtml(new Date(item.reviewed_at).toLocaleString())}</p>` : ''}
+            <button type="button" class="btn btn-secondary btn-small" data-action="review-hint-source" data-source-id="${item.source_id}" data-difficulty="${item.hint_difficulty}" data-reviewed="${item.reviewed}">${actionLabel}</button>
+        </article>
+    `;
+}
+
+async function updateHintSourceReview(sourceId, difficulty, reviewed) {
+    const app = getAdminApp();
+    const headers = { 'Content-Type': 'application/json' };
+    if (app.state.csrfToken) headers['X-CSRF-Token'] = app.state.csrfToken;
+    try {
+        const response = await fetch(adminHintSourcesUrl(sourceId, difficulty), {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({ reviewed }),
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || 'Failed to update review status');
+            return;
+        }
+        showAdminSuccess(reviewed ? 'Hint source marked reviewed' : 'Hint source returned to review');
+        loadHintSourceReviews();
+    } catch (error) {
+        console.error('Error updating hint source review:', error);
         showAdminError('Could not connect to server');
     }
 }
