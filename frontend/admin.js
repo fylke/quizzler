@@ -27,6 +27,12 @@ function setupAdminEventBindings() {
     bindAdminClick('adminDeleteCancelBtn', hideDeleteDialog);
     bindAdminClick('adminDestinationsTab', () => setAdminTab('destinations'));
     bindAdminClick('adminReviewTab', () => setAdminTab('review'));
+    bindAdminClick('adminBackgroundTab', () => setAdminTab('background'));
+
+    bindAdminClick('uploadPortraitBgBtn', () => uploadBackground('portrait'));
+    bindAdminClick('uploadLandscapeBgBtn', () => uploadBackground('landscape'));
+    bindAdminClick('removePortraitBgBtn', () => removeBackground('portrait'));
+    bindAdminClick('removeLandscapeBgBtn', () => removeBackground('landscape'));
 
     document.getElementById('adminReviewStatus')?.addEventListener('change', (event) => {
         adminReviewStatus = event.target.value;
@@ -121,20 +127,44 @@ function adminHintSourcesUrl(sourceId, difficulty) {
     return sourceId ? `${baseUrl}/${sourceId}/${difficulty}` : baseUrl;
 }
 
+function adminBackgroundUrl(orientation) {
+    const apiBase = getAdminApp().api.baseUrl;
+    const baseUrl = `${apiBase}/api/admin/settings/background`;
+    return orientation ? `${baseUrl}/${orientation}` : baseUrl;
+}
+
 function setAdminTab(tab) {
     currentAdminTab = tab;
+    const isDestinations = tab === 'destinations';
     const isReview = tab === 'review';
-    if (isReview) hideAdminForm();
-    document.getElementById('adminDestinationsTab')?.classList.toggle('active', !isReview);
+    const isBackground = tab === 'background';
+
+    if (!isDestinations) hideAdminForm();
+
+    document.getElementById('adminDestinationsTab')?.classList.toggle('active', isDestinations);
     document.getElementById('adminReviewTab')?.classList.toggle('active', isReview);
-    document.getElementById('adminDestinationsTab')?.setAttribute('aria-selected', String(!isReview));
+    document.getElementById('adminBackgroundTab')?.classList.toggle('active', isBackground);
+
+    document.getElementById('adminDestinationsTab')?.setAttribute('aria-selected', String(isDestinations));
     document.getElementById('adminReviewTab')?.setAttribute('aria-selected', String(isReview));
-    document.getElementById('adminDestCount').style.display = isReview ? 'none' : '';
-    document.querySelector('.admin-actions').style.display = isReview ? 'none' : '';
-    document.getElementById('adminDestList').style.display = isReview ? 'none' : '';
-    document.getElementById('adminEmptyState').style.display = isReview ? 'none' : '';
-    document.getElementById('adminReviewPanel').style.display = isReview ? 'block' : 'none';
+    document.getElementById('adminBackgroundTab')?.setAttribute('aria-selected', String(isBackground));
+
+    const destCount = document.getElementById('adminDestCount');
+    if (destCount) destCount.style.display = isDestinations ? '' : 'none';
+    const adminActions = document.querySelector('.admin-actions');
+    if (adminActions) adminActions.style.display = isDestinations ? '' : 'none';
+    const destList = document.getElementById('adminDestList');
+    if (destList) destList.style.display = isDestinations ? '' : 'none';
+    const emptyState = document.getElementById('adminEmptyState');
+    if (emptyState) emptyState.style.display = isDestinations ? '' : 'none';
+
+    const reviewPanel = document.getElementById('adminReviewPanel');
+    if (reviewPanel) reviewPanel.style.display = isReview ? 'block' : 'none';
+    const bgPanel = document.getElementById('adminBackgroundPanel');
+    if (bgPanel) bgPanel.style.display = isBackground ? 'block' : 'none';
+
     if (isReview) loadHintSourceReviews();
+    if (isBackground) loadBackgroundSettings();
 }
 
 function updateAdminTypeLabels() {
@@ -287,6 +317,133 @@ async function updateHintSourceReview(sourceId, difficulty, reviewed) {
     }
 }
 
+async function loadBackgroundSettings() {
+    try {
+        const response = await fetch(`${getAdminApp().api.baseUrl}/api/settings/background`);
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || 'Failed to load background settings');
+            return;
+        }
+        const data = await response.json();
+        updateBackgroundUI('portrait', data.portrait);
+        updateBackgroundUI('landscape', data.landscape);
+        if (typeof applyAppBackground === 'function') {
+            applyAppBackground(data);
+        } else if (getAdminApp()?.ui?.applyAppBackground) {
+            getAdminApp().ui.applyAppBackground(data);
+        }
+    } catch (error) {
+        console.error('Error loading background settings:', error);
+        showAdminError('Could not connect to server');
+    }
+}
+
+function updateBackgroundUI(orientation, imageUrl) {
+    const isPortrait = orientation === 'portrait';
+    const emptyEl = document.getElementById(isPortrait ? 'portraitBgEmptyText' : 'landscapeBgEmptyText');
+    const wrapperEl = document.getElementById(isPortrait ? 'portraitBgPreviewWrapper' : 'landscapeBgPreviewWrapper');
+    const imgEl = document.getElementById(isPortrait ? 'portraitBgPreviewImg' : 'landscapeBgPreviewImg');
+    const filenameEl = document.getElementById(isPortrait ? 'portraitBgFilename' : 'landscapeBgFilename');
+    const removeBtn = document.getElementById(isPortrait ? 'removePortraitBgBtn' : 'removeLandscapeBgBtn');
+    const inputEl = document.getElementById(isPortrait ? 'adminPortraitBgInput' : 'adminLandscapeBgInput');
+
+    if (inputEl) inputEl.value = '';
+
+    if (imageUrl) {
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (wrapperEl) wrapperEl.style.display = 'flex';
+        if (imgEl) imgEl.src = imageUrl;
+        if (filenameEl) filenameEl.textContent = imageUrl.split('/').pop() || imageUrl;
+        if (removeBtn) removeBtn.style.display = 'inline-block';
+    } else {
+        if (emptyEl) emptyEl.style.display = 'block';
+        if (wrapperEl) wrapperEl.style.display = 'none';
+        if (imgEl) imgEl.removeAttribute('src');
+        if (filenameEl) filenameEl.textContent = '';
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
+}
+
+async function uploadBackground(orientation) {
+    const inputEl = document.getElementById(orientation === 'portrait' ? 'adminPortraitBgInput' : 'adminLandscapeBgInput');
+    const file = inputEl?.files?.[0];
+    if (!file) {
+        showAdminError(`Please select an image file for ${orientation} background`);
+        return;
+    }
+
+    const app = getAdminApp();
+    const formData = new FormData();
+    formData.append(orientation, file);
+
+    const headers = {};
+    if (app.state.csrfToken) {
+        headers['X-CSRF-Token'] = app.state.csrfToken;
+    }
+
+    try {
+        const response = await fetch(`${app.api.baseUrl}/api/admin/settings/background`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || `Failed to upload ${orientation} background`);
+            return;
+        }
+
+        const data = await response.json();
+        showAdminSuccess(`${orientation.charAt(0).toUpperCase() + orientation.slice(1)} background updated successfully`);
+        updateBackgroundUI('portrait', data.portrait);
+        updateBackgroundUI('landscape', data.landscape);
+        if (typeof applyAppBackground === 'function') {
+            applyAppBackground(data);
+        } else if (getAdminApp()?.ui?.applyAppBackground) {
+            getAdminApp().ui.applyAppBackground(data);
+        }
+    } catch (error) {
+        console.error(`Error uploading ${orientation} background:`, error);
+        showAdminError('Could not connect to server');
+    }
+}
+
+async function removeBackground(orientation) {
+    const app = getAdminApp();
+    const headers = {};
+    if (app.state.csrfToken) {
+        headers['X-CSRF-Token'] = app.state.csrfToken;
+    }
+
+    try {
+        const response = await fetch(`${app.api.baseUrl}/api/admin/settings/background/${orientation}`, {
+            method: 'DELETE',
+            headers
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || `Failed to remove ${orientation} background`);
+            return;
+        }
+
+        const data = await response.json();
+        showAdminSuccess(`${orientation.charAt(0).toUpperCase() + orientation.slice(1)} background removed successfully`);
+        updateBackgroundUI('portrait', data.portrait);
+        updateBackgroundUI('landscape', data.landscape);
+        if (typeof applyAppBackground === 'function') {
+            applyAppBackground(data);
+        } else if (getAdminApp()?.ui?.applyAppBackground) {
+            getAdminApp().ui.applyAppBackground(data);
+        }
+    } catch (error) {
+        console.error(`Error removing ${orientation} background:`, error);
+        showAdminError('Could not connect to server');
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -356,10 +513,14 @@ async function showDestinationForm(id) {
 }
 
 function hideAdminForm() {
-    document.getElementById('adminForm').style.display = 'none';
-    document.getElementById('adminDestList').style.display = '';
-    document.querySelector('.admin-actions').style.display = '';
-    document.getElementById('adminDestCount').style.display = '';
+    const form = document.getElementById('adminForm');
+    if (form) form.style.display = 'none';
+    const destList = document.getElementById('adminDestList');
+    if (destList) destList.style.display = '';
+    const actions = document.querySelector('.admin-actions');
+    if (actions) actions.style.display = '';
+    const destCount = document.getElementById('adminDestCount');
+    if (destCount) destCount.style.display = '';
     editingDestId = null;
 }
 

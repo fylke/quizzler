@@ -95,9 +95,45 @@ window.QuizzlerApp = {
         showNotification,
         showStatusScreen(...args) {
             return showStatusScreen(...args);
-        }
+        },
+        applyAppBackground
     }
 };
+
+async function loadAppBackground() {
+    try {
+        const response = await fetch(`${API_BASE}/api/settings/background`);
+        if (response.ok) {
+            const data = await response.json();
+            applyAppBackground(data);
+        }
+    } catch (error) {
+        console.error('Failed to load background settings:', error);
+    }
+}
+
+function applyAppBackground(settings) {
+    if (!settings) return;
+    const root = document.documentElement;
+    const body = document.body;
+    if (!root || !body) return;
+
+    if (settings.portrait) {
+        root.style.setProperty('--app-bg-portrait', `url("${settings.portrait}")`);
+        body.classList.add('has-bg-portrait');
+    } else {
+        root.style.removeProperty('--app-bg-portrait');
+        body.classList.remove('has-bg-portrait');
+    }
+
+    if (settings.landscape) {
+        root.style.setProperty('--app-bg-landscape', `url("${settings.landscape}")`);
+        body.classList.add('has-bg-landscape');
+    } else {
+        root.style.removeProperty('--app-bg-landscape');
+        body.classList.remove('has-bg-landscape');
+    }
+}
 
 async function loadValidationRules() {
     try {
@@ -455,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePasswordStrength();
     });
 
+    loadAppBackground();
     loadValidationRules();
     loadUser();
 });

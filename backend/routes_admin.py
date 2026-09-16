@@ -7,7 +7,15 @@ from werkzeug.utils import secure_filename
 
 from .admin import validate_destination_payload
 from .auth import admin_required, csrf_protected, get_current_user
-from .models import HintSourceReview, QuizIdentity, _utcnow_naive, db
+from .models import (
+    HintSourceReview,
+    QuizIdentity,
+    _utcnow_naive,
+    db,
+    get_app_setting,
+    get_background_settings,
+    set_app_setting,
+)
 from .quiz_adapters import get_quiz_adapter
 from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from .quiz_types import get_quiz_type
@@ -327,3 +335,124 @@ def delete_question(quiz_type, source_id):
     db.session.delete(question)
     db.session.commit()
     return jsonify({"message": "Question deleted"}), 200
+
+
+def _remove_background_file(key: str) -> None:
+    current_val = get_app_setting(key)
+    if current_val and current_val.startswith("/media/"):
+        rel_path = current_val.removeprefix("/media/")
+        file_path = Path(current_app.config["MEDIA_DIR"]) / rel_path
+        if file_path.is_file():
+            try:
+                file_path.unlink()
+            except OSError:
+                pass
+
+
+@admin_bp.route("/api/admin/settings/background", methods=["GET"])
+@admin_required
+def get_admin_background_settings():
+    return jsonify(get_background_settings())
+
+
+@admin_bp.route("/api/admin/settings/background", methods=["POST"])
+@admin_required
+@csrf_protected
+def update_background_settings():
+    portrait_file = request.files.get("portrait")
+    landscape_file = request.files.get("landscape")
+
+    if not portrait_file and not landscape_file:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "At least one background image (portrait or landscape)"
+                        " must be provided"
+                    )
+                }
+            ),
+            400,
+        )
+
+    files_to_process = []
+    if portrait_file and portrait_file.filename:
+        filename = secure_filename(portrait_file.filename)
+        extension = Path(filename).suffix.lower()
+        if (
+            not filename
+            or extension not in _IMAGE_EXTENSIONS
+            or not portrait_file.mimetype.startswith("image/")
+        ):
+            return jsonify({"error": "Only image files are allowed"}), 400
+        files_to_process.append(
+            ("portrait", "background_portrait", portrait_file, extension)
+        )
+
+    if landscape_file and landscape_file.filename:
+        filename = secure_filename(landscape_file.filename)
+        extension = Path(filename).suffix.lower()
+        if (
+            not filename
+            or extension not in _IMAGE_EXTENSIONS
+            or not landscape_file.mimetype.startswith("image/")
+        ):
+            return jsonify({"error": "Only image files are allowed"}), 400
+        files_to_process.append(
+            ("landscape", "background_landscape", landscape_file, extension)
+        )
+
+    if not files_to_process:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "At least one background image (portrait or landscape)"
+                        " must be provided"
+                    )
+                }
+            ),
+            400,
+        )
+
+    media_dir = Path(current_app.config["MEDIA_DIR"]) / "backgrounds"
+    media_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = int(_utcnow_naive().timestamp())
+    for orientation, setting_key, file_obj, extension in files_to_process:
+        _remove_background_file(setting_key)
+        saved_filename = f"{orientation}_{timestamp}{extension}"
+        file_obj.save(media_dir / saved_filename)
+        set_app_setting(setting_key, f"/media/backgrounds/{saved_filename}")
+
+    db.session.commit()
+    result = get_background_settings()
+    result["message"] = "Background settings updated"
+    return jsonify(result), 200
+
+
+@admin_bp.route("/api/admin/settings/background/<orientation>", methods=["DELETE"])
+@admin_required
+@csrf_protected
+def delete_background_setting(orientation):
+    orientation = orientation.lower()
+    if orientation not in {"portrait", "landscape", "all"}:
+        return (
+            jsonify(
+                {"error": "Invalid orientation. Must be portrait, landscape, or all"}
+            ),
+            400,
+        )
+
+    if orientation in {"portrait", "all"}:
+        _remove_background_file("background_portrait")
+        set_app_setting("background_portrait", None)
+
+    if orientation in {"landscape", "all"}:
+        _remove_background_file("background_landscape")
+        set_app_setting("background_landscape", None)
+
+    db.session.commit()
+    result = get_background_settings()
+    result["message"] = f"Background {orientation} removed successfully"
+    return jsonify(result), 200

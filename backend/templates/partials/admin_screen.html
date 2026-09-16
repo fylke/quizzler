@@ -6,6 +6,7 @@
             <div class="admin-tabs" role="tablist" aria-label="Admin sections">
                 <button type="button" class="admin-tab active" id="adminDestinationsTab" role="tab" aria-selected="true">Destinations</button>
                 <button type="button" class="admin-tab" id="adminReviewTab" role="tab" aria-selected="false">Review</button>
+                <button type="button" class="admin-tab" id="adminBackgroundTab" role="tab" aria-selected="false">Background</button>
             </div>
             <p id="adminDestCount"></p>
             <div class="admin-actions">
@@ -33,6 +34,52 @@
                     <button type="button" class="btn btn-secondary btn-small" id="adminReviewPreviousBtn">Previous</button>
                     <span id="adminReviewPage"></span>
                     <button type="button" class="btn btn-secondary btn-small" id="adminReviewNextBtn">Next</button>
+                </div>
+            </div>
+
+            <div id="adminBackgroundPanel" class="admin-background-panel" style="display:none;">
+                <div class="admin-background-header">
+                    <h2>App Background Images</h2>
+                    <p class="admin-background-description">Set background images for the entire application. Configure separate background images for portrait (vertical) and landscape (horizontal) orientations.</p>
+                </div>
+                <div class="admin-bg-grid">
+                    <div class="admin-bg-card" id="adminPortraitBgCard">
+                        <h3>Portrait Mode Background</h3>
+                        <p class="admin-bg-hint">Shown on screens with portrait orientation.</p>
+                        <div class="admin-bg-preview-container" id="portraitBgPreviewContainer">
+                            <span class="admin-bg-empty-text" id="portraitBgEmptyText">No background set (using default gradient)</span>
+                            <div class="admin-bg-preview-wrapper" id="portraitBgPreviewWrapper" style="display:none;">
+                                <img id="portraitBgPreviewImg" class="admin-bg-preview-img" alt="Portrait background preview">
+                                <span class="admin-bg-filename" id="portraitBgFilename"></span>
+                            </div>
+                        </div>
+                        <div class="admin-bg-actions">
+                            <input type="file" id="adminPortraitBgInput" accept="image/*" class="admin-bg-file-input" aria-label="Portrait background image file">
+                            <div class="admin-bg-btn-group">
+                                <button type="button" class="btn btn-primary btn-small" id="uploadPortraitBgBtn">Upload Portrait</button>
+                                <button type="button" class="btn btn-danger btn-small" id="removePortraitBgBtn" style="display:none;">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-bg-card" id="adminLandscapeBgCard">
+                        <h3>Landscape Mode Background</h3>
+                        <p class="admin-bg-hint">Shown on screens with landscape orientation.</p>
+                        <div class="admin-bg-preview-container" id="landscapeBgPreviewContainer">
+                            <span class="admin-bg-empty-text" id="landscapeBgEmptyText">No background set (using default gradient)</span>
+                            <div class="admin-bg-preview-wrapper" id="landscapeBgPreviewWrapper" style="display:none;">
+                                <img id="landscapeBgPreviewImg" class="admin-bg-preview-img" alt="Landscape background preview">
+                                <span class="admin-bg-filename" id="landscapeBgFilename"></span>
+                            </div>
+                        </div>
+                        <div class="admin-bg-actions">
+                            <input type="file" id="adminLandscapeBgInput" accept="image/*" class="admin-bg-file-input" aria-label="Landscape background image file">
+                            <div class="admin-bg-btn-group">
+                                <button type="button" class="btn btn-primary btn-small" id="uploadLandscapeBgBtn">Upload Landscape</button>
+                                <button type="button" class="btn btn-danger btn-small" id="removeLandscapeBgBtn" style="display:none;">Remove</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

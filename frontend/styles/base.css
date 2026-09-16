@@ -18,11 +18,27 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: var(--space-5);
+}
+
+@media (orientation: portrait) {
+    body.has-bg-portrait {
+        background-image: var(--app-bg-portrait);
+    }
+}
+
+@media (orientation: landscape) {
+    body.has-bg-landscape {
+        background-image: var(--app-bg-landscape);
+    }
 }
 
 .container {

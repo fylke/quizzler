@@ -47,6 +47,9 @@ flowchart LR
         DELETE["DELETE /api/admin/quiz-types/countries/questions/:id"]
         REVIEW_LIST["GET /api/admin/quiz-types/:type/hint-sources"]
         REVIEW_WRITE["PATCH /api/admin/quiz-types/:type/hint-sources/:id/:difficulty"]
+        BG_GET["GET /api/admin/settings/background"]
+        BG_POST["POST /api/admin/settings/background"]
+        BG_DELETE["DELETE /api/admin/settings/background/:orientation"]
     end
 
     GET_LIST -.->|"auth only"| A2
@@ -56,6 +59,9 @@ flowchart LR
     DELETE -.->|"auth + CSRF"| A3
     REVIEW_LIST -.->|"auth only"| A2
     REVIEW_WRITE -.->|"auth + CSRF"| A3
+    BG_GET -.->|"auth only"| A2
+    BG_POST -.->|"auth + CSRF"| A3
+    BG_DELETE -.->|"auth + CSRF"| A3
 ```
 
 | Method | Endpoint | Auth | CSRF | Description |
@@ -67,12 +73,20 @@ flowchart LR
 | DELETE | `/api/admin/quiz-types/countries/questions/:id` | admin | Yes | Delete country question + cascade results |
 | GET | `/api/admin/quiz-types/:type/hint-sources` | admin | No | List hint sources by review status |
 | PATCH | `/api/admin/quiz-types/:type/hint-sources/:id/:difficulty` | admin | Yes | Mark or unmark one hint source as reviewed |
+| GET | `/api/settings/background` | public | No | Get current background image paths for portrait and landscape |
+| GET | `/api/admin/settings/background` | admin | No | Get current background image settings |
+| POST | `/api/admin/settings/background` | admin | Yes | Upload portrait and/or landscape background images |
+| DELETE | `/api/admin/settings/background/:orientation` | admin | Yes | Remove portrait, landscape, or all background images |
 
 The review list accepts `status=unreviewed` (the default), `status=reviewed`,
 or `status=all`, plus `offset` and `limit` pagination parameters. Results are
 ordered by question ID and hint difficulty. Empty hint sources are excluded.
 Each result includes the question name, hint text, source, difficulty, and
 reviewer/timestamp metadata when reviewed.
+
+The Background tab allows administrators to configure custom background images for the entire app:
+- **Portrait orientation**: applied when the device/browser is in portrait orientation (`@media (orientation: portrait)`).
+- **Landscape orientation**: applied when the device/browser is in landscape orientation (`@media (orientation: landscape)`).
 
 ## Screen Layout
 
@@ -81,7 +95,7 @@ reviewer/timestamp metadata when reviewed.
 │  🔧 Admin: Quiz Management          [← Back to Main]│
 ├─────────────────────────────────────────────────────┤
 │  Total destinations: 3                               │
-│  [Destinations] [Review]                             │
+│  [Destinations] [Review] [Background]                │
 │  [Add New Destination]                               │
 │                                                      │
 │  ┌─────────────────────────────────────────────────┐ │

@@ -178,3 +178,40 @@ class PasswordResetToken(db.Model):
     user = db.relationship(
         "User", backref=db.backref("reset_tokens", cascade="all, delete-orphan")
     )
+
+
+class AppSetting(db.Model):
+    __tablename__ = "app_settings"
+
+    key = db.Column(db.String(64), primary_key=True)
+    value = db.Column(db.String(512), nullable=True)
+
+
+def get_app_setting(key: str, default: str | None = None) -> str | None:
+    """Retrieve an application setting value by key."""
+    setting = AppSetting.query.filter_by(key=key).first()
+    return (
+        setting.value if setting is not None and setting.value is not None else default
+    )
+
+
+def set_app_setting(key: str, value: str | None) -> None:
+    """Set or remove an application setting."""
+    setting = AppSetting.query.filter_by(key=key).first()
+    if setting is None:
+        if value is not None:
+            setting = AppSetting(key=key, value=value)
+            db.session.add(setting)
+    else:
+        if value is None:
+            db.session.delete(setting)
+        else:
+            setting.value = value
+
+
+def get_background_settings() -> dict[str, str | None]:
+    """Return dictionary of configured background image paths."""
+    return {
+        "portrait": get_app_setting("background_portrait"),
+        "landscape": get_app_setting("background_landscape"),
+    }
