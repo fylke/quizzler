@@ -373,3 +373,60 @@ def test_create_destination_validation_error(admin_page: Page):
 
     # Should show error
     expect(admin_page.locator("#adminError")).to_be_visible(timeout=3000)
+
+
+def test_admin_background_settings(admin_page: Page):
+    """Admin can upload portrait and landscape background images and remove them."""
+    admin_page.click("#adminLink")
+    expect(admin_page.locator("#adminScreen")).to_be_visible(timeout=3000)
+
+    # Click Background tab
+    admin_page.click("#adminBackgroundTab")
+    expect(admin_page.locator("#adminBackgroundPanel")).to_be_visible()
+
+    # Initially both previews are empty
+    expect(admin_page.locator("#portraitBgEmptyText")).to_be_visible()
+    expect(admin_page.locator("#landscapeBgEmptyText")).to_be_visible()
+
+    # Upload Portrait Background
+    admin_page.locator("#adminPortraitBgInput").set_input_files(
+        {
+            "name": "portrait_test.jpg",
+            "mimeType": "image/jpeg",
+            "buffer": b"test portrait background image",
+        }
+    )
+    admin_page.click("#uploadPortraitBgBtn")
+
+    expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
+    expect(admin_page.locator("#adminSuccess")).to_contain_text(
+        "Portrait background updated successfully"
+    )
+    expect(admin_page.locator("#portraitBgPreviewWrapper")).to_be_visible()
+    expect(admin_page.locator("#removePortraitBgBtn")).to_be_visible()
+
+    # Upload Landscape Background
+    admin_page.locator("#adminLandscapeBgInput").set_input_files(
+        {
+            "name": "landscape_test.png",
+            "mimeType": "image/png",
+            "buffer": b"test landscape background image",
+        }
+    )
+    admin_page.click("#uploadLandscapeBgBtn")
+
+    expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
+    expect(admin_page.locator("#adminSuccess")).to_contain_text(
+        "Landscape background updated successfully"
+    )
+    expect(admin_page.locator("#landscapeBgPreviewWrapper")).to_be_visible()
+    expect(admin_page.locator("#removeLandscapeBgBtn")).to_be_visible()
+
+    # Remove Portrait Background
+    admin_page.click("#removePortraitBgBtn")
+    expect(admin_page.locator("#adminSuccess")).to_be_visible(timeout=3000)
+    expect(admin_page.locator("#adminSuccess")).to_contain_text(
+        "Portrait background removed successfully"
+    )
+    expect(admin_page.locator("#portraitBgEmptyText")).to_be_visible()
+    expect(admin_page.locator("#removePortraitBgBtn")).to_be_hidden()

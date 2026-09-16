@@ -47,6 +47,11 @@ erDiagram
         boolean ongoing
     }
 
+    app_settings {
+        varchar2 key PK
+        varchar2 value
+    }
+
     user ||--o{ quiz_result : "has"
     countries ||--o{ quiz_result : "referenced by"
     quiz_identity }o--|| countries : "countries source_id"
@@ -64,6 +69,9 @@ links. Rebuilding a database from source data preserves the compact IDs as long
 as the source IDs and registered type codes remain unchanged. Integer source IDs
 remain the keys for result relationships, scoring, complaints, and media
 directories.
+
+`app_settings` stores key-value configuration for application-level settings,
+such as `background_portrait` and `background_landscape` media paths.
 
 `hint_source_review` stores review workflow state independently from quiz
 content. Its `(quiz_type, source_id, hint_difficulty)` tuple is unique so each

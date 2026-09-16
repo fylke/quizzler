@@ -18,7 +18,14 @@ from .auth import (  # noqa: F401 — re-exported for backward compatibility
     login_required,
     player_required,
 )
-from .models import Destination, GuestQuizResult, QuizResult, User, db
+from .models import (
+    Destination,
+    GuestQuizResult,
+    QuizResult,
+    User,
+    db,
+    get_background_settings,
+)
 from .quiz_adapters import get_quiz_adapter_by_media_namespace, get_quiz_adapters
 from .quiz_catalog import synchronize_quiz_identities
 from .quiz_session import active_result_for_player, get_media_access_state
@@ -290,6 +297,12 @@ def health_check():
 def get_validation_rules():
     """Return validation constraints for use by the frontend."""
     return jsonify(validation_rules_dict())
+
+
+@app.route("/api/settings/background", methods=["GET"])
+def get_app_background_settings():
+    """Return configured background images for portrait and landscape modes."""
+    return jsonify(get_background_settings())
 
 
 @app.route("/api/quiz-types", methods=["GET"])

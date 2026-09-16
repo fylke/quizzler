@@ -481,4 +481,157 @@ describe('Admin Panel', function () {
             expect(errorEl.style.display).toBe('block');
         });
     });
+
+    // ========== adminBackgroundUrl ==========
+    describe('adminBackgroundUrl', function () {
+        it('returns base background settings url', function () {
+            expect(adminBackgroundUrl()).toMatch(/\/api\/admin\/settings\/background$/);
+        });
+
+        it('returns orientation-specific background url', function () {
+            expect(adminBackgroundUrl('portrait')).toMatch(/\/api\/admin\/settings\/background\/portrait$/);
+            expect(adminBackgroundUrl('landscape')).toMatch(/\/api\/admin\/settings\/background\/landscape$/);
+        });
+    });
+
+    // ========== setAdminTab with background ==========
+    describe('setAdminTab with background', function () {
+        var destTab, reviewTab, bgTab, destList, reviewPanel, bgPanel, destCount, actions, emptyState;
+
+        beforeEach(function () {
+            destTab = document.createElement('button');
+            destTab.id = 'adminDestinationsTab';
+            reviewTab = document.createElement('button');
+            reviewTab.id = 'adminReviewTab';
+            bgTab = document.createElement('button');
+            bgTab.id = 'adminBackgroundTab';
+            destList = document.createElement('div');
+            destList.id = 'adminDestList';
+            reviewPanel = document.createElement('div');
+            reviewPanel.id = 'adminReviewPanel';
+            bgPanel = document.createElement('div');
+            bgPanel.id = 'adminBackgroundPanel';
+            destCount = document.createElement('p');
+            destCount.id = 'adminDestCount';
+            actions = document.createElement('div');
+            actions.className = 'admin-actions';
+            emptyState = document.createElement('p');
+            emptyState.id = 'adminEmptyState';
+
+            document.body.appendChild(destTab);
+            document.body.appendChild(reviewTab);
+            document.body.appendChild(bgTab);
+            document.body.appendChild(destList);
+            document.body.appendChild(reviewPanel);
+            document.body.appendChild(bgPanel);
+            document.body.appendChild(destCount);
+            document.body.appendChild(actions);
+            document.body.appendChild(emptyState);
+        });
+
+        afterEach(function () {
+            destTab.remove();
+            reviewTab.remove();
+            bgTab.remove();
+            destList.remove();
+            reviewPanel.remove();
+            bgPanel.remove();
+            destCount.remove();
+            actions.remove();
+            emptyState.remove();
+        });
+
+        it('activates background tab and shows background panel', function () {
+            spyOn(window, 'fetch').and.returnValue(Promise.resolve({
+                ok: true,
+                json: function () {
+                    return Promise.resolve({ portrait: null, landscape: null });
+                }
+            }));
+
+            setAdminTab('background');
+            expect(bgTab.classList.contains('active')).toBe(true);
+            expect(destTab.classList.contains('active')).toBe(false);
+            expect(reviewTab.classList.contains('active')).toBe(false);
+            expect(bgPanel.style.display).toBe('block');
+            expect(reviewPanel.style.display).toBe('none');
+            expect(destList.style.display).toBe('none');
+        });
+    });
+
+    // ========== applyAppBackground ==========
+    describe('applyAppBackground', function () {
+        afterEach(function () {
+            applyAppBackground({ portrait: null, landscape: null });
+        });
+
+        it('sets CSS variable and class when portrait is provided', function () {
+            applyAppBackground({ portrait: '/media/backgrounds/portrait.jpg', landscape: null });
+            expect(document.body.classList.contains('has-bg-portrait')).toBe(true);
+            expect(document.body.classList.contains('has-bg-landscape')).toBe(false);
+            expect(document.documentElement.style.getPropertyValue('--app-bg-portrait')).toBe('url("/media/backgrounds/portrait.jpg")');
+        });
+
+        it('sets CSS variable and class when landscape is provided', function () {
+            applyAppBackground({ portrait: null, landscape: '/media/backgrounds/landscape.jpg' });
+            expect(document.body.classList.contains('has-bg-landscape')).toBe(true);
+            expect(document.body.classList.contains('has-bg-portrait')).toBe(false);
+            expect(document.documentElement.style.getPropertyValue('--app-bg-landscape')).toBe('url("/media/backgrounds/landscape.jpg")');
+        });
+
+        it('removes classes and properties when cleared', function () {
+            applyAppBackground({ portrait: '/media/backgrounds/p.jpg', landscape: '/media/backgrounds/l.jpg' });
+            applyAppBackground({ portrait: null, landscape: null });
+            expect(document.body.classList.contains('has-bg-portrait')).toBe(false);
+            expect(document.body.classList.contains('has-bg-landscape')).toBe(false);
+        });
+    });
+
+    // ========== updateBackgroundUI ==========
+    describe('updateBackgroundUI', function () {
+        var emptyText, previewWrapper, previewImg, filenameText, removeBtn;
+
+        beforeEach(function () {
+            emptyText = document.createElement('span');
+            emptyText.id = 'portraitBgEmptyText';
+            previewWrapper = document.createElement('div');
+            previewWrapper.id = 'portraitBgPreviewWrapper';
+            previewImg = document.createElement('img');
+            previewImg.id = 'portraitBgPreviewImg';
+            filenameText = document.createElement('span');
+            filenameText.id = 'portraitBgFilename';
+            removeBtn = document.createElement('button');
+            removeBtn.id = 'removePortraitBgBtn';
+
+            document.body.appendChild(emptyText);
+            document.body.appendChild(previewWrapper);
+            document.body.appendChild(previewImg);
+            document.body.appendChild(filenameText);
+            document.body.appendChild(removeBtn);
+        });
+
+        afterEach(function () {
+            emptyText.remove();
+            previewWrapper.remove();
+            previewImg.remove();
+            filenameText.remove();
+            removeBtn.remove();
+        });
+
+        it('updates preview UI when image url is present', function () {
+            updateBackgroundUI('portrait', '/media/backgrounds/portrait_123.jpg');
+            expect(emptyText.style.display).toBe('none');
+            expect(previewWrapper.style.display).toBe('flex');
+            expect(previewImg.src).toContain('portrait_123.jpg');
+            expect(filenameText.textContent).toBe('portrait_123.jpg');
+            expect(removeBtn.style.display).toBe('inline-block');
+        });
+
+        it('resets preview UI when image url is null', function () {
+            updateBackgroundUI('portrait', null);
+            expect(emptyText.style.display).toBe('block');
+            expect(previewWrapper.style.display).toBe('none');
+            expect(removeBtn.style.display).toBe('none');
+        });
+    });
 });
