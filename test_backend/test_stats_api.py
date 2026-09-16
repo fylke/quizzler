@@ -6,7 +6,14 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from backend import app
-from backend.models import Destination, QuizResult, User, db
+from backend.models import (
+    Destination,
+    GuestQuizResult,
+    GuestSession,
+    QuizResult,
+    User,
+    db,
+)
 from backend.stats import compute_stats
 from test_backend.support import (
     add_destination,
@@ -109,6 +116,53 @@ class StatsAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         data = response.get_json()
         self.assertEqual(data["error"], "Authentication required")
+
+    def test_admin_stats_aggregates_registered_and_guest_results(self):
+        with app.app_context():
+            admin = add_user(
+                email="admin-stats@example.com",
+                password="password123",
+                is_admin=True,
+            )
+            guest = GuestSession(token_hash="a" * 64)
+            db.session.add(guest)
+            db.session.flush()
+            db.session.add_all(
+                [
+                    QuizResult(
+                        user_id=self._user_id,
+                        destination_id=1,
+                        hint_difficulty=5,
+                        remaining_guesses=3,
+                        ongoing=False,
+                    ),
+                    GuestQuizResult(
+                        guest_session_id=guest.id,
+                        destination_id=2,
+                        hint_difficulty=3,
+                        remaining_guesses=2,
+                        ongoing=False,
+                    ),
+                ]
+            )
+            db.session.commit()
+            admin_id = admin.id
+
+        self._login(self.client, admin_id)
+        response = self.client.get("/api/admin/stats")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["registeredUsers"], 2)
+        self.assertEqual(data["guestSessions"], 1)
+        self.assertEqual(data["quizzesStarted"], 2)
+        self.assertEqual(data["quizzesCompleted"], 2)
+        self.assertEqual(data["cumulativeScore"], 21)
+        self.assertEqual(data["averageScore"], 10.5)
+
+    def test_admin_stats_requires_admin(self):
+        self._login(self.client, self._user_id)
+        response = self.client.get("/api/admin/stats")
+        self.assertEqual(response.status_code, 403)
 
     def test_guest_session_can_fetch_zero_stats(self):
         """Guest session can access /api/stats and gets all-zero metrics initially."""

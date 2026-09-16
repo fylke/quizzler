@@ -7,6 +7,7 @@ let currentAdminTab = 'destinations';
 let adminReviewStatus = 'unreviewed';
 let adminReviewOffset = 0;
 const adminReviewLimit = 20;
+const adminTabs = ['destinations', 'review', 'background', 'stats'];
 
 function getAdminApp() {
     return window.QuizzlerApp;
@@ -33,6 +34,8 @@ function setupAdminEventBindings() {
     bindAdminClick('uploadLandscapeBgBtn', () => uploadBackground('landscape'));
     bindAdminClick('removePortraitBgBtn', () => removeBackground('portrait'));
     bindAdminClick('removeLandscapeBgBtn', () => removeBackground('landscape'));
+    bindAdminClick('adminStatsTab', () => setAdminTab('stats'));
+    bindAdminClick('adminStatsRefreshBtn', loadAdminStats);
 
     document.getElementById('adminReviewStatus')?.addEventListener('change', (event) => {
         adminReviewStatus = event.target.value;
@@ -134,20 +137,23 @@ function adminBackgroundUrl(orientation) {
 }
 
 function setAdminTab(tab) {
-    currentAdminTab = tab;
-    const isDestinations = tab === 'destinations';
-    const isReview = tab === 'review';
-    const isBackground = tab === 'background';
+    currentAdminTab = adminTabs.includes(tab) ? tab : 'destinations';
+    const isDestinations = currentAdminTab === 'destinations';
+    const isReview = currentAdminTab === 'review';
+    const isBackground = currentAdminTab === 'background';
+    const isStats = currentAdminTab === 'stats';
 
     if (!isDestinations) hideAdminForm();
 
     document.getElementById('adminDestinationsTab')?.classList.toggle('active', isDestinations);
     document.getElementById('adminReviewTab')?.classList.toggle('active', isReview);
     document.getElementById('adminBackgroundTab')?.classList.toggle('active', isBackground);
+    document.getElementById('adminStatsTab')?.classList.toggle('active', isStats);
 
     document.getElementById('adminDestinationsTab')?.setAttribute('aria-selected', String(isDestinations));
     document.getElementById('adminReviewTab')?.setAttribute('aria-selected', String(isReview));
     document.getElementById('adminBackgroundTab')?.setAttribute('aria-selected', String(isBackground));
+    document.getElementById('adminStatsTab')?.setAttribute('aria-selected', String(isStats));
 
     const destCount = document.getElementById('adminDestCount');
     if (destCount) destCount.style.display = isDestinations ? '' : 'none';
@@ -162,9 +168,48 @@ function setAdminTab(tab) {
     if (reviewPanel) reviewPanel.style.display = isReview ? 'block' : 'none';
     const bgPanel = document.getElementById('adminBackgroundPanel');
     if (bgPanel) bgPanel.style.display = isBackground ? 'block' : 'none';
+    const statsPanel = document.getElementById('adminStatsPanel');
+    if (statsPanel) statsPanel.style.display = isStats ? 'block' : 'none';
 
     if (isReview) loadHintSourceReviews();
     if (isBackground) loadBackgroundSettings();
+    if (isStats) loadAdminStats();
+}
+
+async function loadAdminStats() {
+    const grid = document.getElementById('adminStatsGrid');
+    if (!grid) return;
+    grid.innerHTML = '<p class="admin-stats-loading">Loading stats...</p>';
+    try {
+        const response = await fetch(`${getAdminApp().api.baseUrl}/api/admin/stats`);
+        if (!response.ok) {
+            const err = await response.json();
+            showAdminError(err.error || 'Failed to load stats');
+            return;
+        }
+        const stats = await response.json();
+        const cards = [
+            ['Registered users', stats.registeredUsers],
+            ['Guest sessions', stats.guestSessions],
+            ['Quizzes started', stats.quizzesStarted],
+            ['Quizzes completed', stats.quizzesCompleted],
+            ['Quizzes ongoing', stats.quizzesOngoing],
+            ['Total score', stats.cumulativeScore],
+            ['Average score', stats.averageScore],
+            ['Best score', stats.bestScore],
+            ['Accuracy', `${stats.accuracyRate}%`],
+        ];
+        grid.innerHTML = cards.map(([label, value]) => `
+            <article class="admin-stat-card">
+                <span class="admin-stat-label">${escapeHtml(label)}</span>
+                <strong class="admin-stat-value">${escapeHtml(String(value))}</strong>
+            </article>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading admin stats:', error);
+        grid.innerHTML = '';
+        showAdminError('Could not connect to server');
+    }
 }
 
 function updateAdminTypeLabels() {
