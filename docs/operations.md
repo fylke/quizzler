@@ -45,12 +45,6 @@ Run stack:
 just podman-up
 ```
 
-If local host does not support CPU/memory cgroup limits:
-
-```bash
-just podman-up-local
-```
-
 Stop stack:
 
 ```bash

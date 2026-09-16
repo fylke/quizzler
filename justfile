@@ -103,9 +103,6 @@ podman-preflight:
     fi
 
 podman-up: podman-preflight
-    {{podman_compose}} up --build -d
-
-podman-up-local: podman-preflight
     QUIZZLER_CPUS=0 QUIZZLER_MEM_LIMIT=0 QUIZZLER_PIDS_LIMIT=0 {{podman_compose}} up --build -d
 
 podman-down:
