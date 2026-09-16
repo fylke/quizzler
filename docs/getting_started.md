@@ -16,8 +16,8 @@ Optional for container workflows:
 ### Dev Containers
 
 Use Podman Compose commands from the host workspace, before opening the
-repository in a devcontainer. Running `just podman-up` or
-`just podman-up-local` inside the devcontainer requires nested Podman support,
+repository in a devcontainer. Running `just podman-up` inside the devcontainer
+requires nested Podman support,
 which is not provided by the standard development container runtime.
 
 Inside the devcontainer, run the application directly:
@@ -98,7 +98,6 @@ just e2e
 just test
 just generate-small-webp
 just podman-up
-just podman-up-local
 just podman-down
 ```
 

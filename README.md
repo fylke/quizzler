@@ -32,10 +32,9 @@ Run the spellchecker manually with `uv run codespell`.
 Inside a devcontainer, run the application directly with `uv run python -m backend`.
 The devcontainer starts it automatically on port 5000.
 
-Run `just podman-up` and `just podman-up-local` from the host workspace, not
-inside the devcontainer. In VS Code, run **Dev Containers: Reopen Folder
-Locally** from the Command Palette to leave the devcontainer before using those
-commands.
+Run `just podman-up` from the host workspace, not inside the devcontainer. In
+VS Code, run **Dev Containers: Reopen Folder Locally** from the Command Palette
+to leave the devcontainer before using that command.
 
 ## Documentation Index
 
