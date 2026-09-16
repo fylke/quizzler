@@ -8,17 +8,20 @@ from werkzeug.utils import secure_filename
 from .admin import validate_destination_payload
 from .auth import admin_required, csrf_protected, get_current_user
 from .models import (
+    GuestSession,
     HintSourceReview,
     QuizIdentity,
+    User,
     _utcnow_naive,
     db,
     get_app_setting,
     get_background_settings,
     set_app_setting,
 )
-from .quiz_adapters import get_quiz_adapter
+from .quiz_adapters import get_quiz_adapter, get_quiz_adapters
 from .quiz_catalog import get_or_create_quiz_identity, public_quiz_id
 from .quiz_types import get_quiz_type
+from .stats import compute_stats
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -26,6 +29,42 @@ _IMAGE_EXTENSIONS = {".gif", ".jpeg", ".jpg", ".png", ".webp"}
 _HINT_COUNT = 5
 _REVIEW_PAGE_SIZE = 20
 _REVIEW_MAX_PAGE_SIZE = 100
+
+
+@admin_bp.route("/api/admin/stats", methods=["GET"])
+@admin_required
+def admin_stats():
+    """Return aggregate gameplay statistics for the admin dashboard."""
+    all_results = [
+        (adapter, result)
+        for adapter in get_quiz_adapters()
+        for result in adapter.user_result_model.query.all()
+    ]
+    all_results.extend(
+        (adapter, result)
+        for adapter in get_quiz_adapters()
+        for result in adapter.guest_result_model.query.all()
+    )
+    completed = [result for adapter, result in all_results if not result.ongoing]
+    completed_dicts = [
+        {
+            "hint_difficulty": result.hint_difficulty,
+            "remaining_guesses": result.remaining_guesses,
+            "destination_id": adapter.result_source_id(result),
+        }
+        for adapter, result in all_results
+        if not result.ongoing
+    ]
+    stats = compute_stats(completed_dicts)
+    stats.update(
+        {
+            "registeredUsers": User.query.count(),
+            "guestSessions": GuestSession.query.count(),
+            "quizzesStarted": len(all_results),
+            "quizzesOngoing": len(all_results) - len(completed),
+        }
+    )
+    return jsonify(stats)
 
 
 def _standard_adapter(quiz_type_identifier):

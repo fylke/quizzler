@@ -7,6 +7,7 @@
                 <button type="button" class="admin-tab active" id="adminDestinationsTab" role="tab" aria-selected="true">Destinations</button>
                 <button type="button" class="admin-tab" id="adminReviewTab" role="tab" aria-selected="false">Review</button>
                 <button type="button" class="admin-tab" id="adminBackgroundTab" role="tab" aria-selected="false">Background</button>
+                <button type="button" class="admin-tab" id="adminStatsTab" role="tab" aria-selected="false">Stats</button>
             </div>
             <p id="adminDestCount"></p>
             <div class="admin-actions">
@@ -81,6 +82,15 @@
                         </div>
                     </div>
                 </div>
+            <div id="adminStatsPanel" class="admin-stats-panel" style="display:none;">
+                <div class="admin-stats-header">
+                    <div>
+                        <h2>Overall Stats</h2>
+                        <p>All quiz activity across registered and guest players.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" id="adminStatsRefreshBtn">Refresh</button>
+                </div>
+                <div id="adminStatsGrid" class="admin-stats-grid" aria-live="polite"></div>
             </div>
 
             <div id="adminForm" class="admin-form-section" style="display:none;">
