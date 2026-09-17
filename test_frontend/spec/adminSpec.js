@@ -494,9 +494,9 @@ describe('Admin Panel', function () {
         });
     });
 
-    // ========== setAdminTab with background ==========
-    describe('setAdminTab with background', function () {
-        var destTab, reviewTab, bgTab, destList, reviewPanel, bgPanel, destCount, actions, emptyState;
+    // ========== setAdminTab ==========
+    describe('setAdminTab', function () {
+        var destTab, reviewTab, bgTab, statsTab, destList, reviewPanel, bgPanel, statsPanel, destCount, actions, emptyState;
 
         beforeEach(function () {
             destTab = document.createElement('button');
@@ -505,12 +505,16 @@ describe('Admin Panel', function () {
             reviewTab.id = 'adminReviewTab';
             bgTab = document.createElement('button');
             bgTab.id = 'adminBackgroundTab';
+            statsTab = document.createElement('button');
+            statsTab.id = 'adminStatsTab';
             destList = document.createElement('div');
             destList.id = 'adminDestList';
             reviewPanel = document.createElement('div');
             reviewPanel.id = 'adminReviewPanel';
             bgPanel = document.createElement('div');
             bgPanel.id = 'adminBackgroundPanel';
+            statsPanel = document.createElement('div');
+            statsPanel.id = 'adminStatsPanel';
             destCount = document.createElement('p');
             destCount.id = 'adminDestCount';
             actions = document.createElement('div');
@@ -521,9 +525,11 @@ describe('Admin Panel', function () {
             document.body.appendChild(destTab);
             document.body.appendChild(reviewTab);
             document.body.appendChild(bgTab);
+            document.body.appendChild(statsTab);
             document.body.appendChild(destList);
             document.body.appendChild(reviewPanel);
             document.body.appendChild(bgPanel);
+            document.body.appendChild(statsPanel);
             document.body.appendChild(destCount);
             document.body.appendChild(actions);
             document.body.appendChild(emptyState);
@@ -533,9 +539,11 @@ describe('Admin Panel', function () {
             destTab.remove();
             reviewTab.remove();
             bgTab.remove();
+            statsTab.remove();
             destList.remove();
             reviewPanel.remove();
             bgPanel.remove();
+            statsPanel.remove();
             destCount.remove();
             actions.remove();
             emptyState.remove();
@@ -555,7 +563,38 @@ describe('Admin Panel', function () {
             expect(reviewTab.classList.contains('active')).toBe(false);
             expect(bgPanel.style.display).toBe('block');
             expect(reviewPanel.style.display).toBe('none');
+            expect(statsPanel.style.display).toBe('none');
             expect(destList.style.display).toBe('none');
+        });
+
+        it('activates review tab and shows only the review panel', function () {
+            spyOn(window, 'fetch').and.returnValue(Promise.resolve({
+                ok: true,
+                json: function () {
+                    return Promise.resolve({ items: [], count: 0, has_more: false });
+                }
+            }));
+
+            setAdminTab('review');
+            expect(reviewTab.classList.contains('active')).toBe(true);
+            expect(reviewPanel.style.display).toBe('block');
+            expect(bgPanel.style.display).toBe('none');
+            expect(statsPanel.style.display).toBe('none');
+        });
+
+        it('activates stats tab and shows only the stats panel', function () {
+            spyOn(window, 'fetch').and.returnValue(Promise.resolve({
+                ok: true,
+                json: function () {
+                    return Promise.resolve({});
+                }
+            }));
+
+            setAdminTab('stats');
+            expect(statsTab.classList.contains('active')).toBe(true);
+            expect(statsPanel.style.display).toBe('block');
+            expect(reviewPanel.style.display).toBe('none');
+            expect(bgPanel.style.display).toBe('none');
         });
     });
 
