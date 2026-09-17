@@ -55,10 +55,13 @@ def register():
     if not _EMAIL_RE.match(email):
         return jsonify({"error": "Invalid email format"}), 400
 
-    if len(password) < PASSWORD_MIN_LENGTH:
+    if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
         return (
             jsonify(
-                {"error": f"Password must be at least {PASSWORD_MIN_LENGTH} characters"}
+                {
+                    "error": f"Password must be between {PASSWORD_MIN_LENGTH} and "
+                    f"{PASSWORD_MAX_LENGTH} characters"
+                }
             ),
             400,
         )

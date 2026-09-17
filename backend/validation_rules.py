@@ -19,6 +19,7 @@ HINT_MAX_LENGTH = 256
 # --- Images ---
 IMAGES_MIN_COUNT = 2
 IMAGES_MAX_COUNT = 10
+UPLOAD_MAX_BYTES = 25 * 1024 * 1024
 
 # --- Correct answers ---
 ANSWERS_MIN_COUNT = 1

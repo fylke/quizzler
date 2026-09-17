@@ -716,6 +716,14 @@ class MainAppTestCase(unittest.TestCase):
                 msg=f"Expected 200 for '{email}', got {response.status_code}",
             )
 
+    def test_register_rejects_password_longer_than_maximum(self):
+        response = self.client.post(
+            "/api/register",
+            json={"email": "long-password@example.com", "password": "p" * 129},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("between", response.get_json()["error"])
+
     def test_login_endpoint_allows_registered_user(self):
         response = self.client.post(
             "/api/login", json={"email": "test@example.com", "password": "password123"}
