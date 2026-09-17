@@ -51,6 +51,11 @@ def _ensure_legacy_sqlite_schema_compatibility():
     user_columns = {
         row[1] for row in db.session.execute(text('PRAGMA table_info("user")')).all()
     }
+    if "name" in user_columns:
+        db.session.execute(text('ALTER TABLE "user" DROP COLUMN name'))
+        db.session.commit()
+        print("  Dropped legacy user.name column for legacy schema")
+
     if "password_changed_at" not in user_columns:
         db.session.execute(
             text('ALTER TABLE "user" ADD COLUMN password_changed_at DATETIME')
