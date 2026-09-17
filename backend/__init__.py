@@ -6,6 +6,7 @@ from pathlib import Path
 
 import sqlalchemy.exc
 from flask import Flask, jsonify, render_template, request, send_from_directory
+from werkzeug.exceptions import RequestEntityTooLarge
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -35,7 +36,7 @@ from .routes_auth import auth_bp
 from .routes_oauth import oauth_bp
 from .routes_quiz import quiz_bp
 from .stats import compute_stats
-from .validation_rules import as_dict as validation_rules_dict
+from .validation_rules import UPLOAD_MAX_BYTES, as_dict as validation_rules_dict
 
 # Re-export auth utilities so existing imports like `from backend import admin_required` still work.
 
@@ -44,6 +45,12 @@ PROJECT_ROOT = os.path.dirname(BASE_DIR)
 STATIC_DIR = os.path.join(PROJECT_ROOT, "frontend")
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
+app.config["MAX_CONTENT_LENGTH"] = UPLOAD_MAX_BYTES
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(_error):
+    return jsonify({"error": "Request is too large"}), 413
 
 # Media directory for quiz images (convention: media/<dest_id>/<hint_level>a.jpg)
 MEDIA_DIR = os.environ.get("MEDIA_DIR", os.path.join(PROJECT_ROOT, "media"))

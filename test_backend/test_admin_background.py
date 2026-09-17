@@ -124,6 +124,17 @@ class AdminBackgroundAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Only image files are allowed", response.get_json()["error"])
 
+    def test_upload_background_rejects_oversized_request(self):
+        csrf = self._login_admin()
+        response = self.client.post(
+            "/api/admin/settings/background",
+            data={"portrait": (io.BytesIO(b"x" * (25 * 1024 * 1024)), "large.jpg")},
+            headers={"X-CSRF-Token": csrf},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(response.get_json(), {"error": "Request is too large"})
+
     def test_upload_portrait_and_landscape_backgrounds(self):
         """Admin can upload portrait and landscape backgrounds and retrieve them."""
         csrf = self._login_admin()
