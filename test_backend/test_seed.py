@@ -114,6 +114,44 @@ class TestSeedEmptyDatabase(unittest.TestCase):
             self.assertIn("password_changed_at", columns)
             self.assertGreaterEqual(User.query.filter_by(is_admin=True).count(), 1)
 
+    def test_seed_upgrades_legacy_user_table_with_dropped_name_column(self):
+        """Seeding drops legacy user.name column so user inserts succeed."""
+        from scripts.seed_db import seed
+
+        with app.app_context():
+            db.drop_all()
+            db.session.execute(text("""
+                    CREATE TABLE user (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        password_hash VARCHAR(256) NOT NULL,
+                        name VARCHAR(128) NOT NULL,
+                        email VARCHAR(128) NOT NULL UNIQUE,
+                        is_admin BOOLEAN NOT NULL DEFAULT 0
+                    )
+                    """))
+            db.session.commit()
+
+        with patch.dict(
+            os.environ,
+            {
+                "ADMIN_BOOTSTRAP_PASSWORD": "new-bootstrap-admin-password",
+                "ADMIN_BOOTSTRAP_EMAIL": "admin@example.com",
+            },
+            clear=False,
+        ):
+            seed(destinations=TEST_DESTINATIONS)
+
+        with app.app_context():
+            columns = {
+                row[1]
+                for row in db.session.execute(text('PRAGMA table_info("user")')).all()
+            }
+            self.assertNotIn("name", columns)
+            self.assertIn("password_changed_at", columns)
+            admin = User.query.filter_by(email="admin@example.com").first()
+            self.assertIsNotNone(admin)
+            self.assertTrue(admin.is_admin)
+
     def test_seed_preserves_existing_admin_when_custom_bootstrap_secret_missing(self):
         """Custom bootstrap secret is only required when no admin already exists."""
         from scripts.seed_db import seed

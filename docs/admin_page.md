@@ -161,3 +161,52 @@ Answers are normalized (lowercased + trimmed) before storage.
 | 400 | Validation failure (details in response) |
 | 404 | Destination not found |
 | 409 | Duplicate destination name |
+
+## Admin Account Management
+
+Admin privileges are granted by setting `is_admin=True` on the `user` table. Admin accounts can be created or managed through the following workflows:
+
+### 1. Environment Bootstrap / Seeding
+
+On startup (or when running `scripts.seed_db`), the application can automatically create or update a bootstrap admin account:
+
+- **Environment variables:**
+  - `ADMIN_BOOTSTRAP_EMAIL`: Bootstrap admin email (defaults to `admin@example.com`).
+  - `ADMIN_BOOTSTRAP_PASSWORD`: Bootstrap admin password (must be at least 12 characters).
+  - `REQUIRE_CUSTOM_ADMIN_BOOTSTRAP=true`: Enforces that a custom password is provided if no admin user already exists.
+- **Behavior:**
+  - If a user with `ADMIN_BOOTSTRAP_EMAIL` already exists, its password is updated and `is_admin` is set to `True`.
+  - If no matching user exists, a new admin account is created.
+  - If `ADMIN_BOOTSTRAP_PASSWORD` is omitted and `REQUIRE_CUSTOM_ADMIN_BOOTSTRAP` is not set, a default development account (`admin@example.com` / `adminpass123`) is seeded.
+
+### 2. Promoting or Creating Admins via Python Shell
+
+To add additional admins or promote existing registered users to administrators, run a Python snippet within the app context:
+
+```bash
+uv run python -c "
+from backend import app
+from backend.models import db, User
+from werkzeug.security import generate_password_hash
+
+with app.app_context():
+    email = 'admin2@example.com'
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.is_admin = True
+        print(f'Promoted {email} to admin')
+    else:
+        user = User(
+            email=email,
+            password_hash=generate_password_hash('strong_password_here'),
+            is_admin=True
+        )
+        db.session.add(user)
+        print(f'Created new admin: {email}')
+    db.session.commit()
+"
+```
+
+### 3. Password Reset for Existing Admins
+
+When SMTP is configured (`SMTP_HOST`, `SMTP_PORT`, etc.), administrators can reset their password via the **Forgot Password?** modal on the login screen.

@@ -18,6 +18,9 @@ This guide summarizes runtime configuration, container workflows, backups, and r
 | SMTP_FROM_ADDRESS | Sender address | noreply@quizzler.com |
 | SMTP_USE_TLS | Use TLS if set to true | true |
 | ADMIN_EMAIL | Hint complaint destination email | (none) |
+| ADMIN_BOOTSTRAP_EMAIL | Bootstrap admin email (used during seeding; defaults to `admin@example.com`) | admin@example.com |
+| ADMIN_BOOTSTRAP_PASSWORD | Bootstrap admin password (must be >= 12 chars; updates existing admin or creates new) | change-me-admin-pass |
+| REQUIRE_CUSTOM_ADMIN_BOOTSTRAP | Fail startup if no custom admin password is provided and no admin exists | true |
 
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and
 `SMTP_FROM_ADDRESS` are required when sending password-reset or complaint
