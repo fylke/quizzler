@@ -57,7 +57,7 @@ function handleOAuthLogin(provider) {
 // ==================== Auth ====================
 
 async function loadUser() {
-    await initOAuth();
+    initOAuth();
     try {
         const response = await fetch(`${API_BASE}/api/me`);
         if (response.status === 401) {

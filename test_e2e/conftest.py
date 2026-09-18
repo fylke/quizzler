@@ -79,7 +79,7 @@ def app_server():
         get_or_create_quiz_identity("countries", dest.id)
         db.session.commit()
 
-    server = make_server("127.0.0.1", port, app)
+    server = make_server("127.0.0.1", port, app, threaded=True)
     thread = threading.Thread(target=server.serve_forever)
     thread.daemon = True
     thread.start()
@@ -121,9 +121,12 @@ def clean_db(app_server):
     """Reset user data between tests while keeping destinations."""
     with app.app_context():
         from backend.models import (
+            AppSetting,
             GuestQuizResult,
             GuestSession,
             HintSourceReview,
+            OAuthAccount,
+            PasswordResetToken,
             QuizResult,
             User,
         )
@@ -131,8 +134,11 @@ def clean_db(app_server):
         GuestQuizResult.query.delete()
         GuestSession.query.delete()
         HintSourceReview.query.delete()
+        PasswordResetToken.query.delete()
+        OAuthAccount.query.delete()
         QuizResult.query.delete()
         User.query.delete()
+        AppSetting.query.delete()
         db.session.commit()
     yield
 

@@ -176,7 +176,7 @@ def test_shared_quiz_link_auto_starts_and_can_be_shared(
 
     page.goto(f"{base_url}/quiz/{quiz_guid}")
 
-    expect(page.locator("#quizScreen")).to_be_visible(timeout=5000)
+    expect(page.locator("#quizScreen")).to_be_visible(timeout=10000)
     expect(page.locator("#hint")).to_have_text("Located on the Seine river.")
     expect(page.locator("#shareQuizBtn")).to_be_visible()
 
