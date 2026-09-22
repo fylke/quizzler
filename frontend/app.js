@@ -24,6 +24,7 @@ const COUNTER_PUFF_DURATION_MS = 340;
 const COOKIE_CONSENT_STORAGE_KEY = 'quizzler_cookie_consent_acknowledged_v1';
 const QUIZ_ID_PATTERN = /^[a-z][0-9]+$/i;
 let sharedQuizRequest = readSharedQuizRequest();
+let friendGameRequest = readFriendGameRequest();
 
 // Validation rules fetched from the backend — single source of truth.
 // Fallback defaults are used until the fetch completes.
@@ -261,6 +262,9 @@ function bindAuthAndMainScreenActions() {
     bindClick('runRandomQuizBtn', () => {
         runRandomQuiz();
     });
+    bindClick('friendGameBtn', () => {
+        getScreenController('friendGame').showCreate();
+    });
     bindClick('shareQuizBtn', () => {
         shareCurrentQuiz();
     });
@@ -298,12 +302,35 @@ function readSharedQuizRequest() {
     };
 }
 
+function readFriendGameRequest() {
+    const pathMatch = window.location.pathname.match(/^\/friend\/([^/]+)$/i);
+    if (!pathMatch) {
+        return { present: false, token: null };
+    }
+    let token;
+    try {
+        token = decodeURIComponent(pathMatch[1]).trim();
+    } catch (error) {
+        token = '';
+    }
+    return { present: true, token: token || null };
+}
+
 function removeSharedQuizPath() {
     const url = new URL(window.location.href);
     window.history.replaceState({}, '', `${url.origin}/${url.search}${url.hash}`);
 }
 
 async function startSharedQuizIfPresent() {
+    if (friendGameRequest.present) {
+        const token = friendGameRequest.token;
+        friendGameRequest = { present: false, token: null };
+        if (!token) {
+            showNotification('Friend game not found.');
+            return false;
+        }
+        return getScreenController('friendGame').start(token);
+    }
     if (!sharedQuizRequest.present) {
         return false;
     }

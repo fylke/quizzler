@@ -33,6 +33,7 @@ from .quiz_session import active_result_for_player, get_media_access_state
 from .quiz_types import IDENTIFIER_PATTERN, get_registry, validate_registry
 from .routes_admin import admin_bp
 from .routes_auth import auth_bp
+from .routes_friend_games import friend_games_bp
 from .routes_oauth import oauth_bp
 from .routes_quiz import quiz_bp
 from .stats import compute_stats
@@ -278,6 +279,7 @@ with app.app_context():
 app.register_blueprint(auth_bp)
 app.register_blueprint(oauth_bp)
 app.register_blueprint(quiz_bp)
+app.register_blueprint(friend_games_bp)
 app.register_blueprint(admin_bp)
 
 # Apply rate limits to auth blueprint routes after registration
@@ -388,6 +390,12 @@ def index():
 @app.route("/quiz/<quiz_id>")
 def shared_quiz_page(quiz_id):
     """Serve the main page for a shared compact quiz ID."""
+    return render_template("index.html")
+
+
+@app.route("/friend/<token>")
+def friend_game_page(token):
+    """Serve the main page for a friend-game invitation token."""
     return render_template("index.html")
 
 

@@ -163,6 +163,106 @@ class GuestQuizResult(db.Model):
     country = db.relationship("Destination")
 
 
+class FriendGame(db.Model):
+    __tablename__ = "friend_game"
+
+    id = db.Column(db.String(36), primary_key=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    quiz_type = db.Column(db.String(64), nullable=False)
+    question_count = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
+    last_activity_at = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    closed = db.Column(db.Boolean, nullable=False, default=False)
+
+    questions = db.relationship(
+        "FriendGameQuestion",
+        back_populates="game",
+        cascade="all, delete-orphan",
+        order_by="FriendGameQuestion.position",
+    )
+    participants = db.relationship(
+        "FriendGameParticipant", back_populates="game", cascade="all, delete-orphan"
+    )
+
+
+class FriendGameQuestion(db.Model):
+    __tablename__ = "friend_game_question"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "game_id", "position", name="uq_friend_game_question_position"
+        ),
+        db.UniqueConstraint(
+            "game_id", "source_id", name="uq_friend_game_question_source"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(
+        db.String(36), db.ForeignKey("friend_game.id"), nullable=False, index=True
+    )
+    position = db.Column(db.Integer, nullable=False)
+    source_id = db.Column(db.Integer, nullable=False)
+
+    game = db.relationship("FriendGame", back_populates="questions")
+
+
+class FriendGameParticipant(db.Model):
+    __tablename__ = "friend_game_participant"
+    __table_args__ = (
+        db.UniqueConstraint("game_id", "user_id", name="uq_friend_game_user"),
+        db.UniqueConstraint("game_id", "guest_session_id", name="uq_friend_game_guest"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(
+        db.String(36), db.ForeignKey("friend_game.id"), nullable=False, index=True
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    guest_session_id = db.Column(
+        db.Integer, db.ForeignKey("guest_session.id"), nullable=True, index=True
+    )
+    display_name = db.Column(db.String(64), nullable=False)
+    joined_at = db.Column(db.DateTime, nullable=False, default=_utcnow_naive)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    game = db.relationship("FriendGame", back_populates="participants")
+    user = db.relationship("User")
+    guest_session = db.relationship("GuestSession")
+    answers = db.relationship(
+        "FriendGameAnswer",
+        back_populates="participant",
+        cascade="all, delete-orphan",
+        order_by="FriendGameAnswer.position",
+    )
+
+
+class FriendGameAnswer(db.Model):
+    __tablename__ = "friend_game_answer"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "participant_id", "position", name="uq_friend_game_answer_position"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    participant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("friend_game_participant.id"),
+        nullable=False,
+        index=True,
+    )
+    position = db.Column(db.Integer, nullable=False)
+    hint_difficulty = db.Column(db.Integer, nullable=False, default=5)
+    remaining_guesses = db.Column(db.Integer, nullable=False, default=3)
+    points = db.Column(db.Integer, nullable=False, default=0)
+    completed = db.Column(db.Boolean, nullable=False, default=False)
+    correct = db.Column(db.Boolean, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    participant = db.relationship("FriendGameParticipant", back_populates="answers")
+
+
 class PasswordResetToken(db.Model):
     __tablename__ = "password_reset_token"
 

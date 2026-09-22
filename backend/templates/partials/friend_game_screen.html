@@ -1,0 +1,48 @@
+<div id="friendGameScreen" class="screen hidden">
+    <div class="friend-game-content">
+        <h1>Friend game</h1>
+        <p id="friendGameStatus" aria-live="polite"></p>
+
+        <form id="friendGameCreateForm" class="friend-game-form hidden">
+            <label for="friendGameQuestionCount">Questions</label>
+            <input id="friendGameQuestionCount" type="number" min="1" max="10" value="5" required>
+            <label for="friendGameQuizIds">Specific quiz IDs (optional)</label>
+            <input id="friendGameQuizIds" type="text" inputmode="numeric" placeholder="For example: 12, 27, 41">
+            <label for="friendGameCreateName">Your display name</label>
+            <input id="friendGameCreateName" type="text" maxlength="64" autocomplete="nickname" required>
+            <button class="btn btn-primary" type="submit">Create friend game</button>
+        </form>
+
+        <form id="friendGameJoinForm" class="friend-game-form hidden">
+            <label for="friendGameJoinName">Your display name</label>
+            <input id="friendGameJoinName" type="text" maxlength="64" autocomplete="nickname" required>
+            <button class="btn btn-primary" type="submit">Join game</button>
+        </form>
+
+        <div id="friendGameLobby" class="hidden">
+            <p id="friendGameInvite"></p>
+            <button class="btn btn-secondary" id="friendGameCopyBtn" type="button">Copy invite link</button>
+            <button class="btn btn-primary" id="friendGameStartBtn" type="button">Play</button>
+        </div>
+
+        <div id="friendGamePlay" class="hidden">
+            <p id="friendGameProgress"></p>
+            <h2 id="friendGameHint"></h2>
+            <div class="friend-game-images">
+                <img id="friendGameImage1" alt="Destination image 1">
+                <img id="friendGameImage2" alt="Destination image 2">
+            </div>
+            <p id="friendGameGuesses"></p>
+            <input id="friendGameAnswer" type="text" placeholder="Enter the destination" autocomplete="off">
+            <div class="button-group">
+                <button class="btn btn-primary" id="friendGameSubmitBtn" type="button">Submit answer</button>
+                <button class="btn btn-secondary" id="friendGameHintBtn" type="button">Next hint</button>
+            </div>
+        </div>
+
+        <section id="friendGameLeaderboard" class="friend-game-leaderboard" aria-live="polite">
+            <h2>Results</h2>
+            <ol id="friendGameLeaderboardList"></ol>
+        </section>
+    </div>
+</div>
