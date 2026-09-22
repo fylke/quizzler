@@ -149,7 +149,8 @@ class TestSeedEmptyDatabase(unittest.TestCase):
             self.assertNotIn("name", columns)
             self.assertIn("password_changed_at", columns)
             admin = User.query.filter_by(email="admin@example.com").first()
-            self.assertIsNotNone(admin)
+            if admin is None:
+                self.fail("Expected the bootstrap admin to exist")
             self.assertTrue(admin.is_admin)
 
     def test_seed_preserves_existing_admin_when_custom_bootstrap_secret_missing(self):
@@ -157,13 +158,11 @@ class TestSeedEmptyDatabase(unittest.TestCase):
         from scripts.seed_db import seed
 
         with app.app_context():
-            db.session.add(
-                User(
-                    email="admin@example.com",
-                    password_hash=generate_password_hash("already-set-password"),
-                    is_admin=True,
-                )
-            )
+            admin = User()
+            admin.email = "admin@example.com"
+            admin.password_hash = generate_password_hash("already-set-password")
+            admin.is_admin = True
+            db.session.add(admin)
             db.session.commit()
 
         with patch.dict(
