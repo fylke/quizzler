@@ -120,6 +120,7 @@ def main() -> int:
 
     for workflow in [
         ".github/workflows/check-countries.yml",
+        ".github/workflows/check-hint-sources.yml",
         ".github/workflows/ci.yml",
         ".github/workflows/dependabot-auto-merge.yml",
         ".github/workflows/deploy-qnap.yml",
