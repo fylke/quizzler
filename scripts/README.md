@@ -10,6 +10,8 @@ This directory contains utility scripts used for local development, deployment, 
 - `check_hardening.py`: Validates repository hardening policies used by CI/deployment.
 - `generate_small_webp.py`: Generates optimized `_small.webp` hint images from existing media files.
 - `entrypoint.sh`: Container startup entrypoint (seed first, then run app).
+- `verify_countries.py`: Verifies `frontend/assets/countries.txt` against official UN member states.
+- `verify_hint_sources.py`: Verifies hint source links across quiz data files and ensures they do not return 404.
 
 ## Script Details
 
@@ -98,6 +100,31 @@ Flow:
 2. Starts the Flask backend module.
 
 This keeps container boot deterministic for new/empty volumes.
+
+### `verify_countries.py`
+
+Verifies that `frontend/assets/countries.txt` matches the authoritative UN member states list.
+
+Run:
+
+```bash
+uv run python scripts/verify_countries.py
+```
+
+### `verify_hint_sources.py`
+
+Extracts hint source URLs from quiz seed data files (`data/*.json` or custom paths) and checks that none return HTTP 404 (Not Found).
+
+Run:
+
+```bash
+uv run python scripts/verify_hint_sources.py
+```
+
+Optional arguments:
+- `paths`: Specific JSON files or directories to scan.
+- `--workers`: Number of concurrent worker threads (default: 10).
+- `--timeout`: Timeout in seconds for HTTP requests (default: 15).
 
 ## Notes
 
